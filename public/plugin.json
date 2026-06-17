@@ -1,0 +1,34 @@
+{
+  "name": "颜色值转换器",
+  "code": "color_converter",
+  "description": "支持 HEX / RGB / RGBA / HSL / HSLA / CMYK / LAB / HSV 等多格式颜色值互转、图片取色、预设颜色查询、色彩科普的 uTools 工具",
+  "version": "1.0.0",
+  "main": "index.html",
+  "preload": "preload/services.js",
+  "logo": "logo.png",
+  "development": {
+    "main": "http://localhost:5173"
+  },
+  "features": [
+    {
+      "code": "color_preset",
+      "explain": "W3C 标准预设色卡查询，支持按颜色名和 HEX 值搜索",
+      "cmds": ["预设颜色表", "预设色卡", "色卡查询", "CSS 颜色名"]
+    },
+    {
+      "code": "color_convert",
+      "explain": "HEX / RGB / RGBA / HSL / HSLA / CMYK / LAB / HSV 多格式颜色值双向互转",
+      "cmds": ["颜色转换", "HEX 转 RGB", "RGB 转 HSL", "色值换算"]
+    },
+    {
+      "code": "color_image",
+      "explain": "从图片中提取颜色（吸管取色 + 主色调提取）",
+      "cmds": ["图片取色", "吸管取色", "图片调色板", "从图片提取颜色"]
+    },
+    {
+      "code": "color_knowledge",
+      "explain": "色彩基础知识与格式科普（色光三原色、色环、各格式适用场景）",
+      "cmds": ["色彩知识库", "色彩科普", "颜色知识", "配色原理"]
+    }
+  ]
+}
