@@ -33,7 +33,7 @@ export default {
   props: {
     currentTab: {
       type: String,
-      default: 'knowledge'
+      default: 'BasicKnowledge'
     },
     collapsed: {
       type: Boolean,
@@ -45,19 +45,24 @@ export default {
     return {
       menuItems: [
         {
-          id: 'knowledge',
+          id: 'BasicKnowledge',
           label: '基础知识',
           icon: '<span class="iconfont icon-Areality-Overview"></span>'
         },
         {
-          id: 'convert',
+          id: 'ColorConversion',
           label: '颜色转换',
           icon: '<span class="iconfont icon-Areality-ColorConversion"></span>'
         },
         {
-          id: 'image',
+          id: 'ImageColorSampling',
           label: '图片取色',
           icon: '<span class="iconfont icon-Areality-Picture"></span>'
+        },
+        {
+          id: 'PresetColors',
+          label: '预置颜色',
+          icon: '<span class="iconfont icon-Areality-Color"></span>'
         }
       ]
     };

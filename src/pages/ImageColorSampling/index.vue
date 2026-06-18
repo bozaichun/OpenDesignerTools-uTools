@@ -10,7 +10,7 @@
       @drop.prevent="handleDrop"
     >
       <div class="upload-icon">
-        <span class="iconfont icon-PictureAddition"></span>
+        <span class="iconfont icon-Areality-Picture"></span>
       </div>
       <div class="upload-text">点击选择图片，或拖拽图片到此处</div>
       <div class="upload-hint">支持 PNG / JPG / WEBP / GIF</div>
@@ -163,10 +163,10 @@
 import {
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
   copyToClipboard, showToast
-} from '../utils/colorUtils';
+} from '../../utils/colorUtils';
 
 export default {
-  name: 'ModuleImage',
+  name: 'ImageColorSampling',
   data() {
     return {
       imageLoaded: false,
@@ -314,7 +314,6 @@ export default {
       }
     },
 
-    // 主色调提取：采样 + 量化 + 分桶
     extractMainColors() {
       if (!this.imageData) {
         this.mainColors = [];
@@ -326,7 +325,6 @@ export default {
         const data = this.imageData.data;
         const step = 4;
         const buckets = {};
-        const sampleRgb = {};
 
         for (let i = 0; i < data.length; i += 4 * step) {
           const r = data[i];

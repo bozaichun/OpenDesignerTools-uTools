@@ -78,11 +78,11 @@
 </template>
 
 <script>
-import { PRESET_COLORS, COLOR_GROUPS } from '../data/presetColors';
-import { detectColorFormat, parseColor, formatHEX, formatRGB, formatRGBA, formatHSL, formatCMYK, formatHSV, copyToClipboard, showToast } from '../utils/colorUtils';
+import { PRESET_COLORS, COLOR_GROUPS } from '../../data/presetColors';
+import { parseColor, formatHEX, formatRGB, formatRGBA, formatHSL, formatCMYK, formatHSV, copyToClipboard, showToast } from '../../utils/colorUtils';
 
 export default {
-  name: 'ModulePreset',
+  name: 'PresetColors',
   data() {
     return {
       presetColors: PRESET_COLORS,
@@ -122,7 +122,7 @@ export default {
     },
     copyValue(value, label) {
       copyToClipboard(value);
-      showToast(this, `已复制 ${label}: ${value}`, 'success');
+      showToast(this, '已复制 ' + label + ': ' + value, 'success');
     }
   }
 };

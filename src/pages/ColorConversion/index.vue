@@ -141,10 +141,10 @@ import {
   detectColorFormat, parseColor, formatRGBA, formatHSLA,
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
   copyToClipboard, showToast
-} from '../utils/colorUtils';
+} from '../../utils/colorUtils';
 
 export default {
-  name: 'ModuleConvert',
+  name: 'ColorConversion',
   data() {
     return {
       currentRGB: { r: 255, g: 255, b: 255, a: 1 },
@@ -192,7 +192,6 @@ export default {
       }
 
       const detected = detectColorFormat(value);
-      // 统一为小写比较（支持 RGB/RGBA 视为同一种）
       const detectedFmt = detected ? detected.toLowerCase() : null;
       const normalizedFmt = (format === 'rgb' && detectedFmt === 'rgba') || (format === 'rgba' && detectedFmt === 'rgb')
         ? format
@@ -217,7 +216,6 @@ export default {
       this.currentRGB = { r: rgb.r, g: rgb.g, b: rgb.b, a: rgb.a };
       this.alphaPercent = Math.round(rgb.a * 100);
 
-      // 更新所有其他格式的输入框
       this.syncAllFromRGB(format);
       this.isUpdating = false;
     },

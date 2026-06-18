@@ -52,10 +52,10 @@
 
 <script>
 import * as echarts from 'echarts';
-import { KNOWLEDGE_DATA } from '../data/knowledge';
+import { KNOWLEDGE_DATA } from '../../data/knowledge';
 
 export default {
-  name: 'ModuleKnowledge',
+  name: 'BasicKnowledge',
   data() {
     return {
       KNOWLEDGE_DATA,

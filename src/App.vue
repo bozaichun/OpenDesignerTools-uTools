@@ -13,7 +13,6 @@
       <!-- 页头 -->
       <header-layout
         :title="currentTabLabel"
-        @show-preset-modal="presetModalVisible = true"
       />
 
       <!-- 内容区 -->
@@ -21,11 +20,6 @@
         <router-view />
       </content-body-layout>
     </main-content-layout>
-
-    <!-- 预设颜色表遮罩弹窗 -->
-    <preset-modal :visible="presetModalVisible" @close="presetModalVisible = false">
-      <module-preset />
-    </preset-modal>
 
     <!-- Toast -->
     <div class="toast-container">
@@ -46,20 +40,20 @@ import SidebarLayout from './layout/Sidebar/index.vue';
 import HeaderLayout from './layout/Header/index.vue';
 import MainContentLayout from './layout/MainConter/index.vue';
 import ContentBodyLayout from './layout/ContentBody/index.vue';
-import PresetModal from './components/PresetModal.vue';
-import ModulePreset from './components/ModulePreset.vue';
 import Toast from './components/Toast.vue';
 
 const TAB_BY_ROUTE = {
-  '/knowledge': 'knowledge',
-  '/convert': 'convert',
-  '/image': 'image'
+  '/BasicKnowledge': 'BasicKnowledge',
+  '/ColorConversion': 'ColorConversion',
+  '/ImageColorSampling': 'ImageColorSampling',
+  '/PresetColors': 'PresetColors'
 };
 
 const TAB_LABELS = {
-  knowledge: '基础知识',
-  convert: '颜色转换',
-  image: '图片取色'
+  BasicKnowledge: '基础知识',
+  ColorConversion: '颜色转换',
+  ImageColorSampling: '图片取色',
+  PresetColors: '预置颜色'
 };
 
 export default {
@@ -69,8 +63,6 @@ export default {
     HeaderLayout,
     MainContentLayout,
     ContentBodyLayout,
-    PresetModal,
-    ModulePreset,
     Toast
   },
   setup() {
@@ -87,13 +79,12 @@ export default {
   data() {
     return {
       sidebarCollapsed: false,
-      presetModalVisible: false,
       toasts: []
     };
   },
   computed: {
     currentTab() {
-      return this.TAB_BY_ROUTE[this.route.path] || 'knowledge';
+      return this.TAB_BY_ROUTE[this.route.path] || 'BasicKnowledge';
     },
     currentTabLabel() {
       return this.TAB_LABELS[this.currentTab] || '';
@@ -110,13 +101,13 @@ export default {
       window.utools.onPluginEnter((action) => {
         const code = action && action.code;
         if (code === 'color_preset') {
-          self.presetModalVisible = true;
+          self.router.push('/PresetColors');
         } else if (code === 'color_knowledge') {
-          self.router.push('/knowledge');
+          self.router.push('/BasicKnowledge');
         } else if (code === 'color_convert') {
-          self.router.push('/convert');
+          self.router.push('/ColorConversion');
         } else if (code === 'color_image') {
-          self.router.push('/image');
+          self.router.push('/ImageColorSampling');
         }
       });
     }

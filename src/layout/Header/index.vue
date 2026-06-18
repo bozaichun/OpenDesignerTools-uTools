@@ -16,10 +16,6 @@
       >
         <span class="iconfont icon-Areality-Setting"></span>
       </button>
-      <button class="palette-btn" @click="$emit('show-preset-modal')" title="色彩库">
-        <span class="iconfont icon-Areality-Color palette-icon"></span>
-        <span class="palette-text">色彩库</span>
-      </button>
     </div>
   </header>
 </template>
@@ -33,7 +29,7 @@ export default {
       default: ''
     }
   },
-  emits: ['show-preset-modal', 'toggle-mode', 'show-setting']
+  emits: ['toggle-mode', 'show-setting']
 };
 </script>
 
@@ -91,34 +87,6 @@ export default {
   }
 }
 
-.palette-btn {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-
-  &:hover {
-    background: var(--accent);
-    color: var(--text-invert);
-    border-color: var(--accent);
-    box-shadow: var(--shadow-sm);
-  }
-}
-
-.palette-icon {
-  font-size: 16px;
-  line-height: 1;
-}
-
 @media (max-width: 640px) {
   .page-header {
     flex-wrap: wrap;
@@ -133,11 +101,6 @@ export default {
 
   .header-actions {
     gap: 6px;
-  }
-
-  .palette-btn {
-    padding: 6px 10px;
-    font-size: 13px;
   }
 }
 </style>

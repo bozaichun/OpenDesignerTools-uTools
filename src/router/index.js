@@ -3,25 +3,31 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 const routes = [
   {
     path: '/',
-    redirect: '/knowledge'
+    redirect: '/BasicKnowledge'
   },
   {
-    path: '/knowledge',
-    name: 'knowledge',
-    component: () => import('../pages/Knowledge.vue'),
+    path: '/BasicKnowledge',
+    name: 'BasicKnowledge',
+    component: () => import('../pages/BasicKnowledge/index.vue'),
     meta: { title: '基础知识' }
   },
   {
-    path: '/convert',
-    name: 'convert',
-    component: () => import('../pages/Convert.vue'),
+    path: '/ColorConversion',
+    name: 'ColorConversion',
+    component: () => import('../pages/ColorConversion/index.vue'),
     meta: { title: '颜色转换' }
   },
   {
-    path: '/image',
-    name: 'image',
-    component: () => import('../pages/Image.vue'),
+    path: '/ImageColorSampling',
+    name: 'ImageColorSampling',
+    component: () => import('../pages/ImageColorSampling/index.vue'),
     meta: { title: '图片取色' }
+  },
+  {
+    path: '/PresetColors',
+    name: 'PresetColors',
+    component: () => import('../pages/PresetColors/index.vue'),
+    meta: { title: '预置颜色' }
   }
 ];
 
