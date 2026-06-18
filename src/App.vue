@@ -57,7 +57,7 @@ const TAB_BY_ROUTE = {
 };
 
 const TAB_LABELS = {
-  knowledge: '色彩知识库',
+  knowledge: '基础知识',
   convert: '颜色转换',
   image: '图片取色'
 };

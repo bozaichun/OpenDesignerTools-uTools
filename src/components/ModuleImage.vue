@@ -10,7 +10,7 @@
       @drop.prevent="handleDrop"
     >
       <div class="upload-icon">
-        <span class="iconfont icon-Areality-ModeSwitching"></span>
+        <span class="iconfont icon-PictureAddition"></span>
       </div>
       <div class="upload-text">点击选择图片，或拖拽图片到此处</div>
       <div class="upload-hint">支持 PNG / JPG / WEBP / GIF</div>
@@ -79,27 +79,27 @@
                 <span class="code-label">HEX</span>
                 <span class="code-value">{{ color.hex }}</span>
                 <button class="code-copy" @click="copyValue(color.hex, 'HEX')" title="复制 HEX">
-                  <span class="iconfont icon-Success"></span>
+                  <span class="iconfont icon-Copy"></span>
                 </button>
               </div>
               <div class="code-row">
                 <span class="code-label">RGB</span>
                 <span class="code-value">{{ color.rgb }}</span>
                 <button class="code-copy" @click="copyValue(color.rgb, 'RGB')" title="复制 RGB">
-                  <span class="iconfont icon-Success"></span>
+                  <span class="iconfont icon-Copy"></span>
                 </button>
               </div>
               <div class="code-row">
                 <span class="code-label">HSL</span>
                 <span class="code-value">{{ color.hsl }}</span>
                 <button class="code-copy" @click="copyValue(color.hsl, 'HSL')" title="复制 HSL">
-                  <span class="iconfont icon-Success"></span>
+                  <span class="iconfont icon-Copy"></span>
                 </button>
               </div>
             </div>
             <div class="color-actions">
               <button class="search-btn" @click="searchOnBaidu(color.hex)">
-                <span class="iconfont icon-Success"></span>
+                <span class="iconfont icon-Copy"></span>
                 百度搜索配色
               </button>
             </div>

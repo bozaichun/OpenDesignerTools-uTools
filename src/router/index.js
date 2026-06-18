@@ -9,7 +9,7 @@ const routes = [
     path: '/knowledge',
     name: 'knowledge',
     component: () => import('../pages/Knowledge.vue'),
-    meta: { title: '色彩知识库' }
+    meta: { title: '基础知识' }
   },
   {
     path: '/convert',

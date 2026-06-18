@@ -1,39 +1,49 @@
 <template>
   <div class="module-knowledge">
-    <div class="knowledge-list">
+    <div class="knowledge-grid">
       <div
         v-for="item in KNOWLEDGE_DATA"
         :key="item.id"
         class="knowledge-card"
-        :class="isExpanded(item.id) ? 'expanded' : ''"
       >
-        <div class="knowledge-header" @click="toggle(item.id)">
-          <div class="knowledge-header-text">
+        <div class="knowledge-header">
+          <div class="knowledge-header-left">
             <h3 class="knowledge-title">{{ item.title }}</h3>
-            <p class="knowledge-summary">{{ item.summary }}</p>
+            <span
+              class="prompt-icon iconfont icon-Prompt"
+              @click.stop
+              @mouseenter="showTooltip($event, item.summary)"
+              @mouseleave="hideTooltip"
+              @mouseout="hideTooltip"
+            ></span>
           </div>
-          <span class="knowledge-expand-icon" :class="isExpanded(item.id) ? 'rotated' : ''">▼</span>
+          <div class="knowledge-header-right">
+            <span
+              class="detail-link"
+              @click="openDetail(item)"
+            >详细信息</span>
+          </div>
         </div>
 
-        <div v-if="isExpanded(item.id)" class="knowledge-body">
-          <div class="knowledge-chart" :ref="setChartRefFunc(item.id)"></div>
+        <div class="knowledge-body">
+          <div class="knowledge-chart" :ref="el => setChartRef(el, item.id)"></div>
           <div class="knowledge-chart-title">{{ item.chart ? item.chart.title : '' }}</div>
+        </div>
+      </div>
+    </div>
 
-          <div v-if="item.colorDemo" class="color-demo-row">
-            <div v-for="c in item.colorDemo" :key="c.hex" class="color-demo-item">
-              <div class="color-demo-swatch" :style="{ background: c.hex }"></div>
-              <span class="color-demo-name">{{ c.name }}</span>
-            </div>
-          </div>
+    <div v-if="tooltipVisible" class="tooltip-box" :style="tooltipStyle">
+      {{ tooltipText }}
+    </div>
 
-          <div v-if="item.colorWheel" class="color-wheel">
-            <div v-for="cw in item.colorWheel" :key="cw.h" class="color-wheel-item">
-              <div class="color-wheel-swatch" :style="{ background: 'hsl(' + cw.h + ', 75%, 55%)' }"></div>
-              <span class="color-wheel-label">{{ cw.label }} {{ cw.h }}°</span>
-            </div>
-          </div>
-
-          <div v-for="(section, sIdx) in item.sections" :key="sIdx" class="knowledge-section">
+    <div v-if="detailVisible" class="detail-overlay" @click.self="closeDetail">
+      <div class="detail-modal">
+        <div class="detail-header">
+          <h3 class="detail-title">{{ currentDetailItem ? currentDetailItem.title : '' }}</h3>
+          <span class="detail-close iconfont icon-Failure" @click="closeDetail"></span>
+        </div>
+        <div class="detail-body">
+          <div v-if="currentDetailItem" v-for="(section, sIdx) in currentDetailItem.sections" :key="sIdx" class="knowledge-section">
             <h4 class="knowledge-section-title">{{ section.title }}</h4>
             <p class="knowledge-section-content">{{ section.content }}</p>
           </div>
@@ -52,15 +62,24 @@ export default {
   data() {
     return {
       KNOWLEDGE_DATA,
-      expandedId: null,
       chartInstances: {},
-      _resizeHandler: null
+      chartRefs: {},
+      _resizeHandler: null,
+      tooltipVisible: false,
+      tooltipText: '',
+      tooltipStyle: { top: '0px', left: '0px' },
+      tooltipTimer: null,
+      detailVisible: false,
+      currentDetailItem: null
     };
   },
   mounted() {
     const self = this;
-    this._resizeHandler = function() {
-      Object.keys(self.chartInstances).forEach(function(k) {
+    this.$nextTick(() => {
+      self.initAllCharts();
+    });
+    this._resizeHandler = () => {
+      Object.keys(self.chartInstances).forEach((k) => {
         if (self.chartInstances[k]) {
           self.chartInstances[k].resize();
         }
@@ -81,48 +100,31 @@ export default {
     }
   },
   methods: {
-    isExpanded(id) {
-      return this.expandedId === id;
+    setChartRef(el, id) {
+      if (el) {
+        this.chartRefs[id] = el;
+      }
     },
-    toggle(id) {
-      const willExpand = this.expandedId !== id;
-      this.expandedId = willExpand ? id : null;
-      this.$nextTick(() => {
-        if (this.expandedId) {
-          this.initChart(this.expandedId);
+    initAllCharts() {
+      const self = this;
+      KNOWLEDGE_DATA.forEach((item) => {
+        const el = self.chartRefs[item.id];
+        if (el && item.chart) {
+          self.initOneChart(item.id, el, item.chart);
         }
       });
     },
-    setChartRefFunc(id) {
-      const self = this;
-      return function(el) {
-        if (el && !self.chartInstances[id] && self.expandedId === id) {
-          self.initChartWithEl(id, el);
-        }
-      };
-    },
-    initChart(id) {
-      const el = this.$el.querySelector('.knowledge-card.expanded .knowledge-chart');
-      if (el) {
-        this.initChartWithEl(id, el);
-      }
-    },
-    initChartWithEl(id, el) {
-      if (!el) return;
+    initOneChart(id, el, chartCfg) {
+      if (!el || !chartCfg) return;
       if (this.chartInstances[id]) {
         this.chartInstances[id].dispose();
       }
-      const item = KNOWLEDGE_DATA.find(function(d) { return d.id === id; });
-      if (!item || !item.chart) return;
-
       const chart = echarts.init(el);
       this.chartInstances[id] = chart;
-      const option = this.buildChartOption(item.chart);
+      const option = this.buildChartOption(chartCfg);
       chart.setOption(option);
-
-      const self = this;
-      setTimeout(function() { if (self.chartInstances[id]) self.chartInstances[id].resize(); }, 50);
-      setTimeout(function() { if (self.chartInstances[id]) self.chartInstances[id].resize(); }, 300);
+      setTimeout(() => { if (this.chartInstances[id]) this.chartInstances[id].resize(); }, 50);
+      setTimeout(() => { if (this.chartInstances[id]) this.chartInstances[id].resize(); }, 300);
     },
     buildChartOption(chartConfig) {
       if (chartConfig.type === 'rgb-bar') return this.rgbBarOption(chartConfig);
@@ -132,14 +134,13 @@ export default {
       return {};
     },
     rgbBarOption(cfg) {
-      const names = cfg.data.map(function(d) { return d.name; });
-      const rVals = cfg.data.map(function(d) { return d.r; });
-      const gVals = cfg.data.map(function(d) { return d.g; });
-      const bVals = cfg.data.map(function(d) { return d.b; });
-      const rSeriesData = rVals.map(function(v) { return { value: v, itemStyle: { color: '#EF4444' } }; });
-      const gSeriesData = gVals.map(function(v) { return { value: v, itemStyle: { color: '#10B981' } }; });
-      const bSeriesData = bVals.map(function(v) { return { value: v, itemStyle: { color: '#2563EB' } }; });
-
+      const names = cfg.data.map((d) => d.name);
+      const rVals = cfg.data.map((d) => d.r);
+      const gVals = cfg.data.map((d) => d.g);
+      const bVals = cfg.data.map((d) => d.b);
+      const rSeriesData = rVals.map((v) => ({ value: v, itemStyle: { color: '#EF4444' } }));
+      const gSeriesData = gVals.map((v) => ({ value: v, itemStyle: { color: '#10B981' } }));
+      const bSeriesData = bVals.map((v) => ({ value: v, itemStyle: { color: '#2563EB' } }));
       return {
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
         legend: { data: ['R 通道', 'G 通道', 'B 通道'], top: 5 },
@@ -147,36 +148,33 @@ export default {
         xAxis: { type: 'category', data: names },
         yAxis: { type: 'value', max: 255, splitLine: { lineStyle: { type: 'dashed' } } },
         series: [
-          { name: 'R 通道', type: 'bar', data: rSeriesData, barWidth: 12 },
-          { name: 'G 通道', type: 'bar', data: gSeriesData, barWidth: 12 },
-          { name: 'B 通道', type: 'bar', data: bSeriesData, barWidth: 12 }
+          { name: 'R 通道', type: 'bar', data: rSeriesData, barWidth: 10 },
+          { name: 'G 通道', type: 'bar', data: gSeriesData, barWidth: 10 },
+          { name: 'B 通道', type: 'bar', data: bSeriesData, barWidth: 10 }
         ]
       };
     },
     colorWheelOption(cfg) {
-      const axisData = cfg.data.map(function(d) { return d.label; });
-      const values = cfg.data.map(function(d) {
-        return { value: d.value, itemStyle: { color: 'hsl(' + d.h + ', 75%, 55%)' } };
-      });
-
+      const axisData = cfg.data.map((d) => d.label);
+      const values = cfg.data.map((d) => ({ value: d.value, itemStyle: { color: 'hsl(' + d.h + ', 75%, 55%)' } }));
       return {
         tooltip: {
           trigger: 'item',
-          formatter: function(params) {
+          formatter: (params) => {
             const d = cfg.data[params.dataIndex];
             return d.label + ' ' + d.h + '°';
           }
         },
-        polar: { radius: ['15%', '85%'] },
+        polar: { radius: ['18%', '82%'] },
         angleAxis: { type: 'category', data: axisData, axisLine: { show: false }, splitLine: { show: false } },
         radiusAxis: { type: 'value', max: 100, axisLabel: { show: false }, axisLine: { show: false } },
-        series: [{ type: 'bar', data: values, coordinateSystem: 'polar', barWidth: 18 }]
+        series: [{ type: 'bar', data: values, coordinateSystem: 'polar', barWidth: 16 }]
       };
     },
     radarOption(cfg) {
       return {
         tooltip: {},
-        legend: { data: cfg.data.map(function(d) { return d.name; }), top: 5 },
+        legend: { data: cfg.data.map((d) => d.name), top: 5, textStyle: { fontSize: 11 } },
         radar: {
           indicator: cfg.indicator,
           shape: 'polygon',
@@ -186,39 +184,31 @@ export default {
         },
         series: [{
           type: 'radar',
-          data: cfg.data.map(function(d) {
-            return {
-              value: d.value,
-              name: d.name,
-              areaStyle: { color: d.color, opacity: 0.15 },
-              lineStyle: { color: d.color, width: 2 },
-              itemStyle: { color: d.color }
-            };
-          })
+          data: cfg.data.map((d) => ({
+            value: d.value,
+            name: d.name,
+            areaStyle: { color: d.color, opacity: 0.15 },
+            lineStyle: { color: d.color, width: 2 },
+            itemStyle: { color: d.color }
+          }))
         }]
       };
     },
     designBarOption(cfg) {
-      const sorted = cfg.data.slice().sort(function(a, b) { return a.value - b.value; });
-      const names = sorted.map(function(d) { return d.name; });
-      const maxVal = Math.max.apply(null, cfg.data.map(function(d) { return d.value; })) * 1.1;
-      const barData = sorted.map(function(d) {
-        return { value: d.value, itemStyle: { color: d.color } };
-      });
-
-      const markLines = cfg.thresholds.map(function(t) {
-        return {
-          yAxis: t.value,
-          lineStyle: { color: t.color, type: 'dashed', width: 2 },
-          label: { formatter: t.name, color: t.color, fontSize: 10, position: 'end' }
-        };
-      });
-
+      const sorted = cfg.data.slice().sort((a, b) => a.value - b.value);
+      const names = sorted.map((d) => d.name);
+      const maxVal = Math.max.apply(null, cfg.data.map((d) => d.value)) * 1.1;
+      const barData = sorted.map((d) => ({ value: d.value, itemStyle: { color: d.color } }));
+      const markLines = cfg.thresholds.map((t) => ({
+        yAxis: t.value,
+        lineStyle: { color: t.color, type: 'dashed', width: 2 },
+        label: { formatter: t.name, color: t.color, fontSize: 10, position: 'end' }
+      }));
       return {
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          formatter: function(params) {
+          formatter: (params) => {
             const p = params[0];
             return p.name + '<br/>对比度: ' + p.value + ':1';
           }
@@ -229,7 +219,7 @@ export default {
         series: [{
           type: 'bar',
           data: barData,
-          barWidth: 18,
+          barWidth: 16,
           label: { show: true, position: 'right', formatter: '{c}:1', fontSize: 11 },
           markLine: { silent: true, symbol: 'none', data: markLines }
         }]
@@ -237,12 +227,36 @@ export default {
     },
     disposeAllCharts() {
       const self = this;
-      Object.keys(this.chartInstances).forEach(function(k) {
+      Object.keys(this.chartInstances).forEach((k) => {
         if (self.chartInstances[k]) {
           self.chartInstances[k].dispose();
           delete self.chartInstances[k];
         }
       });
+    },
+    showTooltip(event, text) {
+      const self = this;
+      if (this.tooltipTimer) clearTimeout(this.tooltipTimer);
+      this.tooltipText = text;
+      const x = event.clientX + 12;
+      const y = event.clientY + 12;
+      this.tooltipStyle = { top: y + 'px', left: x + 'px' };
+      this.tooltipVisible = true;
+    },
+    hideTooltip() {
+      const self = this;
+      this.tooltipTimer = setTimeout(() => {
+        self.tooltipVisible = false;
+      }, 100);
+    },
+    openDetail(item) {
+      this.currentDetailItem = item;
+      this.detailVisible = true;
+      document.body.style.overflow = 'hidden';
+    },
+    closeDetail() {
+      this.detailVisible = false;
+      document.body.style.overflow = '';
     }
   }
 };
@@ -252,12 +266,13 @@ export default {
 .module-knowledge {
   width: 100%;
   min-width: 0;
+  position: relative;
 }
 
-.knowledge-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.knowledge-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
   min-width: 0;
 }
 
@@ -266,77 +281,86 @@ export default {
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   overflow: hidden;
-  transition: border-color 0.15s ease;
-
-  &.expanded {
-    border-color: var(--accent);
-  }
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .knowledge-header {
-  padding: 16px 18px;
-  cursor: pointer;
+  padding: 14px 16px;
+  border-bottom: 1px dashed var(--border-primary);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  transition: background 0.15s ease;
-
-  &:hover {
-    background: var(--bg-hover);
-  }
 }
 
-.knowledge-header-text {
-  flex: 1;
-  min-width: 0;
+.knowledge-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.knowledge-header-right {
+  flex-shrink: 0;
 }
 
 .knowledge-title {
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 4px 0;
-}
-
-.knowledge-summary {
-  font-size: 13px;
-  color: var(--text-secondary);
   margin: 0;
-  line-height: 1.5;
 }
 
-.knowledge-expand-icon {
+.prompt-icon {
   font-size: 14px;
-  color: var(--text-tertiary);
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
+  color: var(--text-secondary);
+  cursor: help;
+  user-select: none;
+  transition: color 0.15s ease;
 
-  &.rotated {
-    transform: rotate(180deg);
+  &:hover {
+    color: var(--accent);
   }
 }
 
 .knowledge-body {
-  padding: 0 18px 18px;
-  border-top: 1px dashed var(--border-primary);
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
 }
 
 .knowledge-chart {
   width: 100%;
-  height: 320px;
-  margin: 16px 0 8px 0;
+  height: 300px;
+  min-height: 300px;
 }
 
 .knowledge-chart-title {
   font-size: 12px;
   color: var(--text-tertiary);
   text-align: center;
-  margin-bottom: 16px;
+  margin-top: 4px;
+}
+
+.detail-link {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--bg-hover);
+    text-decoration: underline;
+  }
 }
 
 .knowledge-section {
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .knowledge-section-title {
@@ -351,66 +375,96 @@ export default {
   color: var(--text-secondary);
   line-height: 1.8;
   white-space: pre-line;
+  margin: 0;
 }
 
-.color-wheel {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-  margin: 12px 0;
+.tooltip-box {
+  position: fixed;
+  z-index: 9999;
+  background: rgba(30, 33, 38, 0.95);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  max-width: 340px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
 }
 
-.color-wheel-item {
-  text-align: center;
-}
-
-.color-wheel-swatch {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: 1px solid var(--border-primary);
-  margin-bottom: 4px;
-  box-shadow: var(--shadow-sm);
-}
-
-.color-wheel-label {
-  font-size: 11px;
-  color: var(--text-tertiary);
-}
-
-.color-demo-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 12px 0;
-}
-
-.color-demo-item {
+.detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
 }
 
-.color-demo-swatch {
+.detail-modal {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 680px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.detail-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.detail-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.detail-close {
+  font-size: 18px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+  user-select: none;
   width: 24px;
   height: 24px;
-  border-radius: 4px;
-  border: 1px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
 }
 
-.color-demo-name {
-  font-size: 11px;
-  color: var(--text-secondary);
-  font-family: 'SF Mono', Consolas, Monaco, monospace;
+.detail-body {
+  padding: 16px 20px 24px;
+  overflow-y: auto;
+  flex: 1;
 }
 
-@media (max-width: 640px) {
-  .color-wheel {
-    grid-template-columns: repeat(4, 1fr);
+@media (max-width: 1024px) {
+  .knowledge-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
   .knowledge-chart {
@@ -418,9 +472,21 @@ export default {
   }
 }
 
-@media (min-width: 1024px) {
-  .color-wheel {
-    grid-template-columns: repeat(6, 1fr);
+@media (max-width: 640px) {
+  .knowledge-header {
+    padding: 12px 14px;
+  }
+
+  .knowledge-body {
+    padding: 10px 14px 14px;
+  }
+
+  .knowledge-chart {
+    height: 260px;
+  }
+
+  .detail-overlay {
+    padding: 12px;
   }
 }
 </style>
