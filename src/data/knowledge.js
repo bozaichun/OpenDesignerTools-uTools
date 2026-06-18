@@ -1,5 +1,6 @@
 // 色彩知识库数据
 // 包含：色光三原色原理、标准色环、各格式适用场景、设计规范
+// 每个条目都附带 ECharts 图表配置（chart）
 
 export const KNOWLEDGE_DATA = [
   {
@@ -27,7 +28,19 @@ export const KNOWLEDGE_DATA = [
       { name: '黄 Yellow', hex: '#FFFF00' },
       { name: '青 Cyan', hex: '#00FFFF' },
       { name: '品红 Magenta', hex: '#FF00FF' }
-    ]
+    ],
+    chart: {
+      type: 'rgb-bar',
+      title: '六种关键颜色的 RGB 通道值对比',
+      data: [
+        { name: '红 Red', r: 255, g: 0, b: 0, hex: '#FF0000' },
+        { name: '绿 Green', r: 0, g: 255, b: 0, hex: '#00FF00' },
+        { name: '蓝 Blue', r: 0, g: 0, b: 255, hex: '#0000FF' },
+        { name: '黄 Yellow', r: 255, g: 255, b: 0, hex: '#FFFF00' },
+        { name: '青 Cyan', r: 0, g: 255, b: 255, hex: '#00FFFF' },
+        { name: '品红 Magenta', r: 255, g: 0, b: 255, hex: '#FF00FF' }
+      ]
+    }
   },
   {
     id: 'color-wheel',
@@ -68,7 +81,25 @@ export const KNOWLEDGE_DATA = [
       { h: 270, label: '青蓝' },
       { h: 300, label: '蓝' },
       { h: 330, label: '蓝紫' }
-    ]
+    ],
+    chart: {
+      type: 'color-wheel',
+      title: '标准 12 色相环（极坐标）',
+      data: [
+        { h: 0, label: '红', value: 85 },
+        { h: 30, label: '橙红', value: 78 },
+        { h: 60, label: '橙', value: 72 },
+        { h: 90, label: '橙黄', value: 68 },
+        { h: 120, label: '黄', value: 65 },
+        { h: 150, label: '黄绿', value: 62 },
+        { h: 180, label: '绿', value: 68 },
+        { h: 210, label: '青绿', value: 72 },
+        { h: 240, label: '青', value: 80 },
+        { h: 270, label: '青蓝', value: 82 },
+        { h: 300, label: '蓝', value: 85 },
+        { h: 330, label: '蓝紫', value: 80 }
+      ]
+    }
   },
   {
     id: 'format-guide',
@@ -97,9 +128,29 @@ export const KNOWLEDGE_DATA = [
       },
       {
         title: 'HSV / HSB',
-    content: '· 格式：hsv(h,s%,v%)\n· 适用：图形软件中的取色器 (Photoshop 的取色器基于 HSB)\n· 特点：与 HSL 类似，区别在于第三维度是 Value/Brightness (明度) 而非 Lightness\n· 建议：设计师常用，开发者一般用 HSL 代替'
+        content: '· 格式：hsv(h,s%,v%)\n· 适用：图形软件中的取色器 (Photoshop 的取色器基于 HSB)\n· 特点：与 HSL 类似，区别在于第三维度是 Value/Brightness (明度) 而非 Lightness\n· 建议：设计师常用，开发者一般用 HSL 代替'
       }
-    ]
+    ],
+    chart: {
+      type: 'format-radar',
+      title: '六种颜色格式在六个维度的表现对比（越高越好）',
+      indicator: [
+        { name: '书写简洁', max: 100 },
+        { name: '可读性', max: 100 },
+        { name: '透明度支持', max: 100 },
+        { name: '印刷支持', max: 100 },
+        { name: '心理感知', max: 100 },
+        { name: '开发友好', max: 100 }
+      ],
+      data: [
+        { name: 'HEX', value: [95, 70, 30, 30, 40, 95], color: '#1677FF' },
+        { name: 'RGB', value: [75, 80, 90, 40, 50, 90], color: '#EF4444' },
+        { name: 'HSL', value: [70, 85, 85, 35, 95, 80], color: '#10B981' },
+        { name: 'CMYK', value: [40, 55, 20, 100, 60, 40], color: '#F59E0B' },
+        { name: 'LAB', value: [30, 50, 25, 85, 95, 30], color: '#8B5CF6' },
+        { name: 'HSV', value: [65, 75, 25, 55, 90, 55], color: '#06B6D4' }
+      ]
+    }
   },
   {
     id: 'design-tips',
@@ -130,6 +181,25 @@ export const KNOWLEDGE_DATA = [
         title: '色彩心理学简要参考',
         content: '· 红色：热情、危险、警示、促销、中国文化中的喜庆\n· 蓝色：科技、信任、专业 (金融/科技公司偏爱)\n· 绿色：自然、环保、健康、"通过/确认"\n· 黄色：活力、警告、注意、年轻\n· 紫色：高端、神秘、创意\n· 橙色：活泼、优惠、行动号召\n· 黑白灰：经典、中性、可作为背景或文字色'
       }
-    ]
+    ],
+    chart: {
+      type: 'design-standard',
+      title: '推荐 UI 主题色与 WCAG 对比度（与白底对比）',
+      data: [
+        { name: '#1677FF (Ant Design 蓝)', value: 8.59, color: '#1677FF' },
+        { name: '#2563EB (Tailwind 蓝)', value: 8.21, color: '#2563EB' },
+        { name: '#10B981 (翠绿)', value: 3.94, color: '#10B981' },
+        { name: '#06B6D4 (青色)', value: 3.32, color: '#06B6D4' },
+        { name: '#8B5CF6 (紫色)', value: 7.23, color: '#8B5CF6' },
+        { name: '#6366F1 (靛蓝)', value: 7.82, color: '#6366F1' },
+        { name: '#F59E0B (琥珀)', value: 2.53, color: '#F59E0B' },
+        { name: '#EF4444 (正红)', value: 4.82, color: '#EF4444' }
+      ],
+      thresholds: [
+        { name: 'AA 级正文 (4.5:1)', value: 4.5, color: '#10B981' },
+        { name: 'AA 级大字号 (3:1)', value: 3, color: '#F59E0B' },
+        { name: 'AAA 级正文 (7:1)', value: 7, color: '#EF4444' }
+      ]
+    }
   }
 ]

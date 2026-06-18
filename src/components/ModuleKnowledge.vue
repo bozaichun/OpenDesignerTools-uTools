@@ -5,53 +5,35 @@
         v-for="item in KNOWLEDGE_DATA"
         :key="item.id"
         class="knowledge-card"
-        :class="{ expanded: expandedId === item.id }"
+        :class="isExpanded(item.id) ? 'expanded' : ''"
       >
         <div class="knowledge-header" @click="toggle(item.id)">
           <div class="knowledge-header-text">
             <h3 class="knowledge-title">{{ item.title }}</h3>
             <p class="knowledge-summary">{{ item.summary }}</p>
           </div>
-          <span class="knowledge-expand-icon">▼</span>
+          <span class="knowledge-expand-icon" :class="isExpanded(item.id) ? 'rotated' : ''">▼</span>
         </div>
 
-        <div v-if="expandedId === item.id" class="knowledge-body">
-          <!-- RGB 原理的色卡展示 -->
+        <div v-if="isExpanded(item.id)" class="knowledge-body">
+          <div class="knowledge-chart" :ref="setChartRefFunc(item.id)"></div>
+          <div class="knowledge-chart-title">{{ item.chart ? item.chart.title : '' }}</div>
+
           <div v-if="item.colorDemo" class="color-demo-row">
-            <div
-              v-for="c in item.colorDemo"
-              :key="c.hex"
-              class="color-demo-item"
-            >
-              <div
-                class="color-demo-swatch"
-                :style="{ background: c.hex }"
-              ></div>
+            <div v-for="c in item.colorDemo" :key="c.hex" class="color-demo-item">
+              <div class="color-demo-swatch" :style="{ background: c.hex }"></div>
               <span class="color-demo-name">{{ c.name }}</span>
             </div>
           </div>
 
-          <!-- 色环展示 -->
           <div v-if="item.colorWheel" class="color-wheel">
-            <div
-              v-for="cw in item.colorWheel"
-              :key="cw.h"
-              class="color-wheel-item"
-            >
-              <div
-                class="color-wheel-swatch"
-                :style="{ background: 'hsl(' + cw.h + ', 75%, 55%)' }"
-              ></div>
+            <div v-for="cw in item.colorWheel" :key="cw.h" class="color-wheel-item">
+              <div class="color-wheel-swatch" :style="{ background: 'hsl(' + cw.h + ', 75%, 55%)' }"></div>
               <span class="color-wheel-label">{{ cw.label }} {{ cw.h }}°</span>
             </div>
           </div>
 
-          <!-- 正文 -->
-          <div
-            v-for="(section, sIdx) in item.sections"
-            :key="sIdx"
-            class="knowledge-section"
-          >
+          <div v-for="(section, sIdx) in item.sections" :key="sIdx" class="knowledge-section">
             <h4 class="knowledge-section-title">{{ section.title }}</h4>
             <p class="knowledge-section-content">{{ section.content }}</p>
           </div>
@@ -62,6 +44,7 @@
 </template>
 
 <script>
+import * as echarts from 'echarts';
 import { KNOWLEDGE_DATA } from '../data/knowledge';
 
 export default {
@@ -69,12 +52,197 @@ export default {
   data() {
     return {
       KNOWLEDGE_DATA,
-      expandedId: null
+      expandedId: null,
+      chartInstances: {},
+      _resizeHandler: null
     };
   },
+  mounted() {
+    const self = this;
+    this._resizeHandler = function() {
+      Object.keys(self.chartInstances).forEach(function(k) {
+        if (self.chartInstances[k]) {
+          self.chartInstances[k].resize();
+        }
+      });
+    };
+    window.addEventListener('resize', this._resizeHandler);
+  },
+  beforeUnmount() {
+    this.disposeAllCharts();
+    if (this._resizeHandler) {
+      window.removeEventListener('resize', this._resizeHandler);
+    }
+  },
+  beforeDestroy() {
+    this.disposeAllCharts();
+    if (this._resizeHandler) {
+      window.removeEventListener('resize', this._resizeHandler);
+    }
+  },
   methods: {
+    isExpanded(id) {
+      return this.expandedId === id;
+    },
     toggle(id) {
-      this.expandedId = this.expandedId === id ? null : id;
+      const willExpand = this.expandedId !== id;
+      this.expandedId = willExpand ? id : null;
+      this.$nextTick(() => {
+        if (this.expandedId) {
+          this.initChart(this.expandedId);
+        }
+      });
+    },
+    setChartRefFunc(id) {
+      const self = this;
+      return function(el) {
+        if (el && !self.chartInstances[id] && self.expandedId === id) {
+          self.initChartWithEl(id, el);
+        }
+      };
+    },
+    initChart(id) {
+      const el = this.$el.querySelector('.knowledge-card.expanded .knowledge-chart');
+      if (el) {
+        this.initChartWithEl(id, el);
+      }
+    },
+    initChartWithEl(id, el) {
+      if (!el) return;
+      if (this.chartInstances[id]) {
+        this.chartInstances[id].dispose();
+      }
+      const item = KNOWLEDGE_DATA.find(function(d) { return d.id === id; });
+      if (!item || !item.chart) return;
+
+      const chart = echarts.init(el);
+      this.chartInstances[id] = chart;
+      const option = this.buildChartOption(item.chart);
+      chart.setOption(option);
+
+      const self = this;
+      setTimeout(function() { if (self.chartInstances[id]) self.chartInstances[id].resize(); }, 50);
+      setTimeout(function() { if (self.chartInstances[id]) self.chartInstances[id].resize(); }, 300);
+    },
+    buildChartOption(chartConfig) {
+      if (chartConfig.type === 'rgb-bar') return this.rgbBarOption(chartConfig);
+      if (chartConfig.type === 'color-wheel') return this.colorWheelOption(chartConfig);
+      if (chartConfig.type === 'format-radar') return this.radarOption(chartConfig);
+      if (chartConfig.type === 'design-standard') return this.designBarOption(chartConfig);
+      return {};
+    },
+    rgbBarOption(cfg) {
+      const names = cfg.data.map(function(d) { return d.name; });
+      const rVals = cfg.data.map(function(d) { return d.r; });
+      const gVals = cfg.data.map(function(d) { return d.g; });
+      const bVals = cfg.data.map(function(d) { return d.b; });
+      const rSeriesData = rVals.map(function(v) { return { value: v, itemStyle: { color: '#EF4444' } }; });
+      const gSeriesData = gVals.map(function(v) { return { value: v, itemStyle: { color: '#10B981' } }; });
+      const bSeriesData = bVals.map(function(v) { return { value: v, itemStyle: { color: '#2563EB' } }; });
+
+      return {
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { data: ['R 通道', 'G 通道', 'B 通道'], top: 5 },
+        grid: { left: 40, right: 20, top: 45, bottom: 30, containLabel: true },
+        xAxis: { type: 'category', data: names },
+        yAxis: { type: 'value', max: 255, splitLine: { lineStyle: { type: 'dashed' } } },
+        series: [
+          { name: 'R 通道', type: 'bar', data: rSeriesData, barWidth: 12 },
+          { name: 'G 通道', type: 'bar', data: gSeriesData, barWidth: 12 },
+          { name: 'B 通道', type: 'bar', data: bSeriesData, barWidth: 12 }
+        ]
+      };
+    },
+    colorWheelOption(cfg) {
+      const axisData = cfg.data.map(function(d) { return d.label; });
+      const values = cfg.data.map(function(d) {
+        return { value: d.value, itemStyle: { color: 'hsl(' + d.h + ', 75%, 55%)' } };
+      });
+
+      return {
+        tooltip: {
+          trigger: 'item',
+          formatter: function(params) {
+            const d = cfg.data[params.dataIndex];
+            return d.label + ' ' + d.h + '°';
+          }
+        },
+        polar: { radius: ['15%', '85%'] },
+        angleAxis: { type: 'category', data: axisData, axisLine: { show: false }, splitLine: { show: false } },
+        radiusAxis: { type: 'value', max: 100, axisLabel: { show: false }, axisLine: { show: false } },
+        series: [{ type: 'bar', data: values, coordinateSystem: 'polar', barWidth: 18 }]
+      };
+    },
+    radarOption(cfg) {
+      return {
+        tooltip: {},
+        legend: { data: cfg.data.map(function(d) { return d.name; }), top: 5 },
+        radar: {
+          indicator: cfg.indicator,
+          shape: 'polygon',
+          splitNumber: 4,
+          splitLine: { lineStyle: { type: 'dashed' } },
+          splitArea: { areaStyle: { color: ['transparent'] } }
+        },
+        series: [{
+          type: 'radar',
+          data: cfg.data.map(function(d) {
+            return {
+              value: d.value,
+              name: d.name,
+              areaStyle: { color: d.color, opacity: 0.15 },
+              lineStyle: { color: d.color, width: 2 },
+              itemStyle: { color: d.color }
+            };
+          })
+        }]
+      };
+    },
+    designBarOption(cfg) {
+      const sorted = cfg.data.slice().sort(function(a, b) { return a.value - b.value; });
+      const names = sorted.map(function(d) { return d.name; });
+      const maxVal = Math.max.apply(null, cfg.data.map(function(d) { return d.value; })) * 1.1;
+      const barData = sorted.map(function(d) {
+        return { value: d.value, itemStyle: { color: d.color } };
+      });
+
+      const markLines = cfg.thresholds.map(function(t) {
+        return {
+          yAxis: t.value,
+          lineStyle: { color: t.color, type: 'dashed', width: 2 },
+          label: { formatter: t.name, color: t.color, fontSize: 10, position: 'end' }
+        };
+      });
+
+      return {
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          formatter: function(params) {
+            const p = params[0];
+            return p.name + '<br/>对比度: ' + p.value + ':1';
+          }
+        },
+        grid: { left: 10, right: 60, top: 20, bottom: 30, containLabel: true },
+        xAxis: { type: 'value', max: maxVal, splitLine: { lineStyle: { type: 'dashed' } } },
+        yAxis: { type: 'category', data: names },
+        series: [{
+          type: 'bar',
+          data: barData,
+          barWidth: 18,
+          label: { show: true, position: 'right', formatter: '{c}:1', fontSize: 11 },
+          markLine: { silent: true, symbol: 'none', data: markLines }
+        }]
+      };
+    },
+    disposeAllCharts() {
+      const self = this;
+      Object.keys(this.chartInstances).forEach(function(k) {
+        if (self.chartInstances[k]) {
+          self.chartInstances[k].dispose();
+          delete self.chartInstances[k];
+        }
+      });
     }
   }
 };
@@ -139,19 +307,32 @@ export default {
 }
 
 .knowledge-expand-icon {
-  font-size: 18px;
+  font-size: 14px;
   color: var(--text-tertiary);
   transition: transform 0.2s ease;
   flex-shrink: 0;
-}
 
-.knowledge-card.expanded .knowledge-expand-icon {
-  transform: rotate(180deg);
+  &.rotated {
+    transform: rotate(180deg);
+  }
 }
 
 .knowledge-body {
   padding: 0 18px 18px;
   border-top: 1px dashed var(--border-primary);
+}
+
+.knowledge-chart {
+  width: 100%;
+  height: 320px;
+  margin: 16px 0 8px 0;
+}
+
+.knowledge-chart-title {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-align: center;
+  margin-bottom: 16px;
 }
 
 .knowledge-section {
@@ -230,6 +411,10 @@ export default {
 @media (max-width: 640px) {
   .color-wheel {
     grid-template-columns: repeat(4, 1fr);
+  }
+
+  .knowledge-chart {
+    height: 280px;
   }
 }
 

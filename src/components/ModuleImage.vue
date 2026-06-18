@@ -9,7 +9,9 @@
       @dragleave="isDragging = false"
       @drop.prevent="handleDrop"
     >
-      <div class="upload-icon">🖼️</div>
+      <div class="upload-icon">
+        <span class="iconfont icon-Areality-ModeSwitching"></span>
+      </div>
       <div class="upload-text">点击选择图片，或拖拽图片到此处</div>
       <div class="upload-hint">支持 PNG / JPG / WEBP / GIF</div>
       <input
@@ -21,68 +23,137 @@
       />
     </div>
 
-    <!-- 如果有图片：显示预览 + 取色 -->
+    <!-- 图片展示与分析结果 -->
     <div v-if="imageLoaded" class="image-display-area">
-      <div class="image-container" ref="imageContainer">
-        <canvas
-          ref="canvas"
-          @click="handleCanvasClick"
-          @mousemove="handleCanvasMove"
-        ></canvas>
-        <div
-          v-if="pickerPos"
-          class="picker-indicator"
-          :style="{ left: pickerPos.x + 'px', top: pickerPos.y + 'px' }"
-        ></div>
+      <!-- 图片预览区域 -->
+      <div class="image-preview-section">
+        <div class="image-container" ref="imageContainer">
+          <canvas
+            ref="canvas"
+            @click="handleCanvasClick"
+            @mousemove="handleCanvasMove"
+          ></canvas>
+          <div
+            v-if="pickerPos"
+            class="picker-indicator"
+            :style="{ left: pickerPos.x + 'px', top: pickerPos.y + 'px' }"
+          ></div>
+        </div>
+        <div class="image-actions">
+          <button class="action-btn" @click="analyzeImage">
+            <span class="iconfont icon-Areality-ModeSwitching"></span>
+            一键分析
+          </button>
+          <button class="action-btn secondary" @click="clearImage">
+            重新选择
+          </button>
+        </div>
       </div>
 
-      <!-- 主色调 -->
-      <div class="extracted-colors">
-        <div class="section-label">图片主色调 (自动提取)</div>
-        <div v-if="mainColors.length > 0" class="main-colors-grid">
+      <!-- 分析中状态 -->
+      <div v-if="isAnalyzing" class="analyzing-state">
+        <div class="spinner"></div>
+        <div class="analyzing-text">正在分析图片中的颜色...</div>
+      </div>
+
+      <!-- 主色调分析结果 -->
+      <div v-if="!isAnalyzing && mainColors.length > 0" class="colors-result-section">
+        <div class="section-header">
+          <div class="section-title">图片主色调</div>
+          <div class="section-subtitle">共提取 {{ mainColors.length }} 种主要颜色 · 点击色卡复制 HEX</div>
+        </div>
+
+        <div class="main-colors-grid">
           <div
             v-for="(color, idx) in mainColors"
             :key="idx"
-            class="main-color-card"
+            class="color-card"
           >
             <div
-              class="mc-swatch"
+              class="color-swatch"
               :style="{ background: color.hex }"
               @click="copyValue(color.hex, 'HEX')"
             ></div>
-            <div class="mc-hex">{{ color.hex }}</div>
-            <button class="mc-copy-btn" @click="copyValue(color.hex, 'HEX')">
-              复制
-            </button>
+            <div class="color-codes">
+              <div class="code-row">
+                <span class="code-label">HEX</span>
+                <span class="code-value">{{ color.hex }}</span>
+                <button class="code-copy" @click="copyValue(color.hex, 'HEX')" title="复制 HEX">
+                  <span class="iconfont icon-Success"></span>
+                </button>
+              </div>
+              <div class="code-row">
+                <span class="code-label">RGB</span>
+                <span class="code-value">{{ color.rgb }}</span>
+                <button class="code-copy" @click="copyValue(color.rgb, 'RGB')" title="复制 RGB">
+                  <span class="iconfont icon-Success"></span>
+                </button>
+              </div>
+              <div class="code-row">
+                <span class="code-label">HSL</span>
+                <span class="code-value">{{ color.hsl }}</span>
+                <button class="code-copy" @click="copyValue(color.hsl, 'HSL')" title="复制 HSL">
+                  <span class="iconfont icon-Success"></span>
+                </button>
+              </div>
+            </div>
+            <div class="color-actions">
+              <button class="search-btn" @click="searchOnBaidu(color.hex)">
+                <span class="iconfont icon-Success"></span>
+                百度搜索配色
+              </button>
+            </div>
           </div>
-        </div>
-        <div v-else class="empty-state" style="padding: 20px;">
-          正在分析图片...
         </div>
       </div>
 
       <!-- 吸管取色结果 -->
-      <div v-if="pickedColor" class="extracted-colors">
-        <div class="section-label">吸管取色结果</div>
+      <div v-if="pickedColor && !isAnalyzing" class="picker-result-section">
+        <div class="section-header">
+          <div class="section-title">吸管取色结果</div>
+          <div class="section-subtitle">点击图片任意位置可获取该点颜色值</div>
+        </div>
+
         <div class="picker-result">
           <div
             class="picker-result-swatch"
             :style="{ background: pickedColor.hex }"
           ></div>
           <div class="picker-result-info">
-            <div class="pr-hex">{{ pickedColor.hex }}</div>
-            <div class="pr-detail">RGB: {{ pickedColor.rgb }}</div>
-            <div class="pr-detail">HSL: {{ pickedColor.hsl }}</div>
-            <div class="pr-detail" style="margin-top: 8px;">
-              <button class="copy-btn" @click="copyValue(pickedColor.hex, 'HEX')" style="padding: 4px 10px; font-size: 11px;">复制 HEX</button>
-              <button class="copy-btn" @click="copyValue(pickedColor.rgb, 'RGB')" style="padding: 4px 10px; font-size: 11px; margin-left: 6px;">复制 RGB</button>
+            <div class="pr-row">
+              <span class="pr-label">HEX</span>
+              <span class="pr-value">{{ pickedColor.hex }}</span>
+              <button class="pr-copy" @click="copyValue(pickedColor.hex, 'HEX')">复制</button>
+              <button class="pr-search" @click="searchOnBaidu(pickedColor.hex)">搜索百度</button>
+            </div>
+            <div class="pr-row">
+              <span class="pr-label">RGB</span>
+              <span class="pr-value">{{ pickedColor.rgb }}</span>
+              <button class="pr-copy" @click="copyValue(pickedColor.rgb, 'RGB')">复制</button>
+            </div>
+            <div class="pr-row">
+              <span class="pr-label">HSL</span>
+              <span class="pr-value">{{ pickedColor.hsl }}</span>
+              <button class="pr-copy" @click="copyValue(pickedColor.hsl, 'HSL')">复制</button>
+            </div>
+            <div class="pr-row">
+              <span class="pr-label">CMYK</span>
+              <span class="pr-value">{{ pickedColor.cmyk }}</span>
+              <button class="pr-copy" @click="copyValue(pickedColor.cmyk, 'CMYK')">复制</button>
+            </div>
+            <div class="pr-row">
+              <span class="pr-label">HSV</span>
+              <span class="pr-value">{{ pickedColor.hsv }}</span>
+              <button class="pr-copy" @click="copyValue(pickedColor.hsv, 'HSV')">复制</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div style="margin-top: 16px;">
-        <button @click="clearImage" class="clear-btn">重新选择图片</button>
+      <!-- 没有颜色结果 -->
+      <div v-if="!isAnalyzing && mainColors.length === 0 && !pickedColor" class="empty-state">
+        <div class="empty-icon">🎨</div>
+        <div class="empty-text">暂未提取到颜色，请确保图片包含可见颜色</div>
       </div>
     </div>
   </div>
@@ -90,7 +161,8 @@
 
 <script>
 import {
-  formatHEX, formatRGB, formatHSL, copyToClipboard, showToast
+  formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
+  copyToClipboard, showToast
 } from '../utils/colorUtils';
 
 export default {
@@ -99,12 +171,14 @@ export default {
     return {
       imageLoaded: false,
       isDragging: false,
+      isAnalyzing: false,
       imageData: null,
       mainColors: [],
       pickedColor: null,
       pickerPos: null,
       imageNaturalWidth: 0,
-      imageNaturalHeight: 0
+      imageNaturalHeight: 0,
+      imageSrc: null
     };
   },
   methods: {
@@ -128,21 +202,25 @@ export default {
     },
 
     loadImage(file) {
+      const self = this;
+      this.isAnalyzing = true;
+      this.mainColors = [];
+      this.pickedColor = null;
+
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = function(e) {
         const img = new Image();
-        img.onload = () => {
-          this.renderCanvas(img);
-          this.imageLoaded = true;
-          this.pickedColor = null;
-          this.pickerPos = null;
-          // 延迟执行颜色分析
-          this.$nextTick(() => {
-            this.extractMainColors();
+        img.onload = function() {
+          self.imageSrc = e.target.result;
+          self.imageLoaded = true;
+          self.$nextTick(function() {
+            self.renderCanvas(img);
+            self.extractMainColors();
           });
         };
-        img.onerror = () => {
-          showToast(this, '图片加载失败', 'error');
+        img.onerror = function() {
+          showToast(self, '图片加载失败', 'error');
+          self.isAnalyzing = false;
         };
         img.src = e.target.result;
       };
@@ -151,6 +229,10 @@ export default {
 
     renderCanvas(img) {
       const canvas = this.$refs.canvas;
+      if (!canvas) {
+        console.warn('renderCanvas: canvas ref not found');
+        return;
+      }
       const maxSize = 600;
       let width = img.width;
       let height = img.height;
@@ -171,6 +253,21 @@ export default {
       this.imageData = ctx.getImageData(0, 0, width, height);
     },
 
+    analyzeImage() {
+      if (!this.imageData) {
+        showToast(this, '请先上传图片', 'error');
+        return;
+      }
+      this.isAnalyzing = true;
+      this.mainColors = [];
+      const self = this;
+      this.$nextTick(function() {
+        setTimeout(function() {
+          self.extractMainColors();
+        }, 100);
+      });
+    },
+
     getPixelAt(x, y) {
       if (!this.imageData) return null;
       const data = this.imageData.data;
@@ -184,12 +281,9 @@ export default {
     },
 
     handleCanvasMove(e) {
-      const rect = this.$refs.canvas.getBoundingClientRect();
-      const scaleX = this.imageNaturalWidth / rect.width;
-      const scaleY = this.imageNaturalHeight / rect.height;
-      const x = Math.floor((e.clientX - rect.left) * scaleX);
-      const y = Math.floor((e.clientY - rect.top) * scaleY);
-
+      const canvas = this.$refs.canvas;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
       this.pickerPos = {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top
@@ -197,7 +291,9 @@ export default {
     },
 
     handleCanvasClick(e) {
-      const rect = this.$refs.canvas.getBoundingClientRect();
+      const canvas = this.$refs.canvas;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
       const scaleX = this.imageNaturalWidth / rect.width;
       const scaleY = this.imageNaturalHeight / rect.height;
       const x = Math.floor((e.clientX - rect.left) * scaleX);
@@ -205,80 +301,96 @@ export default {
 
       const pixel = this.getPixelAt(x, y);
       if (pixel) {
-        const hex = formatHEX({ r: pixel.r, g: pixel.g, b: pixel.b });
+        const rgba = { r: pixel.r, g: pixel.g, b: pixel.b, a: pixel.a };
+        const hex = formatHEX(rgba);
         this.pickedColor = {
           hex,
-          rgb: formatRGB({ r: pixel.r, g: pixel.g, b: pixel.b }),
-          hsl: formatHSL({ r: pixel.r, g: pixel.g, b: pixel.b })
+          rgb: formatRGB(rgba),
+          hsl: formatHSL(rgba),
+          cmyk: formatCMYK(rgba),
+          hsv: formatHSV(rgba)
         };
         showToast(this, '已获取颜色: ' + hex, 'success');
       }
     },
 
-    // K-means 简化版主色调提取
+    // 主色调提取：采样 + 量化 + 分桶
     extractMainColors() {
       if (!this.imageData) {
         this.mainColors = [];
+        this.isAnalyzing = false;
         return;
       }
 
       try {
         const data = this.imageData.data;
-        const step = 5; // 采样步长，加速计算
+        const step = 4;
         const buckets = {};
+        const sampleRgb = {};
 
-        // 采样 + 分桶（简化量化）
         for (let i = 0; i < data.length; i += 4 * step) {
           const r = data[i];
           const g = data[i + 1];
           const b = data[i + 2];
           const a = data[i + 3];
 
-          // 跳过透明像素
           if (a < 50) continue;
 
-          // 量化到 32 的倍数以减少颜色数
           const qr = Math.round(r / 32) * 32;
           const qg = Math.round(g / 32) * 32;
           const qb = Math.round(b / 32) * 32;
-          const key = `${qr},${qg},${qb}`;
+          const key = qr + ',' + qg + ',' + qb;
+
           if (!buckets[key]) {
-            buckets[key] = { sum: [r, g, b], count: 0 };
+            buckets[key] = { sumR: 0, sumG: 0, sumB: 0, count: 0 };
           }
-          buckets[key].sum[0] += r;
-          buckets[key].sum[1] += g;
-          buckets[key].sum[2] += b;
+          buckets[key].sumR += r;
+          buckets[key].sumG += g;
+          buckets[key].sumB += b;
           buckets[key].count++;
         }
 
-        // 按计数排序，取前 6 个
         const sorted = Object.entries(buckets)
           .sort((a, b) => b[1].count - a[1].count)
-          .slice(0, 6);
+          .slice(0, 12);
 
-        const results = sorted.map(([, data]) => {
-          const avgR = Math.round(data.sum[0] / data.count);
-          const avgG = Math.round(data.sum[1] / data.count);
-          const avgB = Math.round(data.sum[2] / data.count);
-          return {
-            hex: formatHEX({ r: avgR, g: avgG, b: avgB }),
-            r: avgR, g: avgG, b: avgB
-          };
+        const results = sorted.map(([, d]) => {
+          const avgR = Math.round(d.sumR / d.count);
+          const avgG = Math.round(d.sumG / d.count);
+          const avgB = Math.round(d.sumB / d.count);
+          return { r: avgR, g: avgG, b: avgB };
         });
 
-        // 去重（相似色合并）
         const unique = [];
-        for (const c of results) {
-          const isSimilar = unique.some(u => {
-            return Math.abs(u.r - c.r) < 30 && Math.abs(u.g - c.g) < 30 && Math.abs(u.b - c.b) < 30;
-          });
+        for (let i = 0; i < results.length; i++) {
+          const c = results[i];
+          let isSimilar = false;
+          for (let j = 0; j < unique.length; j++) {
+            const u = unique[j];
+            if (Math.abs(u.r - c.r) < 30 && Math.abs(u.g - c.g) < 30 && Math.abs(u.b - c.b) < 30) {
+              isSimilar = true;
+              break;
+            }
+          }
           if (!isSimilar) unique.push(c);
         }
 
-        this.mainColors = unique.slice(0, 6);
+        this.mainColors = unique.slice(0, 8).map(c => {
+          const rgba = { r: c.r, g: c.g, b: c.b, a: 1 };
+          return {
+            hex: formatHEX(rgba),
+            rgb: formatRGB(rgba),
+            hsl: formatHSL(rgba)
+          };
+        });
+
+        showToast(this, '分析完成，共提取 ' + this.mainColors.length + ' 种颜色', 'success');
       } catch (err) {
         console.error('主色调提取失败', err);
         this.mainColors = [];
+        showToast(this, '颜色提取失败', 'error');
+      } finally {
+        this.isAnalyzing = false;
       }
     },
 
@@ -288,12 +400,24 @@ export default {
       this.pickedColor = null;
       this.pickerPos = null;
       this.imageData = null;
+      this.imageSrc = null;
       if (this.$refs.fileInput) this.$refs.fileInput.value = '';
     },
 
     copyValue(value, label) {
       copyToClipboard(value);
-      showToast(this, `已复制 ${label}: ${value}`, 'success');
+      showToast(this, '已复制 ' + label + ': ' + value, 'success');
+    },
+
+    searchOnBaidu(hex) {
+      const query = encodeURIComponent(hex + ' 颜色 配色方案 色彩搭配');
+      const url = 'https://www.baidu.com/s?wd=' + query;
+      if (window.utools && typeof window.utools.shellOpenExternal === 'function') {
+        window.utools.shellOpenExternal(url);
+      } else {
+        window.open(url, '_blank');
+      }
+      showToast(this, '正在搜索 ' + hex + ' 的配色方案', 'success');
     }
   }
 };
@@ -305,10 +429,11 @@ export default {
   min-width: 0;
 }
 
+/* =============== 上传区域 =============== */
 .upload-area {
   border: 2px dashed var(--border-strong);
   border-radius: var(--radius-lg);
-  padding: 40px 20px;
+  padding: 48px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -319,19 +444,29 @@ export default {
   &.dragging {
     border-color: var(--accent);
     background: var(--accent-soft);
+    transform: scale(1.01);
   }
 }
 
 .upload-icon {
-  font-size: 42px;
-  margin-bottom: 12px;
+  font-size: 48px;
+  margin-bottom: 16px;
   line-height: 1;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .iconfont {
+    font-size: 56px;
+  }
 }
 
 .upload-text {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
+  font-size: 15px;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  font-weight: 500;
 }
 
 .upload-hint {
@@ -339,7 +474,12 @@ export default {
   color: var(--text-tertiary);
 }
 
+/* =============== 图片展示区 =============== */
 .image-display-area {
+  margin-bottom: 20px;
+}
+
+.image-preview-section {
   margin-bottom: 20px;
 }
 
@@ -364,11 +504,52 @@ export default {
     max-width: 100%;
     height: auto;
   }
+}
 
-  img {
-    display: block;
-    max-width: 100%;
-    height: auto;
+.image-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 10px 20px;
+  background: var(--accent);
+  color: var(--text-invert);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+
+  .iconfont {
+    font-size: 16px;
+  }
+
+  &:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &.secondary {
+    background: var(--bg-muted);
+    color: var(--text-secondary);
+    border-color: var(--border-primary);
+
+    &:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
   }
 }
 
@@ -383,163 +564,309 @@ export default {
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
 }
 
-.extracted-colors {
+/* =============== 分析中状态 =============== */
+.analyzing-state {
+  text-align: center;
+  padding: 30px 20px;
+  background: var(--bg-muted);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  margin: 16px 0;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-primary);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.analyzing-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* =============== 分析结果 =============== */
+.colors-result-section,
+.picker-result-section {
   margin-top: 20px;
 }
 
-.section-label {
-  font-size: 13px;
+.section-header {
+  margin-bottom: 14px;
+}
+
+.section-title {
+  font-size: 16px;
   font-weight: 600;
-  margin: 16px 0 10px 0;
   color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.section-subtitle {
+  font-size: 12px;
+  color: var(--text-tertiary);
 }
 
 .main-colors-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 10px;
-  margin-bottom: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
 }
 
-.main-color-card {
-  background: var(--bg-muted);
+.color-card {
+  background: var(--bg-card);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
-  padding: 10px;
-  text-align: center;
+  padding: 14px;
   transition: all 0.2s ease;
 
   &:hover {
     border-color: var(--accent);
-    transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
   }
+}
 
-  .mc-swatch {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: var(--radius-sm);
-    margin-bottom: 8px;
-    border: 1px solid var(--border-primary);
-    cursor: pointer;
+.color-swatch {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+  border: 1px solid var(--border-primary);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.9;
   }
+}
 
-  .mc-hex {
+.color-codes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.code-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.code-label {
+  color: var(--text-tertiary);
+  width: 38px;
+  flex-shrink: 0;
+}
+
+.code-value {
+  flex: 1;
+  color: var(--text-primary);
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.code-copy {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+
+  .iconfont {
     font-size: 12px;
-    font-weight: 600;
-    color: var(--text-primary);
-    font-family: 'SF Mono', Consolas, Monaco, monospace;
-    margin-bottom: 4px;
-    word-break: break-all;
+    color: var(--text-tertiary);
   }
 
-  .mc-copy-btn {
-    padding: 4px 10px;
-    font-size: 11px;
+  &:hover {
     background: var(--accent);
-    color: var(--text-invert);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    width: 100%;
-    transition: opacity 0.15s ease;
+    border-color: var(--accent);
 
-    &:hover {
-      opacity: 0.85;
+    .iconfont {
+      color: var(--text-invert);
     }
   }
 }
 
+.color-actions {
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-primary);
+}
+
+.search-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+
+  .iconfont {
+    font-size: 12px;
+  }
+
+  &:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-invert);
+  }
+}
+
+/* =============== 吸管取色结果 =============== */
 .picker-result {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px;
-  background: var(--bg-muted);
+  gap: 18px;
+  padding: 18px;
+  background: var(--bg-card);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);
 }
 
 .picker-result-swatch {
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   border-radius: var(--radius-md);
   border: 2px solid var(--border-strong);
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.9;
+  }
 }
 
 .picker-result-info {
   flex: 1;
   min-width: 0;
-
-  .pr-hex {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text-primary);
-    font-family: 'SF Mono', Consolas, Monaco, monospace;
-    margin-bottom: 4px;
-  }
-
-  .pr-detail {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin: 2px 0;
-  }
-
-  button {
-    padding: 4px 10px;
-    font-size: 11px;
-    background: var(--accent);
-    color: var(--text-invert);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    margin-top: 8px;
-    transition: opacity 0.15s ease;
-
-    &:hover {
-      opacity: 0.85;
-    }
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
 }
 
-.clear-btn {
-  padding: 8px 16px;
+.pr-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.pr-label {
+  color: var(--text-tertiary);
+  width: 44px;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.pr-value {
+  flex: 1;
+  color: var(--text-primary);
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pr-copy,
+.pr-search {
+  padding: 4px 12px;
   background: var(--bg-muted);
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
 
   &:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-invert);
   }
 }
 
-.empty-state {
-  text-align: center;
-  padding: 20px;
-  color: var(--text-tertiary);
-  font-size: 14px;
+.pr-search {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+
+  &:hover {
+    background: var(--accent);
+    color: var(--text-invert);
+  }
 }
 
+/* =============== 空状态 =============== */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  background: var(--bg-muted);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  margin-top: 16px;
+}
+
+.empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.empty-text {
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+/* =============== 响应式 =============== */
 @media (max-width: 640px) {
   .upload-area {
-    padding: 30px 16px;
+    padding: 32px 16px;
+  }
+
+  .main-colors-grid {
+    grid-template-columns: 1fr;
   }
 
   .picker-result {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 14px;
   }
 
   .picker-result-swatch {
     width: 100%;
-    height: 60px;
+    height: 80px;
+    aspect-ratio: 4 / 1;
   }
 }
 </style>

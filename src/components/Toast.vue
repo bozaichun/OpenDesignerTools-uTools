@@ -1,6 +1,7 @@
 <template>
   <div v-if="visible" class="toast" :class="type">
-    <slot>{{ message }}</slot>
+    <span class="toast-icon iconfont" :class="iconClass"></span>
+    <span class="toast-text">{{ message }}</span>
   </div>
 </template>
 
@@ -24,6 +25,13 @@ export default {
     visible: {
       type: Boolean,
       default: false
+    }
+  },
+  computed: {
+    iconClass() {
+      if (this.type === 'success') return 'icon-Success';
+      if (this.type === 'error') return 'icon-Failure';
+      return 'icon-Query';
     }
   },
   watch: {
@@ -53,7 +61,10 @@ export default {
 }
 
 .toast {
-  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
   background: var(--bg-card);
   color: var(--text-primary);
   border: 1px solid var(--border-primary);
@@ -63,16 +74,38 @@ export default {
   animation: toast-in 0.2s ease;
   pointer-events: auto;
 
+  .toast-icon {
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .toast-text {
+    line-height: 1.4;
+  }
+
   &.success {
     border-left: 4px solid #10b981;
+
+    .toast-icon {
+      color: #10b981;
+    }
   }
 
   &.error {
     border-left: 4px solid var(--text-error);
+
+    .toast-icon {
+      color: var(--text-error);
+    }
   }
 
   &.info {
     border-left: 4px solid var(--accent);
+
+    .toast-icon {
+      color: var(--accent);
+    }
   }
 }
 
