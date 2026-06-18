@@ -1,9 +1,9 @@
 <template>
   <header class="page-header">
     <h1 class="page-title">{{ title }}</h1>
-    <button class="palette-btn" @click="$emit('show-preset-modal')" title="查看颜色表">
-      <span class="palette-icon">&#127912;</span>
-      <span class="palette-text">查看颜色表</span>
+    <button class="palette-btn" @click="$emit('show-preset-modal')" title="色彩库">
+      <span class="iconfont icon-Areality-Color palette-icon"></span>
+      <span class="palette-text">色彩库</span>
     </button>
   </header>
 </template>

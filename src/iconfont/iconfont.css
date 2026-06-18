@@ -1,0 +1,95 @@
+@font-face {
+  font-family: "iconfont"; /* Project id 4020260 */
+  src: url('iconfont.woff2?t=1781748851166') format('woff2'),
+       url('iconfont.woff?t=1781748851166') format('woff'),
+       url('iconfont.ttf?t=1781748851166') format('truetype');
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-Areality-Color:before {
+  content: "\ec04";
+}
+
+.icon-Areality-Palette:before {
+  content: "\ec05";
+}
+
+.icon-Areality-ColorConversion:before {
+  content: "\ec06";
+}
+
+.icon-Areality-Picture:before {
+  content: "\ec07";
+}
+
+.icon-Areality-Setting:before {
+  content: "\ec08";
+}
+
+.icon-Areality-ModeSwitching:before {
+  content: "\ec09";
+}
+
+.icon-Success:before {
+  content: "\ebf9";
+}
+
+.icon-BackTop:before {
+  content: "\ebfa";
+}
+
+.icon-Copy:before {
+  content: "\ebfb";
+}
+
+.icon-Fold:before {
+  content: "\ebfc";
+}
+
+.icon-Expand:before {
+  content: "\ebfd";
+}
+
+.icon-Prompt:before {
+  content: "\ebfe";
+}
+
+.icon-Failure:before {
+  content: "\ebff";
+}
+
+.icon-Query:before {
+  content: "\ec00";
+}
+
+.icon-Back:before {
+  content: "\ec01";
+}
+
+.icon-Areality-Overview:before {
+  content: "\ec02";
+}
+
+.icon-PictureAddition:before {
+  content: "\ec03";
+}
+
+.icon-Palette:before {
+  content: "\ec0a";
+}
+
+.icon-Copyright:before {
+  content: "\ec0b";
+}
+
+.icon-Attention:before {
+  content: "\ebf8";
+}
+

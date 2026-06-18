@@ -17,8 +17,6 @@
       <!-- 中：输入区域 -->
       <div class="col col-input">
         <div class="convert-section">
-          <h3 class="convert-section-title">输入颜色值</h3>
-
           <div class="input-row">
             <span class="input-label">HEX</span>
             <input
@@ -33,6 +31,13 @@
               :value="inputs.hex || '#ffffff'"
               @input="onColorPicker"
             />
+            <button
+              class="copy-icon-btn"
+              @click="copyValue(inputs.hex, 'HEX')"
+              title="复制 HEX"
+            >
+              <span class="iconfont icon-Copy"></span>
+            </button>
           </div>
 
           <div class="input-row">
@@ -44,6 +49,13 @@
               :class="{ invalid: invalidFormat === 'rgb' }"
               placeholder="rgb(r, g, b)"
             />
+            <button
+              class="copy-icon-btn"
+              @click="copyValue(inputs.rgb, 'RGB')"
+              title="复制 RGB"
+            >
+              <span class="iconfont icon-Copy"></span>
+            </button>
           </div>
 
           <div class="input-row">
@@ -55,6 +67,13 @@
               :class="{ invalid: invalidFormat === 'hsl' }"
               placeholder="hsl(h, s%, l%)"
             />
+            <button
+              class="copy-icon-btn"
+              @click="copyValue(inputs.hsl, 'HSL')"
+              title="复制 HSL"
+            >
+              <span class="iconfont icon-Copy"></span>
+            </button>
           </div>
 
           <div class="input-row">
@@ -66,6 +85,13 @@
               :class="{ invalid: invalidFormat === 'cmyk' }"
               placeholder="cmyk(c%, m%, y%, k%)"
             />
+            <button
+              class="copy-icon-btn"
+              @click="copyValue(inputs.cmyk, 'CMYK')"
+              title="复制 CMYK"
+            >
+              <span class="iconfont icon-Copy"></span>
+            </button>
           </div>
 
           <div class="input-row">
@@ -77,6 +103,13 @@
               :class="{ invalid: invalidFormat === 'hsv' }"
               placeholder="hsv(h, s%, v%)"
             />
+            <button
+              class="copy-icon-btn"
+              @click="copyValue(inputs.hsv, 'HSV')"
+              title="复制 HSV"
+            >
+              <span class="iconfont icon-Copy"></span>
+            </button>
           </div>
 
           <div class="alpha-row">
@@ -99,28 +132,6 @@
         </div>
       </div>
 
-      <!-- 右：输出区域 -->
-      <div class="col col-output">
-        <div class="convert-section">
-          <h3 class="convert-section-title">转换结果</h3>
-          <div class="output-grid">
-            <div
-              v-for="item in outputs"
-              :key="item.label"
-              class="output-row"
-            >
-              <span class="output-label">{{ item.label }}</span>
-              <span class="output-value">{{ item.value }}</span>
-              <button
-                class="copy-btn"
-                @click="copyValue(item.value, item.label)"
-              >
-                复制
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -128,7 +139,7 @@
 <script>
 import {
   detectColorFormat, parseColor, formatRGBA, formatHSLA,
-  formatHEX, formatRGB, formatHSL, formatCMYK, formatLAB, formatHSV,
+  formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
   copyToClipboard, showToast
 } from '../utils/colorUtils';
 
@@ -162,21 +173,6 @@ export default {
       const { r, g, b } = this.currentRGB;
       const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
       return luminance > 0.5 ? '#000000' : '#ffffff';
-    },
-    outputs() {
-      const rgba = this.currentRGB;
-      const { r, g, b, a } = rgba;
-      return [
-        { label: 'HEX', value: formatHEX(rgba) },
-        { label: 'HEXA', value: formatHEX({ r, g, b, a: a < 1 ? a : 1 }, a < 1) },
-        { label: 'RGB', value: formatRGB(rgba) },
-        { label: 'RGBA', value: formatRGBA(rgba) },
-        { label: 'HSL', value: formatHSL(rgba) },
-        { label: 'HSLA', value: formatHSLA(rgba) },
-        { label: 'CMYK', value: formatCMYK(rgba) },
-        { label: 'HSV', value: formatHSV(rgba) },
-        { label: 'LAB', value: formatLAB(rgba) }
-      ];
     }
   },
   mounted() {
@@ -283,7 +279,7 @@ export default {
 
 .convert-layout {
   display: grid;
-  grid-template-columns: 1fr 1.3fr 1.3fr;
+  grid-template-columns: 1fr 1.3fr;
   gap: 20px;
   min-width: 0;
 
@@ -297,8 +293,7 @@ export default {
   min-width: 0;
 }
 
-.col-input,
-.col-output {
+.col-input {
   min-width: 0;
 }
 
@@ -331,8 +326,7 @@ export default {
   margin-bottom: 20px;
 }
 
-.col-input .convert-section,
-.col-output .convert-section {
+.col-input .convert-section {
   margin-bottom: 0;
   flex: 1;
   display: flex;
@@ -388,6 +382,33 @@ export default {
     cursor: pointer;
     background: var(--bg-card);
   }
+
+  .copy-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: var(--bg-muted);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+
+    .iconfont {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    &:hover {
+      background: var(--accent);
+      color: var(--text-invert);
+      border-color: var(--accent);
+    }
+  }
 }
 
 .alpha-row {
@@ -436,69 +457,6 @@ export default {
   margin-top: 16px;
 }
 
-.output-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.col-output .output-grid {
-  display: flex;
-  flex-direction: column;
-  grid-template-columns: none;
-}
-
-.output-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 14px;
-  background: var(--bg-muted);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-primary);
-  transition: border-color 0.15s ease;
-
-  &:hover {
-    border-color: var(--accent);
-  }
-
-  .output-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    min-width: 70px;
-  }
-
-  .output-value {
-    flex: 1;
-    font-size: 13px;
-    color: var(--text-primary);
-    font-family: 'SF Mono', Consolas, Monaco, monospace;
-    word-break: break-all;
-    text-align: left;
-    padding: 0 12px;
-  }
-
-  .copy-btn {
-    padding: 6px 14px;
-    font-size: 12px;
-    background: var(--accent);
-    color: var(--text-invert);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: opacity 0.15s ease;
-    min-width: 60px;
-    white-space: nowrap;
-
-    &:hover {
-      opacity: 0.85;
-    }
-  }
-}
-
 .clear-btn {
   padding: 8px 16px;
   background: var(--bg-muted);
@@ -526,31 +484,15 @@ export default {
 }
 
 @media (max-width: 640px) {
-  .output-row {
-    padding: 10px;
-    gap: 8px;
-  }
+  .input-row {
+    .copy-icon-btn {
+      width: 36px;
+      height: 36px;
+    }
 
-  .output-row .output-label {
-    min-width: 60px;
-    font-size: 12px;
-  }
-
-  .output-row .output-value {
-    padding: 0 6px;
-    font-size: 12px;
-  }
-
-  .output-row .copy-btn {
-    padding: 5px 10px;
-    font-size: 11px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .output-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px 16px;
+    .copy-icon-btn .iconfont {
+      font-size: 14px;
+    }
   }
 }
 </style>

@@ -20,9 +20,7 @@
         @click="toggleCollapse"
         :title="collapsed ? '展开导航' : '收起导航'"
       >
-        <span class="collapse-icon" :class="{ rotated: collapsed }">
-          &#10094;
-        </span>
+        <span class="iconfont collapse-icon" :class="collapsed ? 'icon-Expand' : 'icon-Fold'"></span>
         <span class="collapse-label">{{ collapsed ? '展开' : '收起' }}</span>
       </button>
     </div>
@@ -48,18 +46,18 @@ export default {
       menuItems: [
         {
           id: 'knowledge',
-          label: '色彩知识库',
-          icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/><path d="M20 2H8a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h12V2z"/><path d="M9 6h7M9 10h7M9 14h5"/></svg>'
+          label: '基础知识',
+          icon: '<span class="iconfont icon-Areality-Overview"></span>'
         },
         {
           id: 'convert',
           label: '颜色转换',
-          icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-9 9c-4.97 0-9-4.03-9-9S6.03 3 12 3c2 0 3.9 0.64 5.46 1.73"/><path d="M21 4v5h-5"/><path d="M3 20v-5h5"/></svg>'
+          icon: '<span class="iconfont icon-Areality-ColorConversion"></span>'
         },
         {
           id: 'image',
           label: '图片取色',
-          icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>'
+          icon: '<span class="iconfont icon-Areality-Picture"></span>'
         }
       ]
     };
@@ -90,8 +88,8 @@ export default {
 }
 
 .sidebar.collapsed {
-  flex-basis: 68px;
-  width: 68px;
+  flex-basis: 60px;
+  width: 60px;
 }
 
 .sidebar-menu {
@@ -142,14 +140,9 @@ export default {
   flex-shrink: 0;
   color: inherit;
 
-  :deep(svg) {
-    width: 18px;
-    height: 18px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+  :deep(.iconfont) {
+    font-size: 18px;
+    line-height: 1;
   }
 }
 
@@ -167,11 +160,13 @@ export default {
 
   .menu-item {
     justify-content: center;
+    align-items: center;
+    gap: 0;
     width: 100%;
     aspect-ratio: 1 / 1;
     padding: 10px;
     overflow: hidden;
-    max-width: 52px;
+    max-width: 44px;
     margin: 0 auto;
   }
 }
@@ -206,13 +201,8 @@ export default {
 
 .collapse-icon {
   display: inline-block;
-  transition: transform 0.25s ease;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1;
-
-  &.rotated {
-    transform: rotate(180deg);
-  }
 }
 
 .sidebar.collapsed {
@@ -222,9 +212,9 @@ export default {
 
   .collapse-toggle {
     aspect-ratio: 1 / 1;
-    padding: 8px;
+    padding: 10px;
     width: auto;
-    max-width: 52px;
+    max-width: 44px;
     margin: 0 auto;
     display: flex;
     align-items: center;

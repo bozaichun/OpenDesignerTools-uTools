@@ -1,0 +1,149 @@
+{
+  "id": "4020260",
+  "name": "颜色值转换器",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "47879867",
+      "name": "色彩",
+      "font_class": "Areality-Color",
+      "unicode": "ec04",
+      "unicode_decimal": 60420
+    },
+    {
+      "icon_id": "47879868",
+      "name": "调色盘",
+      "font_class": "Areality-Palette",
+      "unicode": "ec05",
+      "unicode_decimal": 60421
+    },
+    {
+      "icon_id": "47879871",
+      "name": "颜色转换",
+      "font_class": "Areality-ColorConversion",
+      "unicode": "ec06",
+      "unicode_decimal": 60422
+    },
+    {
+      "icon_id": "47879872",
+      "name": "图片",
+      "font_class": "Areality-Picture",
+      "unicode": "ec07",
+      "unicode_decimal": 60423
+    },
+    {
+      "icon_id": "47879875",
+      "name": "设置",
+      "font_class": "Areality-Setting",
+      "unicode": "ec08",
+      "unicode_decimal": 60424
+    },
+    {
+      "icon_id": "47879880",
+      "name": "模式切换",
+      "font_class": "Areality-ModeSwitching",
+      "unicode": "ec09",
+      "unicode_decimal": 60425
+    },
+    {
+      "icon_id": "47879817",
+      "name": "成功",
+      "font_class": "Success",
+      "unicode": "ebf9",
+      "unicode_decimal": 60409
+    },
+    {
+      "icon_id": "47879818",
+      "name": "置顶",
+      "font_class": "BackTop",
+      "unicode": "ebfa",
+      "unicode_decimal": 60410
+    },
+    {
+      "icon_id": "47879822",
+      "name": "复制",
+      "font_class": "Copy",
+      "unicode": "ebfb",
+      "unicode_decimal": 60411
+    },
+    {
+      "icon_id": "47879823",
+      "name": "收起",
+      "font_class": "Fold",
+      "unicode": "ebfc",
+      "unicode_decimal": 60412
+    },
+    {
+      "icon_id": "47879824",
+      "name": "展开",
+      "font_class": "Expand",
+      "unicode": "ebfd",
+      "unicode_decimal": 60413
+    },
+    {
+      "icon_id": "47879825",
+      "name": "注释",
+      "font_class": "Prompt",
+      "unicode": "ebfe",
+      "unicode_decimal": 60414
+    },
+    {
+      "icon_id": "47879827",
+      "name": "关闭",
+      "font_class": "Failure",
+      "unicode": "ebff",
+      "unicode_decimal": 60415
+    },
+    {
+      "icon_id": "47879829",
+      "name": "查询",
+      "font_class": "Query",
+      "unicode": "ec00",
+      "unicode_decimal": 60416
+    },
+    {
+      "icon_id": "47879830",
+      "name": "返回",
+      "font_class": "Back",
+      "unicode": "ec01",
+      "unicode_decimal": 60417
+    },
+    {
+      "icon_id": "47879831",
+      "name": "概览",
+      "font_class": "Areality-Overview",
+      "unicode": "ec02",
+      "unicode_decimal": 60418
+    },
+    {
+      "icon_id": "47879832",
+      "name": "图片添加",
+      "font_class": "PictureAddition",
+      "unicode": "ec03",
+      "unicode_decimal": 60419
+    },
+    {
+      "icon_id": "47880359",
+      "name": "调色盘",
+      "font_class": "Palette",
+      "unicode": "ec0a",
+      "unicode_decimal": 60426
+    },
+    {
+      "icon_id": "47880360",
+      "name": "版权",
+      "font_class": "Copyright",
+      "unicode": "ec0b",
+      "unicode_decimal": 60427
+    },
+    {
+      "icon_id": "16401954",
+      "name": "提示",
+      "font_class": "Attention",
+      "unicode": "ebf8",
+      "unicode_decimal": 60408
+    }
+  ]
+}
