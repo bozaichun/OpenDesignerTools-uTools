@@ -31,7 +31,6 @@
       </div>
       <div class="image-actions">
         <button class="action-btn" @click="analyzeImage">
-          <span class="iconfont icon-Areality-ModeSwitching"></span>
           一键分析
         </button>
         <button class="action-btn secondary" @click="clearImage">

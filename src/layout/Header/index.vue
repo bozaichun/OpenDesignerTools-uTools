@@ -1,7 +1,7 @@
 <template>
   <header class="page-header">
     <div class="header-left">
-      <h1 class="page-title">{{ title }}</h1>
+      <SectionTitle :title="title" mode="primary" />
       <template v-if="isDetail">
         <span class="detail-back" @click="$emit('back')">
           <span class="iconfont icon-Back"></span>
@@ -29,8 +29,13 @@
 </template>
 
 <script>
+import SectionTitle from '../../components/SectionTitle.vue';
+
 export default {
   name: 'PageHeader',
+  components: {
+    SectionTitle
+  },
   props: {
     title: {
       type: String,
@@ -85,13 +90,6 @@ export default {
   }
 }
 
-.page-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
 .header-actions {
   display: flex;
   align-items: center;
@@ -133,10 +131,6 @@ export default {
     gap: 10px;
     margin-bottom: 14px;
     padding-bottom: 14px;
-  }
-
-  .page-title {
-    font-size: 17px;
   }
 
   .header-actions {

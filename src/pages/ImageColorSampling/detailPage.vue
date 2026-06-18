@@ -9,29 +9,90 @@
 
     <!-- 分析结果内容 -->
     <div v-else>
-      <!-- 图片预览 + 取色区 -->
-      <div class="image-preview-section">
-        <div class="image-container" ref="imageContainer">
-          <canvas
-            ref="canvas"
-            @click="handleCanvasClick"
-            @mousemove="handleCanvasMove"
-          ></canvas>
-          <div
-            v-if="pickerPos"
-            class="picker-indicator"
-            :style="{ left: pickerPos.x + 'px', top: pickerPos.y + 'px' }"
-          ></div>
+      <!-- 图片预览 + 取色区 + 吸管取色结果 -->
+      <div class="analysis-top-row">
+        <div class="image-preview-section">
+          <SectionTitle
+            mode="secondary"
+            title="图片取色"
+            subtitle="点击图片任意位置可获取该点颜色值"
+          />
+          <div class="image-container" ref="imageContainer">
+            <canvas
+              ref="canvas"
+              @click="handleCanvasClick"
+              @mousemove="handleCanvasMove"
+            ></canvas>
+            <div
+              v-if="pickerPos"
+              class="picker-indicator"
+              :style="{ left: pickerPos.x + 'px', top: pickerPos.y + 'px' }"
+            ></div>
+          </div>
         </div>
-        <div class="image-tip">点击图片任意位置可获取该点颜色值</div>
+
+        <!-- 吸管取色结果 -->
+        <div v-if="pickedColor" class="picker-result-section">
+          <SectionTitle
+            mode="secondary"
+            title="吸管取色结果"
+            subtitle="点击图片任意位置可获取该点颜色值"
+          />
+
+          <div class="picker-result">
+            <div
+              class="picker-result-swatch"
+              :style="{ background: pickedColor.hex }"
+            ></div>
+            <div class="picker-result-info">
+              <div class="pr-row">
+                <span class="pr-label">HEX</span>
+                <span class="pr-value">{{ pickedColor.hex }}</span>
+                <button class="pr-copy" @click="copyValue(pickedColor.hex, 'HEX')">复制</button>
+                <button class="pr-search" @click="searchOnBaidu(pickedColor.hex)">搜索百度</button>
+              </div>
+              <div class="pr-row">
+                <span class="pr-label">RGB</span>
+                <span class="pr-value">{{ pickedColor.rgb }}</span>
+                <button class="pr-copy" @click="copyValue(pickedColor.rgb, 'RGB')">复制</button>
+              </div>
+              <div class="pr-row">
+                <span class="pr-label">HSL</span>
+                <span class="pr-value">{{ pickedColor.hsl }}</span>
+                <button class="pr-copy" @click="copyValue(pickedColor.hsl, 'HSL')">复制</button>
+              </div>
+              <div class="pr-row">
+                <span class="pr-label">CMYK</span>
+                <span class="pr-value">{{ pickedColor.cmyk }}</span>
+                <button class="pr-copy" @click="copyValue(pickedColor.cmyk, 'CMYK')">复制</button>
+              </div>
+              <div class="pr-row">
+                <span class="pr-label">HSV</span>
+                <span class="pr-value">{{ pickedColor.hsv }}</span>
+                <button class="pr-copy" @click="copyValue(pickedColor.hsv, 'HSV')">复制</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 占位：未取色时显示空态提示 -->
+        <div v-else class="picker-result-section">
+          <SectionTitle
+            mode="secondary"
+            title="吸管取色结果"
+            subtitle="点击图片任意位置可获取该点颜色值"
+          />
+          <div class="picker-result-empty">点击左侧图片开始取色</div>
+        </div>
       </div>
 
       <!-- 主色调结果 -->
       <div class="colors-result-section">
-        <div class="section-header">
-          <div class="section-title">图片主色调</div>
-          <div class="section-subtitle">共提取 {{ mainColors.length }} 种主要颜色 · 点击色卡复制 HEX</div>
-        </div>
+        <SectionTitle
+          mode="secondary"
+          title="图片主色调"
+          :subtitle="'共提取 ' + mainColors.length + ' 种主要颜色 · 点击色卡复制 HEX'"
+        />
 
         <div class="main-colors-grid">
           <div
@@ -83,7 +144,7 @@
             </div>
             <div class="color-actions">
               <button class="search-btn" @click="searchOnBaidu(color.hex)">
-                <span class="iconfont icon-Copy"></span>
+                <span class="iconfont icon-Query"></span>
                 百度搜索配色
               </button>
             </div>
@@ -91,48 +152,6 @@
         </div>
       </div>
 
-      <!-- 吸管取色结果 -->
-      <div v-if="pickedColor" class="picker-result-section">
-        <div class="section-header">
-          <div class="section-title">吸管取色结果</div>
-          <div class="section-subtitle">点击图片任意位置可获取该点颜色值</div>
-        </div>
-
-        <div class="picker-result">
-          <div
-            class="picker-result-swatch"
-            :style="{ background: pickedColor.hex }"
-          ></div>
-          <div class="picker-result-info">
-            <div class="pr-row">
-              <span class="pr-label">HEX</span>
-              <span class="pr-value">{{ pickedColor.hex }}</span>
-              <button class="pr-copy" @click="copyValue(pickedColor.hex, 'HEX')">复制</button>
-              <button class="pr-search" @click="searchOnBaidu(pickedColor.hex)">搜索百度</button>
-            </div>
-            <div class="pr-row">
-              <span class="pr-label">RGB</span>
-              <span class="pr-value">{{ pickedColor.rgb }}</span>
-              <button class="pr-copy" @click="copyValue(pickedColor.rgb, 'RGB')">复制</button>
-            </div>
-            <div class="pr-row">
-              <span class="pr-label">HSL</span>
-              <span class="pr-value">{{ pickedColor.hsl }}</span>
-              <button class="pr-copy" @click="copyValue(pickedColor.hsl, 'HSL')">复制</button>
-            </div>
-            <div class="pr-row">
-              <span class="pr-label">CMYK</span>
-              <span class="pr-value">{{ pickedColor.cmyk }}</span>
-              <button class="pr-copy" @click="copyValue(pickedColor.cmyk, 'CMYK')">复制</button>
-            </div>
-            <div class="pr-row">
-              <span class="pr-label">HSV</span>
-              <span class="pr-value">{{ pickedColor.hsv }}</span>
-              <button class="pr-copy" @click="copyValue(pickedColor.hsv, 'HSV')">复制</button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -142,11 +161,15 @@ import {
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
   copyToClipboard, showToast
 } from '../../utils/colorUtils';
+import SectionTitle from '../../components/SectionTitle.vue';
 
 const STORAGE_KEY = 'imageAnalysisData';
 
 export default {
   name: 'ImageColorSamplingDetail',
+  components: {
+    SectionTitle
+  },
   data() {
     return {
       imageSrc: null,
@@ -331,6 +354,37 @@ export default {
   &:hover {
     opacity: 0.88;
   }
+}
+
+/* ============ 顶部行：图片预览 + 吸管取色结果 ============ */
+.analysis-top-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.analysis-top-row .image-preview-section {
+  flex: 1 1 400px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.analysis-top-row .picker-result-section {
+  flex: 1 1 340px;
+  min-width: 0;
+  margin-top: 0;
+}
+
+.picker-result-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  background: var(--bg-muted);
+  border: 1px dashed var(--border-primary);
+  border-radius: var(--radius-md);
 }
 
 /* ============ 图片预览区 ============ */
@@ -615,6 +669,10 @@ export default {
 
 /* ============ 响应式 ============ */
 @media (max-width: 640px) {
+  .analysis-top-row {
+    flex-direction: column;
+  }
+
   .main-colors-grid {
     grid-template-columns: 1fr;
   }
