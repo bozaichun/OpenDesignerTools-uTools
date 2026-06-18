@@ -12,7 +12,9 @@
     <main-content-layout>
       <!-- 页头 -->
       <header-layout
-        :title="currentTabLabel"
+        :title="pageTitle"
+        :is-detail="isDetailRoute"
+        @back="handleBackFromDetail"
       />
 
       <!-- 内容区 -->
@@ -46,6 +48,7 @@ const TAB_BY_ROUTE = {
   '/BasicKnowledge': 'BasicKnowledge',
   '/ColorConversion': 'ColorConversion',
   '/ImageColorSampling': 'ImageColorSampling',
+  '/ImageColorSampling/detailPage': 'ImageColorSampling',
   '/PresetColors': 'PresetColors'
 };
 
@@ -88,11 +91,20 @@ export default {
     },
     currentTabLabel() {
       return this.TAB_LABELS[this.currentTab] || '';
+    },
+    pageTitle() {
+      return this.isDetailRoute ? '分析结果' : this.currentTabLabel;
+    },
+    isDetailRoute() {
+      return this.route.path === '/ImageColorSampling/detailPage';
     }
   },
   methods: {
     handleTabChange(tabId) {
       this.router.push('/' + tabId);
+    },
+    handleBackFromDetail() {
+      this.router.push('/ImageColorSampling');
     }
   },
   mounted() {

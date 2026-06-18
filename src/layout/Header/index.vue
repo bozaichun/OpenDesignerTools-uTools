@@ -1,6 +1,14 @@
 <template>
   <header class="page-header">
-    <h1 class="page-title">{{ title }}</h1>
+    <div class="header-left">
+      <h1 class="page-title">{{ title }}</h1>
+      <template v-if="isDetail">
+        <span class="detail-back" @click="$emit('back')">
+          <span class="iconfont icon-Back"></span>
+          <span class="detail-back-text">返回</span>
+        </span>
+      </template>
+    </div>
     <div class="header-actions">
       <button
         class="icon-btn"
@@ -27,9 +35,13 @@ export default {
     title: {
       type: String,
       default: ''
+    },
+    isDetail: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['toggle-mode', 'show-setting']
+  emits: ['toggle-mode', 'show-setting', 'back']
 };
 </script>
 
@@ -43,6 +55,34 @@ export default {
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--border-primary);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  user-select: none;
+  transition: opacity 0.15s ease;
+
+  .iconfont {
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  &:hover {
+    opacity: 0.75;
+  }
 }
 
 .page-title {

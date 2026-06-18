@@ -24,6 +24,12 @@ const routes = [
     meta: { title: '图片取色' }
   },
   {
+    path: '/ImageColorSampling/detailPage',
+    name: 'ImageColorSamplingDetail',
+    component: () => import('../pages/ImageColorSampling/detailPage.vue'),
+    meta: { title: '图片取色详情' }
+  },
+  {
     path: '/PresetColors',
     name: 'PresetColors',
     component: () => import('../pages/PresetColors/index.vue'),
