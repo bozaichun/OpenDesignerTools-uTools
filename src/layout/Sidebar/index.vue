@@ -75,8 +75,8 @@ export default {
 
 <style lang="scss" scoped>
 .sidebar {
-  width: 220px;
-  flex: 0 0 220px;
+  width: 200px;
+  flex: 0 0 200px;
   height: 100%;
   min-height: 0;
   background: var(--bg-card);
@@ -88,15 +88,15 @@ export default {
 }
 
 .sidebar.collapsed {
-  flex-basis: 60px;
-  width: 60px;
+  flex-basis: 52px;
+  width: 52px;
 }
 
 .sidebar-menu {
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
-  padding: 16px 8px;
+  padding: 12px 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -108,10 +108,10 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border-radius: var(--radius-md);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -135,13 +135,13 @@ export default {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   color: inherit;
 
   :deep(.iconfont) {
-    font-size: 18px;
+    font-size: 16px;
     line-height: 1;
   }
 }
@@ -164,9 +164,9 @@ export default {
     gap: 0;
     width: 100%;
     aspect-ratio: 1 / 1;
-    padding: 10px;
+    padding: 8px;
     overflow: hidden;
-    max-width: 44px;
+    max-width: 40px;
     margin: 0 auto;
   }
 }
@@ -214,7 +214,7 @@ export default {
     aspect-ratio: 1 / 1;
     padding: 10px;
     width: auto;
-    max-width: 44px;
+    max-width: 40px;
     margin: 0 auto;
     display: flex;
     align-items: center;
