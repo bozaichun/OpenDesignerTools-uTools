@@ -11,10 +11,7 @@
             <h3 class="knowledge-title">{{ item.title }}</h3>
             <span
               class="prompt-icon iconfont icon-Prompt"
-              @click.stop
-              @mouseenter="showTooltip($event, item.summary)"
-              @mouseleave="hideTooltip"
-              @mouseout="hideTooltip"
+              @click.stop="toggleTooltip($event, item.id, item.summary)"
             ></span>
           </div>
           <div class="knowledge-header-right">
@@ -68,7 +65,7 @@ export default {
       tooltipVisible: false,
       tooltipText: '',
       tooltipStyle: { top: '0px', left: '0px' },
-      tooltipTimer: null,
+      activeTooltipId: null,
       detailVisible: false,
       currentDetailItem: null
     };
@@ -85,18 +82,29 @@ export default {
         }
       });
     };
+    this._docClickHandler = () => {
+      self.activeTooltipId = null;
+      self.tooltipVisible = false;
+    };
     window.addEventListener('resize', this._resizeHandler);
+    document.addEventListener('click', this._docClickHandler);
   },
   beforeUnmount() {
     this.disposeAllCharts();
     if (this._resizeHandler) {
       window.removeEventListener('resize', this._resizeHandler);
     }
+    if (this._docClickHandler) {
+      document.removeEventListener('click', this._docClickHandler);
+    }
   },
   beforeDestroy() {
     this.disposeAllCharts();
     if (this._resizeHandler) {
       window.removeEventListener('resize', this._resizeHandler);
+    }
+    if (this._docClickHandler) {
+      document.removeEventListener('click', this._docClickHandler);
     }
   },
   methods: {
@@ -174,11 +182,13 @@ export default {
     radarOption(cfg) {
       return {
         tooltip: {},
-        legend: { data: cfg.data.map((d) => d.name), top: 5, textStyle: { fontSize: 11 } },
+        legend: { data: cfg.data.map((d) => d.name), bottom: 0, textStyle: { fontSize: 11 }, itemWidth: 10, itemHeight: 10 },
         radar: {
           indicator: cfg.indicator,
           shape: 'polygon',
           splitNumber: 4,
+          center: ['50%', '48%'],
+          radius: '60%',
           splitLine: { lineStyle: { type: 'dashed' } },
           splitArea: { areaStyle: { color: ['transparent'] } }
         },
@@ -202,7 +212,7 @@ export default {
       const markLines = cfg.thresholds.map((t) => ({
         yAxis: t.value,
         lineStyle: { color: t.color, type: 'dashed', width: 2 },
-        label: { formatter: t.name, color: t.color, fontSize: 10, position: 'end' }
+        label: { formatter: t.name, color: t.color, fontSize: 10, position: 'insideEndTop' }
       }));
       return {
         tooltip: {
@@ -213,9 +223,9 @@ export default {
             return p.name + '<br/>对比度: ' + p.value + ':1';
           }
         },
-        grid: { left: 10, right: 60, top: 20, bottom: 30, containLabel: true },
+        grid: { left: 10, right: 90, top: 20, bottom: 30, containLabel: true },
         xAxis: { type: 'value', max: maxVal, splitLine: { lineStyle: { type: 'dashed' } } },
-        yAxis: { type: 'category', data: names },
+        yAxis: { type: 'category', data: names, axisLabel: { fontSize: 11 } },
         series: [{
           type: 'bar',
           data: barData,
@@ -234,20 +244,18 @@ export default {
         }
       });
     },
-    showTooltip(event, text) {
-      const self = this;
-      if (this.tooltipTimer) clearTimeout(this.tooltipTimer);
+    toggleTooltip(event, id, text) {
+      if (this.activeTooltipId === id) {
+        this.activeTooltipId = null;
+        this.tooltipVisible = false;
+        return;
+      }
+      this.activeTooltipId = id;
       this.tooltipText = text;
       const x = event.clientX + 12;
       const y = event.clientY + 12;
       this.tooltipStyle = { top: y + 'px', left: x + 'px' };
       this.tooltipVisible = true;
-    },
-    hideTooltip() {
-      const self = this;
-      this.tooltipTimer = setTimeout(() => {
-        self.tooltipVisible = false;
-      }, 100);
     },
     openDetail(item) {
       this.currentDetailItem = item;
