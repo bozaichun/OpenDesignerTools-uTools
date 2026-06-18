@@ -33,29 +33,28 @@
       {{ tooltipText }}
     </div>
 
-    <div v-if="detailVisible" class="detail-overlay" @click.self="closeDetail">
-      <div class="detail-modal">
-        <div class="detail-header">
-          <h3 class="detail-title">{{ currentDetailItem ? currentDetailItem.title : '' }}</h3>
-          <span class="detail-close iconfont icon-Failure" @click="closeDetail"></span>
-        </div>
-        <div class="detail-body">
-          <div v-if="currentDetailItem" v-for="(section, sIdx) in currentDetailItem.sections" :key="sIdx" class="knowledge-section">
-            <h4 class="knowledge-section-title">{{ section.title }}</h4>
-            <p class="knowledge-section-content">{{ section.content }}</p>
-          </div>
-        </div>
+    <Dialog
+      v-model:visible="detailVisible"
+      :title="currentDetailItem ? currentDetailItem.title : ''"
+      max-width="680px"
+      @close="closeDetail"
+    >
+      <div v-for="(section, sIdx) in currentDetailItem.sections" :key="sIdx" class="knowledge-section">
+        <h4 class="knowledge-section-title">{{ section.title }}</h4>
+        <p class="knowledge-section-content">{{ section.content }}</p>
       </div>
-    </div>
+    </Dialog>
   </div>
 </template>
 
 <script>
 import * as echarts from 'echarts';
 import { KNOWLEDGE_DATA } from '../../data/knowledge';
+import Dialog from '../../components/Dialog.vue';
 
 export default {
   name: 'BasicKnowledge',
+  components: { Dialog },
   data() {
     return {
       KNOWLEDGE_DATA,
@@ -260,11 +259,9 @@ export default {
     openDetail(item) {
       this.currentDetailItem = item;
       this.detailVisible = true;
-      document.body.style.overflow = 'hidden';
     },
     closeDetail() {
       this.detailVisible = false;
-      document.body.style.overflow = '';
     }
   }
 };
@@ -400,75 +397,6 @@ export default {
   pointer-events: none;
 }
 
-.detail-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 24px;
-}
-
-.detail-modal {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  width: 100%;
-  max-width: 680px;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-}
-
-.detail-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-primary);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-}
-
-.detail-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.detail-close {
-  font-size: 18px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background 0.15s ease;
-  user-select: none;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  &:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-  }
-}
-
-.detail-body {
-  padding: 16px 20px 24px;
-  overflow-y: auto;
-  flex: 1;
-}
-
 @media (max-width: 1024px) {
   .knowledge-grid {
     grid-template-columns: 1fr;
@@ -491,10 +419,6 @@ export default {
 
   .knowledge-chart {
     height: 260px;
-  }
-
-  .detail-overlay {
-    padding: 12px;
   }
 }
 </style>

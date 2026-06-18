@@ -36,37 +36,34 @@
         :key="color.name"
         class="preset-card"
       >
-        <div class="swatch-row" @click="toggleExpand(color.name)">
-          <div
-            class="color-swatch"
-            :style="{ background: color.hex }"
-            :title="'点击复制 ' + color.hex"
-            @click.stop="copyValue(color.hex, color.hex)"
-          ></div>
-          <div>
+        <div class="swatch-row">
+          <div class="swatch-wrapper">
+            <div
+              class="color-swatch"
+              :style="{ background: color.hex }"
+            ></div>
+            <button
+              class="swatch-copy-icon"
+              :title="'复制颜色名: ' + color.name"
+              @click.stop="copyValue(color.name, color.name)"
+            >
+              <span class="iconfont icon-Copy"></span>
+            </button>
+          </div>
+          <div class="color-info">
             <div class="color-name">{{ color.name }}</div>
             <div class="color-hex">{{ color.hex }}</div>
             <div class="group-tag">{{ color.group }}</div>
           </div>
         </div>
 
-        <!-- 展开的多格式输出 -->
-        <div v-if="expandedColor === color.name" class="preset-expanded">
-          <div
-            v-for="item in getFormatOutputs(color.hex)"
-            :key="item.label"
-            class="format-copy-row"
-          >
-            <span class="format-label">{{ item.label }}</span>
-            <span class="format-value">{{ item.value }}</span>
-            <button
-              class="copy-btn"
-              @click="copyValue(item.value, item.label)"
-            >
-              复制
-            </button>
-          </div>
-        </div>
+        <!-- 查看颜色按钮 -->
+        <button
+          class="view-color-btn"
+          @click="openColorModal(color)"
+        >
+          查看颜色
+        </button>
       </div>
     </div>
 
@@ -74,22 +71,60 @@
     <div v-else class="empty-state">
       没有找到匹配的颜色，请尝试其他搜索词。
     </div>
+
+    <!-- 颜色详情遮罩弹框 -->
+    <Dialog
+      v-model:visible="modalVisible"
+      max-width="420px"
+      @close="closeModal"
+    >
+      <template #header>
+        <div class="modal-title-row">
+          <div
+            class="modal-swatch"
+            :style="{ background: modalColor.hex }"
+          ></div>
+          <div>
+            <div class="modal-title">{{ modalColor.name }}</div>
+            <div class="modal-hex">{{ modalColor.hex }}</div>
+          </div>
+        </div>
+      </template>
+
+      <div
+        v-for="item in modalFormatOutputs"
+        :key="item.label"
+        class="modal-format-row"
+      >
+        <span class="modal-format-label">{{ item.label }}</span>
+        <span class="modal-format-value">{{ item.value }}</span>
+        <button
+          class="modal-copy-btn"
+          @click="copyValue(item.value, item.label)"
+        >
+          复制
+        </button>
+      </div>
+    </Dialog>
   </div>
 </template>
 
 <script>
 import { PRESET_COLORS, COLOR_GROUPS } from '../../data/presetColors';
 import { parseColor, formatHEX, formatRGB, formatRGBA, formatHSL, formatCMYK, formatHSV, copyToClipboard, showToast } from '../../utils/colorUtils';
+import Dialog from '../../components/Dialog.vue';
 
 export default {
   name: 'PresetColors',
+  components: { Dialog },
   data() {
     return {
       presetColors: PRESET_COLORS,
       colorGroups: COLOR_GROUPS,
       searchText: '',
       activeGroup: null,
-      expandedColor: null
+      modalVisible: false,
+      modalColor: { name: '', hex: '', group: '' }
     };
   },
   computed: {
@@ -100,14 +135,9 @@ export default {
         const matchGroup = !this.activeGroup || c.group === this.activeGroup;
         return matchSearch && matchGroup;
       });
-    }
-  },
-  methods: {
-    toggleExpand(name) {
-      this.expandedColor = this.expandedColor === name ? null : name;
     },
-    getFormatOutputs(hex) {
-      const rgb = parseColor(hex);
+    modalFormatOutputs() {
+      const rgb = parseColor(this.modalColor.hex);
       if (!rgb) return [];
       const { r, g, b, a } = rgb;
       const rgba = { r, g, b, a };
@@ -119,12 +149,22 @@ export default {
         { label: 'CMYK', value: formatCMYK(rgba) },
         { label: 'HSV', value: formatHSV(rgba) }
       ];
+    }
+  },
+  methods: {
+    openColorModal(color) {
+      this.modalColor = { ...color };
+      this.modalVisible = true;
+    },
+    closeModal() {
+      this.modalVisible = false;
     },
     copyValue(value, label) {
       copyToClipboard(value);
       showToast(this, '已复制 ' + label + ': ' + value, 'success');
     }
-  }
+  },
+
 };
 </script>
 
@@ -133,6 +173,7 @@ export default {
   width: 100%;
 }
 
+/* ============ 搜索区域 ============ */
 .preset-filter-bar {
   display: flex;
   gap: 12px;
@@ -158,6 +199,7 @@ export default {
   }
 }
 
+/* ============ 分组标签 ============ */
 .group-chips {
   display: flex;
   gap: 6px;
@@ -188,6 +230,7 @@ export default {
   }
 }
 
+/* ============ 颜色卡片网格 ============ */
 .preset-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -199,7 +242,6 @@ export default {
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   padding: 12px;
-  cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
@@ -212,28 +254,15 @@ export default {
   .swatch-row {
     display: flex;
     gap: 10px;
-    align-items: center;
-    margin-bottom: 8px;
+    align-items: flex-start;
+    margin-bottom: 10px;
   }
+}
 
-  .color-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-    word-break: break-all;
-  }
-
-  .color-hex {
-    font-size: 12px;
-    color: var(--text-tertiary);
-    font-family: 'SF Mono', Consolas, Monaco, monospace;
-  }
-
-  .group-tag {
-    font-size: 11px;
-    color: var(--text-secondary);
-    margin-top: 4px;
-  }
+/* ============ 色块与复制图标 ============ */
+.swatch-wrapper {
+  position: relative;
+  flex-shrink: 0;
 }
 
 .color-swatch {
@@ -241,63 +270,91 @@ export default {
   height: 40px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
   box-shadow: var(--shadow-sm);
-  flex-shrink: 0;
+}
+
+.swatch-copy-icon {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  opacity: 0;
+
+  .iconfont {
+    font-size: 10px;
+    line-height: 1;
+  }
 
   &:hover {
-    transform: scale(1.1);
-    box-shadow: var(--shadow-md);
-  }
-}
-
-.preset-expanded {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--border-primary);
-}
-
-.format-copy-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 0;
-  gap: 8px;
-
-  .format-label {
-    font-size: 12px;
-    color: var(--text-secondary);
-    min-width: 52px;
-    font-weight: 500;
-  }
-
-  .format-value {
-    flex: 1;
-    font-size: 12px;
-    color: var(--text-primary);
-    font-family: 'SF Mono', Consolas, Monaco, monospace;
-    word-break: break-all;
-    text-align: left;
-  }
-
-  .copy-btn {
-    padding: 4px 10px;
-    font-size: 11px;
-    min-width: 50px;
     background: var(--accent);
+    border-color: var(--accent);
     color: var(--text-invert);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: opacity 0.15s ease;
-
-    &:hover {
-      opacity: 0.85;
-    }
   }
 }
 
+.preset-card:hover .swatch-copy-icon {
+  opacity: 1;
+}
+
+/* ============ 颜色信息 ============ */
+.color-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.color-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-all;
+  line-height: 1.3;
+}
+
+.color-hex {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  margin-top: 2px;
+}
+
+.group-tag {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* ============ 查看颜色按钮 ============ */
+.view-color-btn {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-weight: 500;
+
+  &:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-invert);
+  }
+}
+
+/* ============ 空状态 ============ */
 .empty-state {
   text-align: center;
   padding: 40px 20px;
@@ -305,10 +362,99 @@ export default {
   font-size: 14px;
 }
 
+/* ============ 弹框头部 ============ */
+.modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.modal-swatch {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.modal-hex {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  margin-top: 4px;
+}
+
+/* ============ 弹框内容 ============ */
+.modal-format-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  gap: 12px;
+  border-radius: var(--radius-md);
+  transition: background 0.15s ease;
+  border: 1px solid transparent;
+
+  & + .modal-format-row {
+    margin-top: 4px;
+  }
+
+  &:hover {
+    background: var(--bg-muted);
+    border-color: var(--border-primary);
+  }
+}
+
+.modal-format-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 56px;
+  flex-shrink: 0;
+  text-align: left;
+}
+
+.modal-format-value {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  word-break: break-all;
+  min-width: 0;
+}
+
+.modal-copy-btn {
+  padding: 5px 14px;
+  font-size: 12px;
+  background: var(--accent);
+  color: var(--text-invert);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-weight: 500;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+/* ============ 响应式 ============ */
 @media (max-width: 640px) {
   .preset-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 8px;
+  }
+
+  .swatch-copy-icon {
+    opacity: 1;
   }
 }
 </style>
