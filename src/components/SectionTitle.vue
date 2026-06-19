@@ -43,7 +43,7 @@ export default {
 }
 
 .st-title-primary {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   margin-bottom: 0;
 }

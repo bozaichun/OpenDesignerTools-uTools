@@ -49,7 +49,7 @@
                 <span class="pr-label">HEX</span>
                 <span class="pr-value">{{ pickedColor.hex }}</span>
                 <button class="pr-copy" @click="copyValue(pickedColor.hex, 'HEX')">复制</button>
-                <button class="pr-search" @click="searchOnBaidu(pickedColor.hex)">搜索百度</button>
+                <button class="pr-search" @click="searchOnBaidu(pickedColor.hex)">色彩搭配</button>
               </div>
               <div class="pr-row">
                 <span class="pr-label">RGB</span>
@@ -145,7 +145,7 @@
             <div class="color-actions">
               <button class="search-btn" @click="searchOnBaidu(color.hex)">
                 <span class="iconfont icon-Query"></span>
-                百度搜索配色
+                色彩搭配
               </button>
             </div>
           </div>

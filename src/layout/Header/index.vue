@@ -3,13 +3,13 @@
     <div class="header-left">
       <SectionTitle :title="title" mode="primary" />
       <template v-if="isDetail">
-        <span class="detail-back" @click="$emit('back')">
+        <span class="detail-back" @click="$emit('back')" title="返回">
           <span class="iconfont icon-Back"></span>
-          <span class="detail-back-text">返回</span>
         </span>
       </template>
     </div>
     <div class="header-actions">
+      <slot name="actions"></slot>
       <button
         class="icon-btn"
         @click="$emit('toggle-mode')"
@@ -72,13 +72,16 @@ export default {
 .detail-back {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   color: var(--accent);
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
   user-select: none;
-  transition: opacity 0.15s ease;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  transition: all 0.15s ease;
 
   .iconfont {
     font-size: 16px;
@@ -86,7 +89,15 @@ export default {
   }
 
   &:hover {
-    opacity: 0.75;
+    background: var(--accent);
+    color: var(--text-invert);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
 

@@ -2,12 +2,22 @@
   <div class="module-preset">
     <!-- 搜索和分组过滤 -->
     <div class="preset-filter-bar">
-      <input
-        type="text"
-        v-model="searchText"
-        placeholder="搜索颜色名称或 HEX 值..."
-        class="search-input"
-      />
+      <div class="search-wrap">
+        <input
+          type="text"
+          v-model="searchText"
+          placeholder="搜索颜色名称或 HEX 值..."
+          class="search-input"
+        />
+        <button
+          v-if="searchText"
+          class="search-clear-btn"
+          @click="searchText = ''"
+          title="清空"
+        >
+          <span class="iconfont icon-Failure"></span>
+        </button>
+      </div>
     </div>
 
     <div class="group-chips" style="margin-bottom: 16px;">
@@ -36,6 +46,7 @@
         :key="color.name"
         class="preset-card"
       >
+        <div class="group-tag">{{ color.group }}</div>
         <div class="swatch-row">
           <div class="swatch-wrapper">
             <div
@@ -53,7 +64,6 @@
           <div class="color-info">
             <div class="color-name">{{ color.name }}</div>
             <div class="color-hex">{{ color.hex }}</div>
-            <div class="group-tag">{{ color.group }}</div>
           </div>
         </div>
 
@@ -62,7 +72,7 @@
           class="view-color-btn"
           @click="openColorModal(color)"
         >
-          查看颜色
+          查看颜色值
         </button>
       </div>
     </div>
@@ -180,22 +190,58 @@ export default {
   margin-bottom: 20px;
   align-items: center;
   flex-wrap: wrap;
+}
 
-  .search-input {
-    flex: 1;
-    min-width: 200px;
-    background: var(--bg-input);
-    border: 1px solid var(--border-primary);
-    color: var(--text-primary);
-    padding: 8px 12px;
-    border-radius: var(--radius-md);
+.search-wrap {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  padding: 8px 36px 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease;
+
+  &:focus {
+    border-color: var(--border-focus);
+  }
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+
+  .iconfont {
     font-size: 14px;
-    outline: none;
-    transition: border-color 0.15s ease;
+    line-height: 1;
+  }
 
-    &:focus {
-      border-color: var(--border-focus);
-    }
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
   }
 }
 
@@ -233,11 +279,12 @@ export default {
 /* ============ 颜色卡片网格 ============ */
 .preset-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(6, 1fr);
   gap: 12px;
 }
 
 .preset-card {
+  position: relative;
   background: var(--bg-muted);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
@@ -329,9 +376,22 @@ export default {
 }
 
 .group-tag {
+  position: absolute;
+  top: 0;
+  right: 0;
   font-size: 11px;
-  color: var(--text-secondary);
-  margin-top: 4px;
+  color: var(--text-tertiary);
+  background: var(--bg-card);
+  padding: 3px 10px;
+  border: 1px solid var(--border-primary);
+  border-top: none;
+  border-right: none;
+  border-top-right-radius: var(--radius-md);
+  border-bottom-left-radius: var(--radius-md);
+  border-top-left-radius: 0;
+  border-bottom-right-radius: 0;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 /* ============ 查看颜色按钮 ============ */
@@ -447,9 +507,21 @@ export default {
 }
 
 /* ============ 响应式 ============ */
+@media (max-width: 1200px) {
+  .preset-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .preset-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 @media (max-width: 640px) {
   .preset-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
   }
 

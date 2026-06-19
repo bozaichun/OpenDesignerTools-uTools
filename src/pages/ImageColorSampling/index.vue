@@ -15,29 +15,23 @@
       </div>
       <div class="upload-text">点击选择图片，或拖拽图片到此处</div>
       <div class="upload-hint">支持 PNG / JPG / WEBP / GIF</div>
-      <input
-        ref="fileInput"
-        type="file"
-        accept="image/*"
-        style="display: none;"
-        @change="handleFileSelect"
-      />
     </div>
 
-    <!-- 图片预览 + 操作按钮（图片已加载后显示） -->
+    <!-- 图片预览（图片已加载后显示） -->
     <div v-if="imageLoaded" class="image-preview-section">
       <div class="image-container" ref="imageContainer">
         <img :src="imageSrc" alt="preview" />
       </div>
-      <div class="image-actions">
-        <button class="action-btn" @click="analyzeImage">
-          一键分析
-        </button>
-        <button class="action-btn secondary" @click="clearImage">
-          重新选择
-        </button>
-      </div>
     </div>
+
+    <!-- 全局文件选择器（始终在 DOM 中，便于从页头按钮触发） -->
+    <input
+      ref="fileInput"
+      type="file"
+      accept="image/*"
+      style="display: none;"
+      @change="handleFileSelect"
+    />
 
     <!-- Loading 遮罩 -->
     <Loading :visible="isAnalyzing" text="正在分析图片中的颜色..." />
@@ -56,6 +50,7 @@ const STORAGE_KEY = 'imageAnalysisData';
 export default {
   name: 'ImageColorSampling',
   components: { Loading },
+  inject: ['setHeaderActions', 'clearHeaderActions'],
   data() {
     return {
       imageLoaded: false,
@@ -68,11 +63,31 @@ export default {
       mainColors: []
     };
   },
+  mounted() {
+    this.updateHeaderActions();
+  },
+  unmounted() {
+    this.clearHeaderActions();
+  },
+  watch: {
+    imageLoaded() {
+      this.updateHeaderActions();
+    }
+  },
   methods: {
+    updateHeaderActions() {
+      if (this.imageLoaded) {
+        this.setHeaderActions([
+          { label: '一键分析', onClick: () => this.analyzeImage() },
+          { label: '重新选择', onClick: () => this.triggerFileInput(), secondary: true }
+        ]);
+      } else {
+        this.clearHeaderActions();
+      }
+    },
     triggerFileInput() {
       this.$refs.fileInput.click();
     },
-
     handleFileSelect(e) {
       const file = e.target.files[0];
       if (file) this.loadImage(file);
@@ -315,6 +330,9 @@ export default {
 
 /* =============== 图片预览区 =============== */
 .image-preview-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-bottom: 20px;
 }
 
@@ -338,53 +356,6 @@ export default {
     max-width: 100%;
     max-height: 600px;
     height: auto;
-  }
-}
-
-.image-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 14px;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  padding: 10px 20px;
-  background: var(--accent);
-  color: var(--text-invert);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.15s ease;
-
-  .iconfont {
-    font-size: 16px;
-  }
-
-  &:hover {
-    opacity: 0.88;
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  &.secondary {
-    background: var(--bg-muted);
-    color: var(--text-secondary);
-    border-color: var(--border-primary);
-
-    &:hover {
-      background: var(--bg-hover);
-      color: var(--text-primary);
-    }
   }
 }
 
