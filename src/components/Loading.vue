@@ -1,7 +1,7 @@
 <template>
   <div v-if="visible" class="loading-overlay">
     <div class="loading-content">
-      <div class="loading-spinner"></div>
+      <img class="loading-spinner" src="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/icon/project/loading.gif" alt="loading" />
       <div class="loading-text">{{ text }}</div>
     </div>
   </div>
@@ -47,31 +47,24 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 32px 40px;
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-primary);
+  justify-content: center;
+  gap: 12px;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--border-primary);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
 }
 
 .loading-text {
   font-size: 14px;
-  color: var(--text-primary);
+  color: #fff;
   font-weight: 500;
   white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 </style>

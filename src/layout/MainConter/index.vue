@@ -1,12 +1,16 @@
 <template>
   <main class="main-content">
     <slot></slot>
+    <BackToTop />
   </main>
 </template>
 
 <script>
+import BackToTop from '../../components/BackToTop.vue';
+
 export default {
-  name: 'MainContent'
+  name: 'MainContent',
+  components: { BackToTop }
 };
 </script>
 

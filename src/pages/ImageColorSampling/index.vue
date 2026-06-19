@@ -157,7 +157,7 @@ export default {
       this.$nextTick(function() {
         setTimeout(function() {
           self.extractMainColors();
-        }, 300);
+        }, 2000);
       });
     },
 
