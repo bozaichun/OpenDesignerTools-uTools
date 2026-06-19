@@ -34,6 +34,42 @@ const routes = [
     name: 'PresetColors',
     component: () => import('../pages/PresetColors/index.vue'),
     meta: { title: '预置颜色' }
+  },
+  {
+    path: '/AccessibilityCheck',
+    name: 'AccessibilityCheck',
+    component: () => import('../pages/AccessibilityCheck/index.vue'),
+    meta: { title: '色彩对比' }
+  },
+  {
+    path: '/IntelligentColorMatching',
+    name: 'IntelligentColorMatching',
+    component: () => import('../pages/IntelligentColorMatching/index.vue'),
+    meta: { title: '智能配色' }
+  },
+  {
+    path: '/PaletteManager',
+    name: 'PaletteManager',
+    component: () => import('../pages/PaletteManager/index.vue'),
+    meta: { title: '色板管理' }
+  },
+  {
+    path: '/CodeExporter',
+    name: 'CodeExporter',
+    component: () => import('../pages/CodeExporter/index.vue'),
+    meta: { title: '代码导出' }
+  },
+  {
+    path: '/PrintTools',
+    name: 'PrintTools',
+    component: () => import('../pages/PrintTools/index.vue'),
+    meta: { title: '印刷工具' }
+  },
+  {
+    path: '/ColorTools',
+    name: 'ColorTools',
+    component: () => import('../pages/ColorTools/index.vue'),
+    meta: { title: '调色工具' }
   }
 ];
 

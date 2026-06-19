@@ -30,6 +30,15 @@
             </button>
           </template>
         </template>
+        <template #mobile-expand>
+          <button
+            class="icon-btn header-expand-btn"
+            @click="navDrawerVisible = true"
+            title="展开导航"
+          >
+            <span class="iconfont icon-Expand"></span>
+          </button>
+        </template>
       </header-layout>
 
       <!-- 内容区 -->
@@ -48,6 +57,28 @@
         :visible="true"
       />
     </div>
+
+    <!-- 移动端导航抽屉 -->
+    <Drawer
+      v-model:visible="navDrawerVisible"
+      title="导航菜单"
+      placement="right"
+      width="320px"
+      @close="navDrawerVisible = false"
+    >
+      <div class="nav-drawer-menu-list">
+        <div
+          v-for="item in navMenuItems"
+          :key="item.id"
+          class="nav-drawer-menu-item"
+          :class="{ active: currentTab === item.id }"
+          @click="handleNavDrawerSelect(item.id)"
+        >
+          <span :class="['iconfont', item.icon]"></span>
+          <span>{{ item.label }}</span>
+        </div>
+      </div>
+    </Drawer>
 
     <!-- 设置 Dialog -->
     <Dialog
@@ -101,6 +132,8 @@ import MainContentLayout from './layout/MainConter/index.vue';
 import ContentBodyLayout from './layout/ContentBody/index.vue';
 import Toast from './components/Toast.vue';
 import Dialog from './components/Dialog.vue';
+import Drawer from './components/Drawer.vue';
+import { NAV_MENU_ITEMS } from './data/navMenu.js';
 import { I18N_DICT, TAB_BY_ROUTE, translate } from './config/i18n.js';
 
 export default {
@@ -111,7 +144,8 @@ export default {
     MainContentLayout,
     ContentBodyLayout,
     Toast,
-    Dialog
+    Dialog,
+    Drawer
   },
   setup() {
     const route = useRoute();
@@ -123,6 +157,8 @@ export default {
       sidebarCollapsed: false,
       toasts: [],
       headerActionButtons: [],
+      navDrawerVisible: false,
+      navMenuItems: NAV_MENU_ITEMS,
       settingVisible: false,
       themeMode: 'system',
       language: 'zh-CN',
@@ -150,7 +186,13 @@ export default {
         BasicKnowledge: 'basicKnowledge',
         ColorConversion: 'colorConversion',
         ImageColorSampling: 'imageSampling',
-        PresetColors: 'presetColors'
+        PresetColors: 'presetColors',
+        AccessibilityCheck: 'accessibilityCheck',
+        IntelligentColorMatching: 'intelligentMatching',
+        PaletteManager: 'paletteManager',
+        CodeExporter: 'codeExporter',
+        PrintTools: 'printTools',
+        ColorTools: 'colorTools'
       };
       return this.t(map[this.currentTab] || 'basicKnowledge');
     },
@@ -183,6 +225,12 @@ export default {
     },
     handleTabChange(tabId) {
       this.router.push('/' + tabId);
+    },
+    handleNavDrawerSelect(tabId) {
+      this.navDrawerVisible = false;
+      if (tabId !== this.currentTab) {
+        this.handleTabChange(tabId);
+      }
     },
     handleBackFromDetail() {
       this.router.push('/ImageColorSampling');
@@ -231,6 +279,7 @@ export default {
   watch: {
     '$route.path'() {
       this.headerActionButtons = [];
+      this.navDrawerVisible = false;
     }
   },
   mounted() {
@@ -398,5 +447,67 @@ export default {
   .app-layout {
     flex-direction: column;
   }
+}
+
+.nav-drawer-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-drawer-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nav-drawer-menu-item .iconfont {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.nav-drawer-menu-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.nav-drawer-menu-item.active {
+  background: var(--accent);
+  color: var(--text-invert);
+}
+
+:deep(.header-expand-btn) {
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+:deep(.header-expand-btn .iconfont) {
+  font-size: 16px;
+  line-height: 1;
+}
+
+:deep(.header-expand-btn:hover) {
+  background: var(--accent);
+  color: var(--text-invert);
+  border-color: var(--accent);
 }
 </style>

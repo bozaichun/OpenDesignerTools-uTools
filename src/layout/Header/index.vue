@@ -10,6 +10,7 @@
     </div>
     <div class="header-actions">
       <slot name="actions"></slot>
+      <slot name="mobile-expand"></slot>
       <button
         class="icon-btn"
         @click="$emit('toggle-mode')"
@@ -146,6 +147,16 @@ export default {
 
   .header-actions {
     gap: 6px;
+  }
+}
+
+:slotted(.header-expand-btn) {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  :slotted(.header-expand-btn) {
+    display: inline-flex;
   }
 }
 </style>

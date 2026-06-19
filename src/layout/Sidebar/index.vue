@@ -28,6 +28,8 @@
 </template>
 
 <script>
+import { NAV_MENU_ITEMS } from '../../data/navMenu.js';
+
 export default {
   name: 'Sidebar',
   props: {
@@ -43,28 +45,10 @@ export default {
   emits: ['update:currentTab', 'toggle-collapse'],
   data() {
     return {
-      menuItems: [
-        {
-          id: 'BasicKnowledge',
-          label: '基础知识',
-          icon: '<span class="iconfont icon-Areality-Overview"></span>'
-        },
-        {
-          id: 'ColorConversion',
-          label: '颜色转换',
-          icon: '<span class="iconfont icon-Areality-ColorConversion"></span>'
-        },
-        {
-          id: 'ImageColorSampling',
-          label: '图片取色',
-          icon: '<span class="iconfont icon-Areality-Picture"></span>'
-        },
-        {
-          id: 'PresetColors',
-          label: '预置颜色',
-          icon: '<span class="iconfont icon-Areality-Color"></span>'
-        }
-      ]
+      menuItems: NAV_MENU_ITEMS.map((item) => ({
+        ...item,
+        icon: `<span class="iconfont ${item.icon}"></span>`
+      }))
     };
   },
   methods: {
@@ -227,47 +211,9 @@ export default {
   }
 }
 
-/* 响应式 */
+/* 响应式：移动端隐藏侧栏，改由页头抽屉导航 */
 @media (max-width: 640px) {
   .sidebar {
-    width: 100% !important;
-    flex: 0 0 auto;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border-primary);
-  }
-
-  .sidebar-menu {
-    flex-direction: row;
-    padding: 8px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    max-height: none;
-  }
-
-  .menu-item {
-    padding: 8px 12px;
-    font-size: 13px;
-    flex-shrink: 0;
-    aspect-ratio: auto;
-    max-width: none;
-  }
-
-  .sidebar.collapsed {
-    .menu-label {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .menu-item {
-      justify-content: flex-start;
-      padding: 8px 12px;
-      aspect-ratio: auto;
-      max-width: none;
-    }
-  }
-
-  .sidebar-footer {
     display: none;
   }
 }
