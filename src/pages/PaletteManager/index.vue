@@ -68,20 +68,18 @@
       <div class="dialog-form">
         <div class="form-field">
           <label class="form-label">分组类型</label>
-          <select v-model="newGroupType" class="form-select">
+          <Selector v-model="newGroupType">
             <option value="personal">个人</option>
             <option value="project">项目</option>
             <option value="brand">品牌</option>
-          </select>
+          </Selector>
         </div>
         <div class="form-field">
           <label class="form-label">分组名称</label>
-          <input
-            type="text"
+          <Input
             v-model="newGroupName"
             :placeholder="editingGroupId ? '输入分组名称...' : '输入新分组名称...'"
-            class="form-input"
-            @keyup.enter="saveGroup"
+            @keyup-enter="saveGroup"
           />
         </div>
         <div class="dialog-footer">
@@ -121,7 +119,12 @@
           <div class="share-link-box">
             <span class="share-link-label">分享链接：</span>
             <div class="share-link-row">
-              <input type="text" :value="shareLink" readonly class="share-link-input" />
+              <Input
+                variant="mono"
+                :model-value="shareLink"
+                readonly
+                :flex="true"
+              />
               <button class="primary-btn" @click="copyValue(shareLink, '分享链接')">复制链接</button>
             </div>
           </div>
@@ -245,6 +248,8 @@
 <script>
 import DataTable from '../../components/Table.vue';
 import Dialog from '../../components/Dialog.vue';
+import Input from '../../components/Input.vue';
+import Selector from '../../components/Selector.vue';
 import Pagination from '../../components/Pagination.vue';
 import CodeExportPanel from '../../components/CodeExportPanel.vue';
 import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
@@ -255,6 +260,8 @@ export default {
   components: {
     DataTable,
     Dialog,
+    Input,
+    Selector,
     Pagination,
     CodeExportPanel
   },
@@ -654,17 +661,6 @@ export default {
   color: var(--text-tertiary);
 }
 
-.form-input,
-.form-select {
-  padding: 8px 12px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-size: 13px;
-  &:focus { outline: none; border-color: var(--accent); }
-}
-
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
@@ -796,17 +792,11 @@ export default {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
-.share-link-input {
-  flex: 1;
+.share-link-row :deep(.app-input-wrap) {
   min-width: 200px;
-  padding: 8px 12px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-family: monospace;
 }
 
 .share-code-title,

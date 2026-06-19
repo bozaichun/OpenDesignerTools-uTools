@@ -105,14 +105,14 @@
 
         <div class="gradient-direction">
           <label>渐变方向：</label>
-          <select v-model="gradientDirection" class="form-select">
+          <Selector v-model="gradientDirection" :block="false" :flex="true">
             <option value="to right">从左到右</option>
             <option value="to bottom">从上到下</option>
             <option value="to bottom right">对角线</option>
             <option value="circle">圆形辐射</option>
             <option value="45deg">45° 斜向</option>
             <option value="135deg">135° 斜向</option>
-          </select>
+          </Selector>
         </div>
 
         <div class="gradient-extracted">
@@ -236,6 +236,7 @@
 
 <script>
 import ColorPicker from '../../components/ColorPicker.vue';
+import Selector from '../../components/Selector.vue';
 import { parseColor, rgbToHex, rgbToHsl, hslToRgb, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 
 function rgbToLab({ r, g, b }) {
@@ -254,7 +255,7 @@ function rgbToLab({ r, g, b }) {
 
 export default {
   name: 'ColorTools',
-  components: { ColorPicker },
+  components: { ColorPicker, Selector },
   data() {
     return {
       activeTab: 'adjust',
@@ -493,17 +494,6 @@ export default {
 .panel-title { font-size: 15px; font-weight: 600; margin: 0 0 4px 0; color: var(--text-primary); }
 .panel-sub { font-size: 12px; color: var(--text-tertiary); }
 
-.form-input {
-  padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px;
-  font-family: 'SF Mono', monospace;
-  &:focus { outline: none; border-color: var(--accent); }
-}
-.form-select {
-  padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px;
-}
-
 .primary-btn, .secondary-btn {
   padding: 8px 18px; background: var(--accent); color: var(--text-invert);
   border: 1px solid var(--accent); border-radius: var(--radius-md);
@@ -601,7 +591,7 @@ export default {
   display: flex; align-items: center; gap: 10px;
   label { font-size: 12px; color: var(--text-secondary); min-width: 60px; }
   input[type="color"] { width: 40px; height: 36px; border: 1px solid var(--border-primary); border-radius: 4px; cursor: pointer; }
-  input[type="text"] { flex: 1; }
+  :deep(.color-picker) { flex: 1; min-width: 0; }
 }
 .gradient-pos-slider { flex: 1; min-width: 80px; }
 
@@ -666,7 +656,7 @@ export default {
 .diff-input-row {
   display: flex; gap: 8px; align-items: center;
   input[type="color"] { width: 40px; height: 36px; border: 1px solid var(--border-primary); border-radius: 4px; cursor: pointer; }
-  input[type="text"] { flex: 1; }
+  :deep(.color-picker) { flex: 1; min-width: 0; }
 }
 
 .diff-compare {

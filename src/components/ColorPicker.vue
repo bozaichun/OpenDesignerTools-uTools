@@ -7,23 +7,28 @@
       :disabled="disabled"
       @input="handlePickerInput"
     />
-    <input
-      type="text"
-      class="color-picker__hex"
-      :value="displayValue"
+    <Input
+      variant="mono"
+      :block="false"
+      :flex="true"
+      :clearable="false"
+      :model-value="displayValue"
       :placeholder="placeholder"
       :disabled="disabled"
-      @input="handleHexInput"
+      :invalid="invalid"
+      @update:model-value="handleHexInput"
       @blur="handleHexBlur"
     />
   </div>
 </template>
 
 <script>
+import Input from './Input.vue';
 import { parseColor, formatHEX } from '../utils/colorUtils';
 
 export default {
   name: 'ColorPicker',
+  components: { Input },
   props: {
     modelValue: {
       type: String,
@@ -81,10 +86,10 @@ export default {
       this.editingHex = false;
       this.emitColor(hex);
     },
-    handleHexInput(e) {
+    handleHexInput(value) {
       this.editingHex = true;
       this.invalid = false;
-      this.$emit('update:modelValue', e.target.value);
+      this.$emit('update:modelValue', value);
     },
     handleHexBlur() {
       this.editingHex = false;
@@ -105,6 +110,7 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
 }
 
 .color-picker__native {
@@ -121,31 +127,5 @@ export default {
 .color-picker__native:disabled {
   cursor: not-allowed;
   opacity: 0.6;
-}
-
-.color-picker__hex {
-  flex: 1;
-  min-width: 0;
-  padding: 8px 12px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md, 6px);
-  color: var(--text-primary);
-  font-size: 13px;
-  font-family: monospace;
-}
-
-.color-picker__hex:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.color-picker__hex:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.color-picker.is-invalid .color-picker__hex {
-  border-color: var(--text-error, #ef4444);
 }
 </style>

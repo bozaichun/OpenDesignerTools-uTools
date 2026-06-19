@@ -22,12 +22,12 @@
 
       <div class="cmyk-input-row">
         <ColorPicker v-model="cmykInputColor" />
-        <select v-model="cmykProfile" class="form-select">
+        <Selector v-model="cmykProfile" :block="false" :flex="true">
           <option value="srgb">sRGB / 通用</option>
           <option value="cmyk_us">US Web Coated (SWOP) v2</option>
           <option value="cmyk_eu">Euroscale Coated v2</option>
           <option value="cmyk_jp">Japan Color 2001 Coated</option>
-        </select>
+        </Selector>
       </div>
 
       <div class="cmyk-preview">
@@ -89,10 +89,10 @@
 
       <div class="pantone-input-row">
         <ColorPicker v-model="pantoneInputColor" />
-        <select v-model="pantonePaperType" class="form-select">
+        <Selector v-model="pantonePaperType" :block="false" :flex="true">
           <option value="coated">铜版纸 Coated</option>
           <option value="uncoated">胶版纸 Uncoated</option>
-        </select>
+        </Selector>
         <button class="primary-btn" @click="matchPantone">匹配潘通色</button>
       </div>
 
@@ -188,12 +188,12 @@
           <input type="checkbox" v-model="halftoneUseDPI" />
           <span>根据 DPI 精确计算</span>
         </label>
-        <select v-if="halftoneUseDPI" v-model="halftoneDPI" class="form-select">
+        <Selector v-if="halftoneUseDPI" v-model="halftoneDPI" :block="false" :flex="true">
           <option value="150">150 lpi（粗网点）</option>
           <option value="175">175 lpi（标准）</option>
           <option value="200">200 lpi（精细）</option>
           <option value="300">300 lpi（超精细）</option>
-        </select>
+        </Selector>
       </div>
 
       <div class="halftone-grid">
@@ -223,6 +223,7 @@
 
 <script>
 import ColorPicker from '../../components/ColorPicker.vue';
+import Selector from '../../components/Selector.vue';
 import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 
 const PANTONE_COATED = [
@@ -285,7 +286,7 @@ function deltaE(lab1, lab2) {
 
 export default {
   name: 'PrintTools',
-  components: { ColorPicker },
+  components: { ColorPicker, Selector },
   data() {
     return {
       activeTab: 'cmyk',
@@ -424,13 +425,6 @@ export default {
 .panel-title { font-size: 15px; font-weight: 600; margin: 0 0 4px 0; color: var(--text-primary); }
 .panel-sub { font-size: 12px; color: var(--text-tertiary); }
 
-.form-input, .form-select {
-  padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px;
-  font-family: 'SF Mono', monospace;
-  &:focus { outline: none; border-color: var(--accent); }
-}
-
 .primary-btn {
   padding: 8px 18px; background: var(--accent); color: var(--text-invert);
   border: 1px solid var(--accent); border-radius: var(--radius-md);
@@ -533,7 +527,10 @@ export default {
 .input-row {
   display: flex; gap: 8px; align-items: center;
 }
-.input-row input[type="text"] { flex: 1; }
+.input-row :deep(.color-picker) {
+  flex: 1;
+  min-width: 0;
+}
 .input-row input[type="color"] {
   width: 40px; height: 36px; border: 1px solid var(--border-primary);
   border-radius: var(--radius-sm); padding: 2px; cursor: pointer;

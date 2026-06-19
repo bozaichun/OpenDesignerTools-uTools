@@ -21,14 +21,14 @@
       </div>
 
       <div class="semantic-input-row">
-        <select v-model="selectedMood" class="form-select">
+        <Selector v-model="selectedMood" :block="false" :flex="true">
           <option value="">请选择情绪调性</option>
           <option v-for="m in moodOptions" :key="m.key" :value="m.key">{{ m.label }}</option>
-        </select>
-        <select v-model="selectedIndustry" class="form-select">
+        </Selector>
+        <Selector v-model="selectedIndustry" :block="false" :flex="true">
           <option value="">请选择行业场景</option>
           <option v-for="i in industryOptions" :key="i.key" :value="i.key">{{ i.label }}</option>
-        </select>
+        </Selector>
         <button class="primary-btn" @click="generateSemantic">生成配色</button>
       </div>
 
@@ -192,9 +192,9 @@
       </div>
 
       <div class="unique-input-row">
-        <select v-model="selectedAvoidIndustry" class="form-select">
+        <Selector v-model="selectedAvoidIndustry" :block="false" :flex="true">
           <option v-for="i in avoidIndustryOptions" :key="i.key" :value="i.key">{{ i.label }}</option>
-        </select>
+        </Selector>
         <button class="primary-btn" @click="generateUnique">生成差异化配色</button>
       </div>
 
@@ -238,11 +238,12 @@
 
 <script>
 import ColorPicker from '../../components/ColorPicker.vue';
+import Selector from '../../components/Selector.vue';
 import { parseColor, rgbToHex, rgbToHsl, hslToRgb, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 
 export default {
   name: 'IntelligentColorMatching',
-  components: { ColorPicker },
+  components: { ColorPicker, Selector },
   data() {
     return {
       activeTab: 'semantic',
@@ -513,12 +514,6 @@ export default {
 .panel-header { margin-bottom: 16px; }
 .panel-title { font-size: 15px; font-weight: 600; margin: 0 0 4px 0; color: var(--text-primary); }
 .panel-sub { font-size: 12px; color: var(--text-tertiary); }
-
-.form-input, .form-select {
-  padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md); color: var(--text-primary); font-size: 13px;
-  &:focus { outline: none; border-color: var(--accent); }
-}
 
 .primary-btn {
   padding: 8px 18px; background: var(--accent); color: var(--text-invert);

@@ -21,20 +21,10 @@
         </div>
       </div>
       <div class="search-wrap">
-        <input
-          type="text"
+        <Input
           v-model="searchText"
           placeholder="搜索颜色名称或 HEX 值..."
-          class="search-input"
         />
-        <button
-          v-if="searchText"
-          class="search-clear-btn"
-          @click="searchText = ''"
-          title="清空"
-        >
-          <span class="iconfont icon-Failure"></span>
-        </button>
       </div>
     </div>
 
@@ -89,11 +79,12 @@
 import { PRESET_COLORS, COLOR_GROUPS } from '../../data/presetColors';
 import { copyToClipboard, showToast } from '../../utils/colorUtils';
 import FavoriteButton from '../../components/FavoriteButton.vue';
+import Input from '../../components/Input.vue';
 import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
 
 export default {
   name: 'PresetColors',
-  components: { FavoriteButton, ColorFormatDialog },
+  components: { FavoriteButton, Input, ColorFormatDialog },
   data() {
     return {
       presetColors: PRESET_COLORS,
@@ -145,54 +136,6 @@ export default {
 .search-wrap {
   flex-shrink: 0;
   width: 280px;
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-input {
-  width: 100%;
-  background: var(--bg-input);
-  border: 1px solid var(--border-primary);
-  color: var(--text-primary);
-  padding: 8px 36px 8px 12px;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.15s ease;
-
-  &:focus {
-    border-color: var(--border-focus);
-  }
-}
-
-.search-clear-btn {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  transition: all 0.15s ease;
-
-  .iconfont {
-    font-size: 14px;
-    line-height: 1;
-  }
-
-  &:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-  }
 }
 
 /* ============ 分组标签 ============ */

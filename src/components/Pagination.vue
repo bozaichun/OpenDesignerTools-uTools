@@ -6,9 +6,10 @@
   >
     <div v-if="mode === 'full'" class="pagination__meta">
       <span class="pagination__total">共 {{ total }} 条</span>
-      <select
-        class="pagination__size-select"
-        :value="pageSize"
+      <Selector
+        variant="compact"
+        :block="false"
+        :model-value="pageSize"
         @change="handlePageSizeChange"
       >
         <option
@@ -18,7 +19,7 @@
         >
           {{ size }}条/页
         </option>
-      </select>
+      </Selector>
     </div>
 
     <div class="pagination__pager">
@@ -62,8 +63,11 @@
 </template>
 
 <script>
+import Selector from './Selector.vue';
+
 export default {
   name: 'Pagination',
+  components: { Selector },
   props: {
     total: {
       type: Number,
@@ -135,9 +139,9 @@ export default {
       this.$emit('update:currentPage', nextPage);
       this.$emit('change', { currentPage: nextPage, pageSize: this.pageSize });
     },
-    handlePageSizeChange(event) {
-      const nextSize = Number(event.target.value);
-      if (!nextSize || nextSize === this.pageSize) return;
+    handlePageSizeChange(nextSize) {
+      const size = Number(nextSize);
+      if (!size || size === this.pageSize) return;
       this.$emit('update:pageSize', nextSize);
       this.$emit('update:currentPage', 1);
       this.$emit('change', { currentPage: 1, pageSize: nextSize });
@@ -174,22 +178,6 @@ export default {
   font-size: 13px;
   color: var(--text-secondary);
   white-space: nowrap;
-}
-
-.pagination__size-select {
-  min-width: 108px;
-  padding: 6px 10px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.pagination__size-select:focus {
-  outline: none;
-  border-color: var(--accent);
 }
 
 .pagination__pager {

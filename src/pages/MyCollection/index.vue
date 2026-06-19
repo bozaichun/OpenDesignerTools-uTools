@@ -62,7 +62,7 @@
       <div v-if="paletteGroups.length" class="dialog-form">
         <div class="form-field">
           <label class="form-label">选择色板分组</label>
-          <select v-model="selectedGroupId" class="form-select">
+          <Selector v-model="selectedGroupId">
             <option
               v-for="group in paletteGroups"
               :key="group.id"
@@ -70,14 +70,12 @@
             >
               {{ group.name }}（{{ group.colors.length }} 色）
             </option>
-          </select>
+          </Selector>
         </div>
         <div class="form-field">
           <label class="form-label">色值名称</label>
-          <input
-            type="text"
+          <Input
             v-model="paletteColorName"
-            class="form-input"
             placeholder="色值名称"
           />
         </div>
@@ -96,6 +94,8 @@
 
 <script>
 import Dialog from '../../components/Dialog.vue';
+import Input from '../../components/Input.vue';
+import Selector from '../../components/Selector.vue';
 import FavoriteButton from '../../components/FavoriteButton.vue';
 import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
 import {
@@ -109,6 +109,8 @@ export default {
   name: 'MyCollection',
   components: {
     Dialog,
+    Input,
+    Selector,
     FavoriteButton,
     ColorFormatDialog
   },
@@ -380,23 +382,6 @@ export default {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
-}
-
-.form-select,
-.form-input {
-  width: 100%;
-  background: var(--bg-input);
-  border: 1px solid var(--border-primary);
-  color: var(--text-primary);
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.15s ease;
-
-  &:focus {
-    border-color: var(--border-focus);
-  }
 }
 
 .dialog-footer {

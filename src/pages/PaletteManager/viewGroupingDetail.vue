@@ -52,21 +52,21 @@
               <span class="palette-contrast-text" :style="{ color: getContrastColor(entry.color.color) }">Aa</span>
             </div>
             <div class="palette-name-cell">
-              <input
-                type="text"
-                class="palette-name-input"
+              <Input
                 v-model="entry.color.name"
-                @blur="saveAll()"
+                variant="ghost"
+                bold
                 placeholder="色值名称"
+                @blur="saveAll()"
               />
               <div class="palette-hex">{{ entry.color.color }}</div>
             </div>
-            <input
-              type="text"
-              class="palette-note-input"
+            <Textarea
               v-model="entry.color.note"
-              @blur="saveAll()"
+              variant="ghost"
+              :rows="2"
               placeholder="备注 / 使用场景"
+              @blur="saveAll()"
             />
             <div class="palette-type-cell">
               <span
@@ -97,16 +97,14 @@
       <div class="dialog-form">
         <div class="form-field">
           <label class="form-label">色值名称</label>
-          <input
-            type="text"
+          <Input
             v-model="newColorName"
             placeholder="色值名称（如：品牌主色）"
-            class="form-input"
           />
         </div>
         <div class="form-field">
           <label class="form-label">色值类型</label>
-          <select v-model="newColorType" class="form-select">
+          <Selector v-model="newColorType">
             <option
               v-for="item in colorValueTypes"
               :key="item.value"
@@ -114,7 +112,7 @@
             >
               {{ item.label }}
             </option>
-          </select>
+          </Selector>
         </div>
         <div class="form-field">
           <label class="form-label">选择颜色</label>
@@ -122,11 +120,9 @@
         </div>
         <div class="form-field">
           <label class="form-label">使用场景<span class="form-optional">（选填）</span></label>
-          <input
-            type="text"
+          <Textarea
             v-model="newColorNote"
             placeholder="备注/使用场景（选填）"
-            class="form-input"
           />
         </div>
         <div class="dialog-footer">
@@ -159,6 +155,9 @@
 
 <script>
 import Dialog from '../../components/Dialog.vue';
+import Input from '../../components/Input.vue';
+import Textarea from '../../components/Textarea.vue';
+import Selector from '../../components/Selector.vue';
 import ColorPicker from '../../components/ColorPicker.vue';
 import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 import { loadPalettes, savePalettes } from './paletteStorage.js';
@@ -177,6 +176,9 @@ export default {
   name: 'PaletteManagerDetail',
   components: {
     Dialog,
+    Input,
+    Textarea,
+    Selector,
     ColorPicker
   },
   inject: ['setHeaderActions', 'clearHeaderActions'],
@@ -444,7 +446,7 @@ export default {
   display: grid;
   grid-template-columns: 48px minmax(120px, 160px) minmax(140px, 1fr) minmax(160px, max-content) auto;
   gap: 12px;
-  align-items: center;
+  align-items: start;
   padding: 12px;
   background: var(--bg-card);
   border-radius: var(--radius-md);
@@ -456,12 +458,20 @@ export default {
   text-align: left;
 }
 
+.palette-item > .palette-swatch,
+.palette-item > .palette-name-cell,
+.palette-item > .palette-type-cell,
+.palette-item > .palette-actions-sm {
+  align-self: center;
+}
+
 .palette-item > .palette-swatch {
   width: 48px;
 }
 
 .palette-item > .palette-name-cell,
-.palette-item > .palette-note-input {
+.palette-item > :deep(.app-input-wrap),
+.palette-item > :deep(.app-textarea-wrap) {
   width: 100%;
   max-width: 100%;
 }
@@ -500,42 +510,10 @@ export default {
   font-weight: 700;
 }
 
-.palette-name-input {
-  background: transparent;
-  border: 1px solid transparent;
-  padding: 4px 6px 4px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  border-radius: var(--radius-sm);
-}
-
-.palette-name-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  background: var(--bg-muted);
-}
-
 .palette-hex {
   font-size: 12px;
   font-family: monospace;
   color: var(--text-secondary);
-}
-
-.palette-note-input {
-  background: transparent;
-  border: 1px solid transparent;
-  padding: 4px 6px 4px 0;
-  width: 100%;
-  font-size: 12px;
-  color: var(--text-secondary);
-  border-radius: var(--radius-sm);
-}
-
-.palette-note-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  background: var(--bg-muted);
 }
 
 .palette-type-cell {
@@ -642,48 +620,6 @@ export default {
   color: var(--text-tertiary);
 }
 
-.form-input {
-  padding: 8px 12px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-size: 13px;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.form-select {
-  width: 100%;
-  padding: 8px 32px 8px 12px;
-  appearance: none;
-  -webkit-appearance: none;
-  background-color: var(--bg-input);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 12px;
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-@media (prefers-color-scheme: dark) {
-  .form-select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath stroke='%23aaa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
-  }
-}
-
-.form-select:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
 .color-picker-full {
   width: 100%;
 }
@@ -757,7 +693,8 @@ export default {
     grid-template-columns: 48px 1fr;
   }
 
-  .palette-note-input,
+  .palette-item > :deep(.app-input-wrap),
+  .palette-item > :deep(.app-textarea-wrap),
   .palette-type-cell,
   .palette-actions-sm {
     grid-column: 1 / -1;

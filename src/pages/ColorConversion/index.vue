@@ -34,12 +34,13 @@
 
           <div class="input-row">
             <span class="input-label">RGB</span>
-            <input
-              type="text"
+            <Input
               v-model="inputs.rgb"
-              @input="onInputChange('rgb')"
-              :class="{ invalid: invalidFormat === 'rgb' }"
+              :block="false"
+              :flex="true"
+              :invalid="invalidFormat === 'rgb'"
               placeholder="rgb(r, g, b)"
+              @input="onInputChange('rgb')"
             />
             <button
               class="copy-icon-btn"
@@ -52,12 +53,13 @@
 
           <div class="input-row">
             <span class="input-label">HSL</span>
-            <input
-              type="text"
+            <Input
               v-model="inputs.hsl"
-              @input="onInputChange('hsl')"
-              :class="{ invalid: invalidFormat === 'hsl' }"
+              :block="false"
+              :flex="true"
+              :invalid="invalidFormat === 'hsl'"
               placeholder="hsl(h, s%, l%)"
+              @input="onInputChange('hsl')"
             />
             <button
               class="copy-icon-btn"
@@ -70,12 +72,13 @@
 
           <div class="input-row">
             <span class="input-label">CMYK</span>
-            <input
-              type="text"
+            <Input
               v-model="inputs.cmyk"
-              @input="onInputChange('cmyk')"
-              :class="{ invalid: invalidFormat === 'cmyk' }"
+              :block="false"
+              :flex="true"
+              :invalid="invalidFormat === 'cmyk'"
               placeholder="cmyk(c%, m%, y%, k%)"
+              @input="onInputChange('cmyk')"
             />
             <button
               class="copy-icon-btn"
@@ -88,12 +91,13 @@
 
           <div class="input-row">
             <span class="input-label">HSV</span>
-            <input
-              type="text"
+            <Input
               v-model="inputs.hsv"
-              @input="onInputChange('hsv')"
-              :class="{ invalid: invalidFormat === 'hsv' }"
+              :block="false"
+              :flex="true"
+              :invalid="invalidFormat === 'hsv'"
               placeholder="hsv(h, s%, v%)"
+              @input="onInputChange('hsv')"
             />
             <button
               class="copy-icon-btn"
@@ -130,6 +134,7 @@
 
 <script>
 import ColorPicker from '../../components/ColorPicker.vue';
+import Input from '../../components/Input.vue';
 import {
   detectColorFormat, parseColor, formatRGBA, formatHSLA,
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
@@ -138,7 +143,7 @@ import {
 
 export default {
   name: 'ColorConversion',
-  components: { ColorPicker },
+  components: { ColorPicker, Input },
   data() {
     return {
       currentRGB: { r: 255, g: 255, b: 255, a: 1 },
@@ -343,25 +348,9 @@ export default {
     min-width: 80px;
   }
 
-  input[type="text"] {
-    background: var(--bg-input);
-    border: 1px solid var(--border-primary);
-    color: var(--text-primary);
-    padding: 8px 12px;
-    border-radius: var(--radius-md);
-    font-size: 14px;
-    font-family: inherit;
-    outline: none;
-    transition: border-color 0.15s ease;
+  :deep(.app-input-wrap) {
     flex: 1;
-
-    &:focus {
-      border-color: var(--border-focus);
-    }
-
-    &.invalid {
-      border-color: var(--text-error);
-    }
+    min-width: 0;
   }
 
   input[type="color"] {

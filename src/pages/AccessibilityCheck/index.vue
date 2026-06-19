@@ -520,11 +520,9 @@ export default {
     width: 40px; height: 36px; border: 1px solid var(--border-primary);
     border-radius: var(--radius-sm); padding: 2px; background: var(--bg-card); cursor: pointer;
   }
-  input[type="text"] {
-    flex: 1; padding: 8px 12px; background: var(--bg-input);
-    border: 1px solid var(--border-primary); border-radius: var(--radius-sm);
-    color: var(--text-primary); font-size: 13px; font-family: 'SF Mono', monospace;
-    &:focus { outline: none; border-color: var(--accent); }
+  :deep(.color-picker) {
+    flex: 1;
+    min-width: 0;
   }
 }
 .color-swatch {
@@ -598,11 +596,9 @@ export default {
 /* gov */
 .gov-input-row {
   display: flex; gap: 8px; align-items: center; margin-bottom: 16px;
-  input[type="text"] {
-    flex: 1; padding: 8px 12px; background: var(--bg-input);
-    border: 1px solid var(--border-primary); border-radius: var(--radius-sm);
-    color: var(--text-primary); font-size: 13px; font-family: 'SF Mono', monospace;
-    &:focus { outline: none; border-color: var(--accent); }
+  :deep(.color-picker) {
+    flex: 1;
+    min-width: 0;
   }
   input[type="color"] {
     width: 40px; height: 36px; border: 1px solid var(--border-primary);
