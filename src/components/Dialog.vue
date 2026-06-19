@@ -41,12 +41,12 @@ export default {
       type: String,
       default: '680px'
     },
-    closeOnOverlay: {
+    confirmOnEnter: {
       type: Boolean,
-      default: true
+      default: false
     }
   },
-  emits: ['close', 'update:visible'],
+  emits: ['close', 'update:visible', 'confirm'],
   computed: {
     cardStyle() {
       return {
@@ -65,8 +65,16 @@ export default {
   },
   mounted() {
     this._keyHandler = (e) => {
-      if (e.key === 'Escape' && this.visible) {
+      if (!this.visible) return;
+      if (e.key === 'Escape') {
         this.handleClose();
+        return;
+      }
+      if (e.key === 'Enter' && this.confirmOnEnter) {
+        const tag = e.target?.tagName;
+        if (tag === 'TEXTAREA' || tag === 'SELECT') return;
+        e.preventDefault();
+        this.$emit('confirm');
       }
     };
     document.addEventListener('keydown', this._keyHandler);

@@ -54,6 +54,12 @@ const routes = [
     meta: { title: '色板管理' }
   },
   {
+    path: '/PaletteManager/viewGroupingDetail',
+    name: 'PaletteManagerDetail',
+    component: () => import('../pages/PaletteManager/viewGroupingDetail.vue'),
+    meta: { title: '色板分组详情' }
+  },
+  {
     path: '/CodeExporter',
     name: 'CodeExporter',
     component: () => import('../pages/CodeExporter/index.vue'),

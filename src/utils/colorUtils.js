@@ -205,7 +205,12 @@ export function rgbToHsl({ r, g, b, a = 1 }) {
 }
 
 export function hslToRgb({ h, s, l, a = 1 }) {
+  h = ((h % 360) + 360) % 360
   h /= 360
+  if (s > 1) s /= 100
+  if (l > 1) l /= 100
+  s = Math.max(0, Math.min(1, s))
+  l = Math.max(0, Math.min(1, l))
   if (s === 0) {
     const v = Math.round(l * 255)
     return { r: v, g: v, b: v, a }
@@ -381,8 +386,8 @@ export function labToRgb({ l, a, b, alpha = 1 }) {
 
 export function rgbToHex({ r, g, b }, withAlpha = false, alpha = 1) {
   const toHex = (n) => {
-    const h = n.toString(16)
-    return h.length === 1 ? '0' + h : h
+    const clamped = Math.max(0, Math.min(255, Math.round(n)))
+    return clamped.toString(16).padStart(2, '0')
   }
   let hex = '#' + toHex(r) + toHex(g) + toHex(b)
   if (withAlpha && alpha < 1) {

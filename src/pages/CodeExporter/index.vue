@@ -32,17 +32,7 @@
             placeholder="变量名（如 primary）"
             class="form-input name-input"
           />
-          <input
-            type="color"
-            v-model="color.color"
-            class="color-picker"
-          />
-          <input
-            type="text"
-            v-model="color.color"
-            placeholder="#FFFFFF"
-            class="form-input hex-input"
-          />
+          <ColorPicker v-model="color.color" />
           <button
             v-if="inputColors.length > 1"
             class="sm-btn danger"
@@ -143,6 +133,7 @@
 </template>
 
 <script>
+import ColorPicker from '../../components/ColorPicker.vue';
 import { parseColor, copyToClipboard, showToast } from '../../utils/colorUtils';
 
 function toKebabCase(str) {
@@ -178,6 +169,7 @@ function hexToRgbaTuple(hex) {
 
 export default {
   name: 'CodeExporter',
+  components: { ColorPicker },
   data() {
     return {
       activeTab: 'css',

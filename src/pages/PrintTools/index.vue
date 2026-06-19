@@ -21,8 +21,7 @@
       </div>
 
       <div class="cmyk-input-row">
-        <input type="color" v-model="cmykInputColor" />
-        <input type="text" v-model="cmykInputColor" class="form-input" />
+        <ColorPicker v-model="cmykInputColor" />
         <select v-model="cmykProfile" class="form-select">
           <option value="srgb">sRGB / 通用</option>
           <option value="cmyk_us">US Web Coated (SWOP) v2</option>
@@ -89,8 +88,7 @@
       </div>
 
       <div class="pantone-input-row">
-        <input type="color" v-model="pantoneInputColor" />
-        <input type="text" v-model="pantoneInputColor" class="form-input" />
+        <ColorPicker v-model="pantoneInputColor" />
         <select v-model="pantonePaperType" class="form-select">
           <option value="coated">铜版纸 Coated</option>
           <option value="uncoated">胶版纸 Uncoated</option>
@@ -131,15 +129,13 @@
         <div class="overprint-input-group">
           <div class="input-label">颜色 A（底层）</div>
           <div class="input-row">
-            <input type="color" v-model="overprintColorA" />
-            <input type="text" v-model="overprintColorA" class="form-input" />
+            <ColorPicker v-model="overprintColorA" />
           </div>
         </div>
         <div class="overprint-input-group">
           <div class="input-label">颜色 B（上层）</div>
           <div class="input-row">
-            <input type="color" v-model="overprintColorB" />
-            <input type="text" v-model="overprintColorB" class="form-input" />
+            <ColorPicker v-model="overprintColorB" />
           </div>
         </div>
         <div class="overprint-input-group">
@@ -187,8 +183,7 @@
       </div>
 
       <div class="halftone-input-row">
-        <input type="color" v-model="halftoneInputColor" />
-        <input type="text" v-model="halftoneInputColor" class="form-input" />
+        <ColorPicker v-model="halftoneInputColor" />
         <label class="checkbox-label">
           <input type="checkbox" v-model="halftoneUseDPI" />
           <span>根据 DPI 精确计算</span>
@@ -227,6 +222,7 @@
 </template>
 
 <script>
+import ColorPicker from '../../components/ColorPicker.vue';
 import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 
 const PANTONE_COATED = [
@@ -289,6 +285,7 @@ function deltaE(lab1, lab2) {
 
 export default {
   name: 'PrintTools',
+  components: { ColorPicker },
   data() {
     return {
       activeTab: 'cmyk',

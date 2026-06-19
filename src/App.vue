@@ -197,10 +197,17 @@ export default {
       return this.t(map[this.currentTab] || 'basicKnowledge');
     },
     pageTitle() {
-      return this.isDetailRoute ? this.t('analysisResult') : this.currentTabLabel;
+      if (this.route.path === '/ImageColorSampling/detailPage') {
+        return this.t('analysisResult');
+      }
+      if (this.route.path === '/PaletteManager/viewGroupingDetail') {
+        return this.route.query.name || '分组详情';
+      }
+      return this.currentTabLabel;
     },
     isDetailRoute() {
-      return this.route.path === '/ImageColorSampling/detailPage';
+      return this.route.path === '/ImageColorSampling/detailPage'
+        || this.route.path === '/PaletteManager/viewGroupingDetail';
     }
   },
   provide() {
@@ -233,6 +240,10 @@ export default {
       }
     },
     handleBackFromDetail() {
+      if (this.route.path === '/PaletteManager/viewGroupingDetail') {
+        this.router.push('/PaletteManager');
+        return;
+      }
       this.router.push('/ImageColorSampling');
     },
     changeTheme(mode) {

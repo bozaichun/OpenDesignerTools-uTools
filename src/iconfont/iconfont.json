@@ -6,6 +6,13 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "47888366",
+      "name": "印刷工具",
+      "font_class": "Areality-PrintingTool",
+      "unicode": "ec0c",
+      "unicode_decimal": 60428
+    },
+    {
       "icon_id": "47879867",
       "name": "色彩",
       "font_class": "Areality-Color",
@@ -46,6 +53,34 @@
       "font_class": "Areality-ModeSwitching",
       "unicode": "ec09",
       "unicode_decimal": 60425
+    },
+    {
+      "icon_id": "47888662",
+      "name": "调色桶",
+      "font_class": "Areality-ColorMixing",
+      "unicode": "ec0e",
+      "unicode_decimal": 60430
+    },
+    {
+      "icon_id": "47888663",
+      "name": "代码",
+      "font_class": "Areality-Code",
+      "unicode": "ec0f",
+      "unicode_decimal": 60431
+    },
+    {
+      "icon_id": "47888664",
+      "name": "智能配色",
+      "font_class": "Areality-ColorMatching",
+      "unicode": "ec10",
+      "unicode_decimal": 60432
+    },
+    {
+      "icon_id": "47888665",
+      "name": "色彩对比",
+      "font_class": "Areality-ColorContrast",
+      "unicode": "ec11",
+      "unicode_decimal": 60433
     },
     {
       "icon_id": "47879817",

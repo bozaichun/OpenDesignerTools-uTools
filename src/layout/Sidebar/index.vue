@@ -64,8 +64,8 @@ export default {
 
 <style lang="scss" scoped>
 .sidebar {
-  width: 200px;
-  flex: 0 0 200px;
+  width: 168px;
+  flex: 0 0 168px;
   height: 100%;
   min-height: 0;
   background: var(--bg-card);

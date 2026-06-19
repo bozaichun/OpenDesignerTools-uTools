@@ -169,6 +169,7 @@ export const TAB_BY_ROUTE = {
   '/AccessibilityCheck': 'AccessibilityCheck',
   '/IntelligentColorMatching': 'IntelligentColorMatching',
   '/PaletteManager': 'PaletteManager',
+  '/PaletteManager/viewGroupingDetail': 'PaletteManager',
   '/CodeExporter': 'CodeExporter',
   '/PrintTools': 'PrintTools',
   '/ColorTools': 'ColorTools'

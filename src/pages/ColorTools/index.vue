@@ -21,8 +21,7 @@
       </div>
 
       <div class="adjust-input-row">
-        <input type="color" v-model="adjustColor" />
-        <input type="text" v-model="adjustColor" class="form-input" />
+        <ColorPicker v-model="adjustColor" />
         <button class="primary-btn" @click="resetAdjust">重置</button>
       </div>
 
@@ -90,8 +89,7 @@
             class="gradient-stop-input"
           >
             <label>节点 {{ idx + 1 }}</label>
-            <input type="color" v-model="stop.color" />
-            <input type="text" v-model="stop.color" class="form-input" />
+            <ColorPicker v-model="stop.color" />
             <input type="range" v-model="stop.position" min="0" max="100" class="gradient-pos-slider" />
             <span>{{ stop.position }}%</span>
             <button v-if="gradientStops.length > 2" class="sm-btn danger" @click="removeStop(idx)">×</button>
@@ -150,15 +148,13 @@
         <div class="diff-input-group">
           <label>颜色 A</label>
           <div class="diff-input-row">
-            <input type="color" v-model="diffColorA" />
-            <input type="text" v-model="diffColorA" class="form-input" />
+            <ColorPicker v-model="diffColorA" />
           </div>
         </div>
         <div class="diff-input-group">
           <label>颜色 B</label>
           <div class="diff-input-row">
-            <input type="color" v-model="diffColorB" />
-            <input type="text" v-model="diffColorB" class="form-input" />
+            <ColorPicker v-model="diffColorB" />
           </div>
         </div>
       </div>
@@ -239,6 +235,7 @@
 </template>
 
 <script>
+import ColorPicker from '../../components/ColorPicker.vue';
 import { parseColor, rgbToHex, rgbToHsl, hslToRgb, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 
 function rgbToLab({ r, g, b }) {
@@ -257,6 +254,7 @@ function rgbToLab({ r, g, b }) {
 
 export default {
   name: 'ColorTools',
+  components: { ColorPicker },
   data() {
     return {
       activeTab: 'adjust',
@@ -284,7 +282,11 @@ export default {
   },
   computed: {
     adjustedColor() {
-      const rgb = hslToRgb({ h: this.adjustHue, s: this.adjustSaturation / 100 * 100, l: this.adjustLightness });
+      const rgb = hslToRgb({
+        h: this.adjustHue,
+        s: this.adjustSaturation,
+        l: this.adjustLightness
+      });
       return rgbToHex(rgb).toUpperCase();
     },
     adjustedShades() {

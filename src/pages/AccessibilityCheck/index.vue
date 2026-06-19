@@ -26,8 +26,7 @@
         <div class="color-input-card">
           <div class="color-input-label">前景色（文字）</div>
           <div class="color-input-row">
-            <input type="color" v-model="fgColor" @input="onFgPicker" />
-            <input type="text" v-model="fgColor" @input="onFgText" />
+            <ColorPicker v-model="fgColor" />
           </div>
           <div class="color-swatch" :style="{ background: fgColor }"></div>
         </div>
@@ -35,8 +34,7 @@
         <div class="color-input-card">
           <div class="color-input-label">背景色</div>
           <div class="color-input-row">
-            <input type="color" v-model="bgColor" @input="onBgPicker" />
-            <input type="text" v-model="bgColor" @input="onBgText" />
+            <ColorPicker v-model="bgColor" />
           </div>
           <div class="color-swatch" :style="{ background: bgColor }"></div>
         </div>
@@ -96,8 +94,7 @@
       <div class="sim-color-input">
         <div class="color-input-label">上传或选择主色</div>
         <div class="color-input-row">
-          <input type="color" v-model="simColor" />
-          <input type="text" v-model="simColor" @input="onSimText" />
+          <ColorPicker v-model="simColor" />
         </div>
       </div>
 
@@ -140,8 +137,7 @@
       </div>
 
       <div class="gov-input-row">
-        <input type="text" v-model="govColor" placeholder="请输入 HEX，如 #1677FF" />
-        <input type="color" v-model="govColor" />
+        <ColorPicker v-model="govColor" />
         <button class="primary-btn" @click="runGovCheck">执行合规检查</button>
       </div>
 
@@ -175,8 +171,7 @@
       <div class="text-bg-input">
         <div class="color-input-label">底色（背景色）</div>
         <div class="color-input-row">
-          <input type="color" v-model="textBgColor" />
-          <input type="text" v-model="textBgColor" @input="onTextBgText" />
+          <ColorPicker v-model="textBgColor" />
         </div>
       </div>
 
@@ -199,6 +194,7 @@
 </template>
 
 <script>
+import ColorPicker from '../../components/ColorPicker.vue';
 import {
   parseColor, formatHEX, copyToClipboard, showToast
 } from '../../utils/colorUtils';
@@ -276,6 +272,7 @@ function darken(rgb, amount) {
 
 export default {
   name: 'AccessibilityCheck',
+  components: { ColorPicker },
   data() {
     return {
       activeTab: 'wcag',

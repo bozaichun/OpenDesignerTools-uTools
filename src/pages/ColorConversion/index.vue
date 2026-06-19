@@ -19,17 +19,9 @@
         <div class="convert-section">
           <div class="input-row">
             <span class="input-label">HEX</span>
-            <input
-              type="text"
+            <ColorPicker
               v-model="inputs.hex"
-              @input="onInputChange('hex')"
-              :class="{ invalid: invalidFormat === 'hex' }"
-              placeholder="#RRGGBB 或 #RGB"
-            />
-            <input
-              type="color"
-              :value="inputs.hex || '#ffffff'"
-              @input="onColorPicker"
+              @change="onColorPickerChange"
             />
             <button
               class="copy-icon-btn"
@@ -137,6 +129,7 @@
 </template>
 
 <script>
+import ColorPicker from '../../components/ColorPicker.vue';
 import {
   detectColorFormat, parseColor, formatRGBA, formatHSLA,
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
@@ -145,6 +138,7 @@ import {
 
 export default {
   name: 'ColorConversion',
+  components: { ColorPicker },
   data() {
     return {
       currentRGB: { r: 255, g: 255, b: 255, a: 1 },
@@ -220,8 +214,7 @@ export default {
       this.isUpdating = false;
     },
 
-    onColorPicker(e) {
-      const hex = e.target.value;
+    onColorPickerChange(hex) {
       if (this.isUpdating) return;
       this.isUpdating = true;
       const rgb = parseColor(hex);

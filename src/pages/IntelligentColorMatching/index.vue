@@ -59,8 +59,7 @@
       </div>
 
       <div class="mono-input-row">
-        <input type="color" v-model="monoColor" />
-        <input type="text" v-model="monoColor" class="form-input" />
+        <ColorPicker v-model="monoColor" />
         <button class="primary-btn" @click="generateMonochrome">生成延展</button>
       </div>
 
@@ -238,10 +237,12 @@
 </template>
 
 <script>
+import ColorPicker from '../../components/ColorPicker.vue';
 import { parseColor, rgbToHex, rgbToHsl, hslToRgb, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 
 export default {
   name: 'IntelligentColorMatching',
+  components: { ColorPicker },
   data() {
     return {
       activeTab: 'semantic',

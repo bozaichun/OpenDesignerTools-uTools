@@ -22,12 +22,12 @@ export const NAV_MENU_ITEMS = [
   {
     id: 'AccessibilityCheck',
     label: '色彩对比',
-    icon: 'icon-Areality-Check'
+    icon: 'icon-Areality-ColorContrast'
   },
   {
     id: 'IntelligentColorMatching',
     label: '智能配色',
-    icon: 'icon-Areality-Sparkles'
+    icon: 'icon-Areality-ColorMatching'
   },
   {
     id: 'PaletteManager',
@@ -42,11 +42,11 @@ export const NAV_MENU_ITEMS = [
   {
     id: 'PrintTools',
     label: '印刷工具',
-    icon: 'icon-Areality-Print'
+    icon: 'icon-Areality-PrintingTool'
   },
   {
     id: 'ColorTools',
     label: '调色工具',
-    icon: 'icon-Areality-Brush'
+    icon: 'icon-Areality-ColorMixing'
   }
 ];
