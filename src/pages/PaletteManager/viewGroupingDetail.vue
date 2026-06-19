@@ -657,12 +657,26 @@ export default {
 }
 
 .form-select {
-  padding: 8px 12px;
-  background: var(--bg-input);
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--bg-input);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 13px;
+  cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+  .form-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath stroke='%23aaa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  }
 }
 
 .form-select:focus {
