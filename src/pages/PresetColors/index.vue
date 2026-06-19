@@ -47,21 +47,19 @@
       >
         <div class="group-tag">{{ color.group }}</div>
         <div class="swatch-row">
-          <div class="swatch-wrapper">
-            <div
-              class="color-swatch"
-              :style="{ background: color.hex }"
-            ></div>
-            <button
-              class="swatch-copy-icon"
-              :title="'复制颜色名: ' + color.name"
-              @click.stop="copyValue(color.name, color.name)"
-            >
-              <span class="iconfont icon-Copy"></span>
-            </button>
-          </div>
+          <div class="color-swatch" :style="{ background: color.hex }"></div>
           <div class="color-info">
-            <div class="color-name">{{ color.name }}</div>
+            <div class="color-info-header">
+              <button
+                class="info-action-btn"
+                :title="'复制颜色名: ' + color.name"
+                @click.stop="copyValue(color.name, color.name)"
+              >
+                <span class="iconfont icon-Copy"></span>
+              </button>
+              <div class="color-name">{{ color.name }}</div>
+              <FavoriteButton :hex="color.hex" :name="color.name" />
+            </div>
             <div class="color-hex">{{ color.hex }}</div>
           </div>
         </div>
@@ -81,51 +79,22 @@
       没有找到匹配的颜色，请尝试其他搜索词。
     </div>
 
-    <!-- 颜色详情遮罩弹框 -->
-    <Dialog
+    <ColorFormatDialog
       v-model:visible="modalVisible"
-      max-width="420px"
-      @close="closeModal"
-    >
-      <template #header>
-        <div class="modal-title-row">
-          <div
-            class="modal-swatch"
-            :style="{ background: modalColor.hex }"
-          ></div>
-          <div>
-            <div class="modal-title">{{ modalColor.name }}</div>
-            <div class="modal-hex">{{ modalColor.hex }}</div>
-          </div>
-        </div>
-      </template>
-
-      <div
-        v-for="item in modalFormatOutputs"
-        :key="item.label"
-        class="modal-format-row"
-      >
-        <span class="modal-format-label">{{ item.label }}</span>
-        <span class="modal-format-value">{{ item.value }}</span>
-        <button
-          class="modal-copy-btn"
-          @click="copyValue(item.value, item.label)"
-        >
-          复制
-        </button>
-      </div>
-    </Dialog>
+      :color="modalColor"
+    />
   </div>
 </template>
 
 <script>
 import { PRESET_COLORS, COLOR_GROUPS } from '../../data/presetColors';
-import { parseColor, formatHEX, formatRGB, formatRGBA, formatHSL, formatCMYK, formatHSV, copyToClipboard, showToast } from '../../utils/colorUtils';
-import Dialog from '../../components/Dialog.vue';
+import { copyToClipboard, showToast } from '../../utils/colorUtils';
+import FavoriteButton from '../../components/FavoriteButton.vue';
+import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
 
 export default {
   name: 'PresetColors',
-  components: { Dialog },
+  components: { FavoriteButton, ColorFormatDialog },
   data() {
     return {
       presetColors: PRESET_COLORS,
@@ -145,28 +114,11 @@ export default {
         return matchSearch && matchGroup;
       });
     },
-    modalFormatOutputs() {
-      const rgb = parseColor(this.modalColor.hex);
-      if (!rgb) return [];
-      const { r, g, b, a } = rgb;
-      const rgba = { r, g, b, a };
-      return [
-        { label: 'HEX', value: formatHEX(rgba) },
-        { label: 'RGB', value: formatRGB(rgba) },
-        { label: 'RGBA', value: formatRGBA(rgba) },
-        { label: 'HSL', value: formatHSL(rgba) },
-        { label: 'CMYK', value: formatCMYK(rgba) },
-        { label: 'HSV', value: formatHSV(rgba) }
-      ];
-    }
   },
   methods: {
     openColorModal(color) {
       this.modalColor = { ...color };
       this.modalVisible = true;
-    },
-    closeModal() {
-      this.modalVisible = false;
     },
     copyValue(value, label) {
       copyToClipboard(value);
@@ -306,52 +258,13 @@ export default {
   }
 }
 
-/* ============ 色块与复制图标 ============ */
-.swatch-wrapper {
-  position: relative;
-  flex-shrink: 0;
-}
-
 .color-swatch {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);
   box-shadow: var(--shadow-sm);
-}
-
-.swatch-copy-icon {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: 50%;
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-  opacity: 0;
-
-  .iconfont {
-    font-size: 10px;
-    line-height: 1;
-  }
-
-  &:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--text-invert);
-  }
-}
-
-.preset-card:hover .swatch-copy-icon {
-  opacity: 1;
+  flex-shrink: 0;
 }
 
 /* ============ 颜色信息 ============ */
@@ -360,7 +273,41 @@ export default {
   min-width: 0;
 }
 
+.color-info-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-action-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+
+  .iconfont {
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  &:hover {
+    color: var(--accent);
+    background: var(--bg-hover);
+  }
+}
+
 .color-name {
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
@@ -373,6 +320,7 @@ export default {
   color: var(--text-tertiary);
   font-family: 'SF Mono', Consolas, Monaco, monospace;
   margin-top: 2px;
+  padding-left: 28px;
 }
 
 .group-tag {
@@ -422,90 +370,6 @@ export default {
   font-size: 14px;
 }
 
-/* ============ 弹框头部 ============ */
-.modal-title-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.modal-swatch {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.modal-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
-}
-
-.modal-hex {
-  font-size: 13px;
-  color: var(--text-tertiary);
-  font-family: 'SF Mono', Consolas, Monaco, monospace;
-  margin-top: 4px;
-}
-
-/* ============ 弹框内容 ============ */
-.modal-format-row {
-  display: flex;
-  align-items: center;
-  padding: 12px 14px;
-  gap: 12px;
-  border-radius: var(--radius-md);
-  transition: background 0.15s ease;
-  border: 1px solid transparent;
-
-  & + .modal-format-row {
-    margin-top: 4px;
-  }
-
-  &:hover {
-    background: var(--bg-muted);
-    border-color: var(--border-primary);
-  }
-}
-
-.modal-format-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-  min-width: 56px;
-  flex-shrink: 0;
-  text-align: left;
-}
-
-.modal-format-value {
-  flex: 1;
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-family: 'SF Mono', Consolas, Monaco, monospace;
-  word-break: break-all;
-  min-width: 0;
-}
-
-.modal-copy-btn {
-  padding: 5px 14px;
-  font-size: 12px;
-  background: var(--accent);
-  color: var(--text-invert);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  flex-shrink: 0;
-  font-weight: 500;
-  transition: opacity 0.15s ease;
-
-  &:hover {
-    opacity: 0.85;
-  }
-}
-
 /* ============ 响应式 ============ */
 @media (max-width: 1200px) {
   .preset-grid {
@@ -532,10 +396,6 @@ export default {
   .preset-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
-  }
-
-  .swatch-copy-icon {
-    opacity: 1;
   }
 }
 </style>

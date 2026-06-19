@@ -46,7 +46,7 @@
             <button class="link-btn" @click="viewGroup(row)">查看</button>
             <button class="link-btn" @click="openDedupDialog(row)">查重</button>
             <button class="link-btn" @click="openShareDialog(row)">共享</button>
-            <button class="link-btn" @click="openCodeExportDialog(row)">生成代码</button>
+            <button class="link-btn" @click="openCodeExportDialog(row)">导出</button>
             <button class="link-btn danger" @click="openDeleteConfirm(row)">删除</button>
           </div>
         </template>

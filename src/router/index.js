@@ -3,7 +3,13 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 const routes = [
   {
     path: '/',
-    redirect: '/BasicKnowledge'
+    redirect: '/FunctionOverview'
+  },
+  {
+    path: '/FunctionOverview',
+    name: 'FunctionOverview',
+    component: () => import('../pages/FunctionOverview/index.vue'),
+    meta: { title: '功能概览' }
   },
   {
     path: '/BasicKnowledge',
@@ -34,6 +40,12 @@ const routes = [
     name: 'PresetColors',
     component: () => import('../pages/PresetColors/index.vue'),
     meta: { title: '预置颜色' }
+  },
+  {
+    path: '/MyCollection',
+    name: 'MyCollection',
+    component: () => import('../pages/MyCollection/index.vue'),
+    meta: { title: '我的收藏' }
   },
   {
     path: '/AccessibilityCheck',

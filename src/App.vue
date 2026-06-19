@@ -179,21 +179,23 @@ export default {
   },
   computed: {
     currentTab() {
-      return TAB_BY_ROUTE[this.route.path] || 'BasicKnowledge';
+      return TAB_BY_ROUTE[this.route.path] || 'FunctionOverview';
     },
     currentTabLabel() {
       const map = {
+        FunctionOverview: 'functionOverview',
         BasicKnowledge: 'basicKnowledge',
         ColorConversion: 'colorConversion',
         ImageColorSampling: 'imageSampling',
         PresetColors: 'presetColors',
+        MyCollection: 'myCollection',
         AccessibilityCheck: 'accessibilityCheck',
         IntelligentColorMatching: 'intelligentMatching',
         PaletteManager: 'paletteManager',
         PrintTools: 'printTools',
         ColorTools: 'colorTools'
       };
-      return this.t(map[this.currentTab] || 'basicKnowledge');
+      return this.t(map[this.currentTab] || 'functionOverview');
     },
     pageTitle() {
       if (this.route.path === '/ImageColorSampling/detailPage') {

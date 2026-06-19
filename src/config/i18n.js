@@ -3,10 +3,12 @@
    ============================================================ */
 export const I18N_DICT = {
   'zh-CN': {
+    functionOverview: '功能概览',
     basicKnowledge: '基础知识',
     colorConversion: '颜色转换',
     imageSampling: '图片取色',
     presetColors: '预置颜色',
+    myCollection: '我的收藏',
     accessibilityCheck: '色彩对比',
     intelligentMatching: '智能配色',
     paletteManager: '色板管理',
@@ -28,10 +30,12 @@ export const I18N_DICT = {
     settingsSaved: '设置已自动保存'
   },
   'zh-TW': {
+    functionOverview: '功能概覽',
     basicKnowledge: '基礎知識',
     colorConversion: '顏色轉換',
     imageSampling: '圖片取色',
     presetColors: '預設顏色',
+    myCollection: '我的收藏',
     accessibilityCheck: '色彩對比',
     intelligentMatching: '智能配色',
     paletteManager: '色板管理',
@@ -53,10 +57,12 @@ export const I18N_DICT = {
     settingsSaved: '設定已自動保存'
   },
   en: {
+    functionOverview: 'Function Overview',
     basicKnowledge: 'Basic Knowledge',
     colorConversion: 'Color Conversion',
     imageSampling: 'Image Sampling',
     presetColors: 'Preset Colors',
+    myCollection: 'My Collection',
     accessibilityCheck: 'Accessibility',
     intelligentMatching: 'AI Matching',
     paletteManager: 'Palette',
@@ -78,10 +84,12 @@ export const I18N_DICT = {
     settingsSaved: 'Settings are saved automatically'
   },
   ja: {
+    functionOverview: '機能概要',
     basicKnowledge: '基礎知識',
     colorConversion: '色変換',
     imageSampling: '画像抽出',
     presetColors: 'プリセット',
+    myCollection: 'お気に入り',
     accessibilityCheck: 'アクセシビリティ',
     intelligentMatching: 'AI配色',
     paletteManager: 'パレット',
@@ -103,13 +111,15 @@ export const I18N_DICT = {
     settingsSaved: '設定は自動的に保存されます'
   },
   ko: {
+    functionOverview: '기능 개요',
     basicKnowledge: '기초 지식',
     colorConversion: '색상 변환',
     imageSampling: '이미지 색상',
     presetColors: '프리셋 색상',
+    myCollection: '내 즐겨찾기',
     accessibilityCheck: '접근성',
     intelligentMatching: 'AI 배색',
-    paletteManager: '팔레트',
+    paletteManager: '팔레트',
     printTools: '인쇄 도구',
     colorTools: '보정 도구',
     analysisResult: '분석 결과',
@@ -128,10 +138,12 @@ export const I18N_DICT = {
     settingsSaved: '설정이 자동으로 저장됩니다'
   },
   ru: {
+    functionOverview: 'Обзор функций',
     basicKnowledge: 'Основы',
     colorConversion: 'Преобразование цвета',
     imageSampling: 'Пипетка с картинки',
     presetColors: 'Предустановленные цвета',
+    myCollection: 'Избранное',
     accessibilityCheck: 'Доступность',
     intelligentMatching: 'AI подбор',
     paletteManager: 'Палитра',
@@ -155,11 +167,13 @@ export const I18N_DICT = {
 };
 
 export const TAB_BY_ROUTE = {
+  '/FunctionOverview': 'FunctionOverview',
   '/BasicKnowledge': 'BasicKnowledge',
   '/ColorConversion': 'ColorConversion',
   '/ImageColorSampling': 'ImageColorSampling',
   '/ImageColorSampling/detailPage': 'ImageColorSampling',
   '/PresetColors': 'PresetColors',
+  '/MyCollection': 'MyCollection',
   '/AccessibilityCheck': 'AccessibilityCheck',
   '/IntelligentColorMatching': 'IntelligentColorMatching',
   '/PaletteManager': 'PaletteManager',

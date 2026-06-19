@@ -1,5 +1,10 @@
 export const NAV_MENU_ITEMS = [
   {
+    id: 'FunctionOverview',
+    label: '功能概览',
+    icon: 'icon-Query'
+  },
+  {
     id: 'BasicKnowledge',
     label: '基础知识',
     icon: 'icon-Areality-Overview'
@@ -19,6 +24,7 @@ export const NAV_MENU_ITEMS = [
     label: '预置颜色',
     icon: 'icon-Areality-Color'
   },
+
   {
     id: 'AccessibilityCheck',
     label: '色彩对比',
@@ -43,5 +49,10 @@ export const NAV_MENU_ITEMS = [
     id: 'ColorTools',
     label: '调色工具',
     icon: 'icon-Areality-ColorMixing'
+  },
+  {
+    id: 'MyCollection',
+    label: '我的收藏',
+    icon: 'icon-Copyright'
   }
 ];
