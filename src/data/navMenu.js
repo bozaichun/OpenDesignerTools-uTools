@@ -35,11 +35,6 @@ export const NAV_MENU_ITEMS = [
     icon: 'icon-Areality-Palette'
   },
   {
-    id: 'CodeExporter',
-    label: '代码导出',
-    icon: 'icon-Areality-Code'
-  },
-  {
     id: 'PrintTools',
     label: '印刷工具',
     icon: 'icon-Areality-PrintingTool'

@@ -37,7 +37,7 @@
           <div class="palette-actions-sm">
             <button class="sm-btn" @click="openEditColorDialog(idx, color)">修改色值</button>
             <button class="sm-btn" @click="copyValue(color.color, color.name)">复制</button>
-            <button class="sm-btn danger" @click="deleteColor(idx)">删除</button>
+            <button class="sm-btn danger" @click="openDeleteConfirm(idx, color)">删除</button>
           </div>
         </div>
       </div>
@@ -79,6 +79,25 @@
         </div>
       </div>
     </Dialog>
+
+    <!-- 删除确认 -->
+    <Dialog
+      v-model:visible="dialogDeleteConfirm"
+      title="删除色值"
+      max-width="420px"
+      :confirm-on-enter="true"
+      @confirm="confirmDeleteColor"
+    >
+      <div class="dialog-confirm">
+        <p class="confirm-text">
+          您是否删除「{{ deleteTargetName }}」色值，此过程不可撤销！
+        </p>
+        <div class="dialog-footer">
+          <button class="secondary-btn" @click="dialogDeleteConfirm = false">取消</button>
+          <button class="primary-btn danger-btn" @click="confirmDeleteColor">确认删除</button>
+        </div>
+      </div>
+    </Dialog>
   </div>
 </template>
 
@@ -100,7 +119,10 @@ export default {
       groups: [],
       group: null,
       dialogAddColor: false,
+      dialogDeleteConfirm: false,
       editingColorIndex: null,
+      deleteTargetIndex: null,
+      deleteTargetName: '',
       newColorName: '',
       newColorValue: '#1677FF',
       newColorNote: ''
@@ -191,10 +213,19 @@ export default {
       this.saveAll();
       showToast(this, '色值添加成功', 'success');
     },
-    deleteColor(idx) {
-      if (!this.group) return;
-      this.group.colors.splice(idx, 1);
+    openDeleteConfirm(idx, color) {
+      this.deleteTargetIndex = idx;
+      this.deleteTargetName = color.name || color.color;
+      this.dialogDeleteConfirm = true;
+    },
+    confirmDeleteColor() {
+      if (!this.group || this.deleteTargetIndex === null) return;
+      this.group.colors.splice(this.deleteTargetIndex, 1);
+      this.deleteTargetIndex = null;
+      this.deleteTargetName = '';
+      this.dialogDeleteConfirm = false;
       this.saveAll();
+      showToast(this, '色值已删除', 'success');
     },
     saveAll() {
       savePalettes(this.groups);
@@ -406,6 +437,24 @@ export default {
   background: var(--bg-card);
   color: var(--text-primary);
   border-color: var(--border-primary);
+}
+
+.danger-btn {
+  background: var(--text-error, #ef4444);
+  border-color: var(--text-error, #ef4444);
+}
+
+.dialog-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.confirm-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.6;
 }
 
 @media (max-width: 768px) {

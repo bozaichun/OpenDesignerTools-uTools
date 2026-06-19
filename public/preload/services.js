@@ -13,6 +13,13 @@ window.services = {
     fs.writeFileSync(filePath, text, { encoding: 'utf-8' })
     return filePath
   },
+  // 代码文件写入到下载目录
+  writeCodeFile (text, fileName) {
+    const safeName = String(fileName || 'colors.txt').replace(/[\\/:*?"<>|]/g, '-')
+    const filePath = path.join(window.utools.getPath('downloads'), safeName)
+    fs.writeFileSync(filePath, text, { encoding: 'utf-8' })
+    return filePath
+  },
   // 图片写入到下载目录
   writeImageFile (base64Url) {
     const matchs = /^data:image\/([a-z]{1,20});base64,/i.exec(base64Url)

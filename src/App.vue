@@ -190,7 +190,6 @@ export default {
         AccessibilityCheck: 'accessibilityCheck',
         IntelligentColorMatching: 'intelligentMatching',
         PaletteManager: 'paletteManager',
-        CodeExporter: 'codeExporter',
         PrintTools: 'printTools',
         ColorTools: 'colorTools'
       };

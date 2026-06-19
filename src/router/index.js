@@ -60,12 +60,6 @@ const routes = [
     meta: { title: '色板分组详情' }
   },
   {
-    path: '/CodeExporter',
-    name: 'CodeExporter',
-    component: () => import('../pages/CodeExporter/index.vue'),
-    meta: { title: '代码导出' }
-  },
-  {
     path: '/PrintTools',
     name: 'PrintTools',
     component: () => import('../pages/PrintTools/index.vue'),

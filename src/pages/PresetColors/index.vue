@@ -1,7 +1,25 @@
 <template>
   <div class="module-preset">
-    <!-- 搜索和分组过滤 -->
+    <!-- 筛选与搜索 -->
     <div class="preset-filter-bar">
+      <div class="group-chips">
+        <div
+          class="chip"
+          :class="{ active: activeGroup === null }"
+          @click="activeGroup = null"
+        >
+          全部
+        </div>
+        <div
+          v-for="group in colorGroups"
+          :key="group"
+          class="chip"
+          :class="{ active: activeGroup === group }"
+          @click="activeGroup = group"
+        >
+          {{ group }}
+        </div>
+      </div>
       <div class="search-wrap">
         <input
           type="text"
@@ -17,25 +35,6 @@
         >
           <span class="iconfont icon-Failure"></span>
         </button>
-      </div>
-    </div>
-
-    <div class="group-chips" style="margin-bottom: 16px;">
-      <div
-        class="chip"
-        :class="{ active: activeGroup === null }"
-        @click="activeGroup = null"
-      >
-        全部
-      </div>
-      <div
-        v-for="group in colorGroups"
-        :key="group"
-        class="chip"
-        :class="{ active: activeGroup === group }"
-        @click="activeGroup = group"
-      >
-        {{ group }}
       </div>
     </div>
 
@@ -183,18 +182,18 @@ export default {
   width: 100%;
 }
 
-/* ============ 搜索区域 ============ */
+/* ============ 筛选与搜索 ============ */
 .preset-filter-bar {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
+  justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .search-wrap {
-  flex: 1;
-  min-width: 200px;
+  flex-shrink: 0;
+  width: 280px;
   position: relative;
   display: flex;
   align-items: center;
@@ -250,7 +249,8 @@ export default {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  flex: 1;
+  min-width: 0;
 }
 
 .chip {
@@ -520,6 +520,15 @@ export default {
 }
 
 @media (max-width: 640px) {
+  .preset-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-wrap {
+    width: 100%;
+  }
+
   .preset-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;

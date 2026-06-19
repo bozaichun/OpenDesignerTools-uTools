@@ -6,7 +6,7 @@
         :border="true"
         row-key="id"
         action-label="操作"
-        action-width="360px"
+        action-width="420px"
         empty-text="暂无分组，点击右上角「新建分组」创建"
       >
         <template #name="{ row }">
@@ -42,10 +42,11 @@
 
         <template #action="{ row }">
           <div class="table-actions">
-            <button class="link-btn" @click="openEditGroupDialog(row)">编辑分组</button>
-            <button class="link-btn" @click="viewGroup(row)">查看色值</button>
-            <button class="link-btn" @click="openDedupDialog(row)">查重合并</button>
-            <button class="link-btn" @click="openShareDialog(row)">共享导出</button>
+            <button class="link-btn" @click="openEditGroupDialog(row)">编辑</button>
+            <button class="link-btn" @click="viewGroup(row)">查看</button>
+            <button class="link-btn" @click="openDedupDialog(row)">查重</button>
+            <button class="link-btn" @click="openShareDialog(row)">共享</button>
+            <button class="link-btn" @click="openCodeExportDialog(row)">生成代码</button>
             <button class="link-btn danger" @click="openDeleteConfirm(row)">删除</button>
           </div>
         </template>
@@ -61,7 +62,7 @@
     <!-- 新建 / 修改分组 -->
     <Dialog
       v-model:visible="dialogNewGroup"
-      :title="editingGroupId ? '修改分组' : '新建分组'"
+      :title="editingGroupId ? '编辑分组' : '新增分组'"
       max-width="480px"
     >
       <div class="dialog-form">
@@ -220,6 +221,24 @@
         </div>
       </div>
     </Dialog>
+
+    <!-- 生成代码 -->
+    <Dialog
+      v-model:visible="dialogCodeExport"
+      :title="codeExportTitle"
+      max-width="900px"
+    >
+      <div v-if="codeExportGroup" class="dialog-code-export">
+        <p v-if="codeExportColors.length === 0" class="dialog-desc">
+          该分组暂无色值，请先在分组中添加色值后再生成代码。
+        </p>
+        <CodeExportPanel
+          v-else
+          :colors="codeExportColors"
+          :export-name="codeExportGroup.name"
+        />
+      </div>
+    </Dialog>
   </div>
 </template>
 
@@ -227,6 +246,7 @@
 import DataTable from '../../components/Table.vue';
 import Dialog from '../../components/Dialog.vue';
 import Pagination from '../../components/Pagination.vue';
+import CodeExportPanel from '../../components/CodeExportPanel.vue';
 import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 import { loadPalettes, savePalettes } from './paletteStorage.js';
 
@@ -235,7 +255,8 @@ export default {
   components: {
     DataTable,
     Dialog,
-    Pagination
+    Pagination,
+    CodeExportPanel
   },
   inject: ['setHeaderActions', 'clearHeaderActions'],
   data() {
@@ -256,6 +277,8 @@ export default {
       shareGroupId: null,
       dialogDedup: false,
       dialogDeleteConfirm: false,
+      dialogCodeExport: false,
+      codeExportGroupId: null,
       newGroupName: '',
       newGroupType: 'personal',
       deleteTargetId: null,
@@ -273,6 +296,21 @@ export default {
     shareTargetGroup() {
       if (!this.shareGroupId) return null;
       return this.groups.find((group) => group.id === this.shareGroupId) || null;
+    },
+    codeExportGroup() {
+      if (!this.codeExportGroupId) return null;
+      return this.groups.find((group) => group.id === this.codeExportGroupId) || null;
+    },
+    codeExportColors() {
+      if (!this.codeExportGroup) return [];
+      return this.codeExportGroup.colors.map((color) => ({
+        name: color.name,
+        color: color.color
+      }));
+    },
+    codeExportTitle() {
+      if (!this.codeExportGroup) return '生成代码';
+      return `生成代码 - ${this.codeExportGroup.name}`;
     },
     shareLink() {
       return 'https://color.tools/share/' + (this.shareTargetGroup ? this.shareTargetGroup.id : '');
@@ -316,7 +354,7 @@ export default {
   methods: {
     updateHeaderActions() {
       this.setHeaderActions([
-        { label: '新建分组', onClick: () => this.openNewGroupDialog() }
+        { label: '新增分组', onClick: () => this.openNewGroupDialog() }
       ]);
     },
     reloadGroups() {
@@ -369,6 +407,11 @@ export default {
       this.dedupResults = [];
       this.hasRunDedup = false;
       this.dialogDedup = true;
+    },
+    openCodeExportDialog(row) {
+      this.codeExportGroupId = row.id;
+      this.activeGroup = row.id;
+      this.dialogCodeExport = true;
     },
     viewGroup(row) {
       this.$router.push({
