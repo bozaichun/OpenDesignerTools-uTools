@@ -175,7 +175,8 @@ export default {
       group.colors.push({
         name,
         color: this.paletteTargetColor.hex,
-        note: '来自我的收藏'
+        note: '来自我的收藏',
+        colorType: 'auxiliary'
       });
       savePalettes(groups);
       this.paletteDialogVisible = false;

@@ -6,40 +6,84 @@
     </div>
 
     <template v-else>
-      <div class="detail-summary">共 {{ group.colors.length }} 个色值</div>
-
-      <div v-if="group.colors.length" class="palette-list">
-        <div
-          v-for="(color, idx) in group.colors"
-          :key="idx"
-          class="palette-item"
-        >
-          <div class="palette-swatch" :style="{ background: color.color }">
-            <span class="palette-contrast-text" :style="{ color: getContrastColor(color.color) }">Aa</span>
-          </div>
-          <div class="palette-info">
-            <input
-              type="text"
-              class="palette-name-input"
-              v-model="color.name"
-              @blur="saveAll()"
-              placeholder="色值名称"
-            />
-            <div class="palette-hex">{{ color.color }}</div>
-          </div>
-          <input
-            type="text"
-            class="palette-note-input"
-            v-model="color.note"
-            @blur="saveAll()"
-            placeholder="备注 / 使用场景"
-          />
-          <div class="palette-actions-sm">
-            <button class="sm-btn" @click="openEditColorDialog(idx, color)">修改色值</button>
-            <button class="sm-btn" @click="copyValue(color.color, color.name)">复制</button>
-            <button class="sm-btn danger" @click="openDeleteConfirm(idx, color)">删除</button>
+      <div class="palette-toolbar">
+        <div v-if="group.colors.length" class="filter-main">
+          <span class="filter-label">筛选</span>
+          <div class="filter-chips">
+            <button
+              type="button"
+              class="filter-chip"
+              :class="{ active: activeTypeFilter === null }"
+              @click="activeTypeFilter = null"
+            >
+              全部
+            </button>
+            <button
+              v-for="item in colorValueTypes"
+              :key="item.value"
+              type="button"
+              class="filter-chip"
+              :class="{ active: activeTypeFilter === item.value }"
+              @click="activeTypeFilter = item.value"
+            >
+              {{ item.label }}
+            </button>
+            <button
+              type="button"
+              class="filter-chip"
+              :class="{ active: activeTypeFilter === UNCATEGORIZED_FILTER }"
+              @click="activeTypeFilter = UNCATEGORIZED_FILTER"
+            >
+              未分类
+            </button>
           </div>
         </div>
+        <div class="detail-summary">共 {{ group.colors.length }} 个色值</div>
+      </div>
+
+      <div v-if="group.colors.length" class="palette-list-wrap">
+        <div v-if="filteredColorEntries.length" class="palette-list">
+          <div
+            v-for="entry in filteredColorEntries"
+            :key="entry.idx"
+            class="palette-item"
+          >
+            <div class="palette-swatch" :style="{ background: entry.color.color }">
+              <span class="palette-contrast-text" :style="{ color: getContrastColor(entry.color.color) }">Aa</span>
+            </div>
+            <div class="palette-name-cell">
+              <input
+                type="text"
+                class="palette-name-input"
+                v-model="entry.color.name"
+                @blur="saveAll()"
+                placeholder="色值名称"
+              />
+              <div class="palette-hex">{{ entry.color.color }}</div>
+            </div>
+            <input
+              type="text"
+              class="palette-note-input"
+              v-model="entry.color.note"
+              @blur="saveAll()"
+              placeholder="备注 / 使用场景"
+            />
+            <div class="palette-type-cell">
+              <span
+                class="color-type-tag"
+                :class="getColorTypeTagClass(entry.color.colorType)"
+              >
+                {{ getColorTypeLabel(entry.color.colorType) }}
+              </span>
+            </div>
+            <div class="palette-actions-sm">
+              <button class="sm-btn" @click="openEditColorDialog(entry.idx, entry.color)">修改色值</button>
+              <button class="sm-btn" @click="copyValue(entry.color.color, entry.color.name)">复制</button>
+              <button class="sm-btn danger" @click="openDeleteConfirm(entry.idx, entry.color)">删除</button>
+            </div>
+          </div>
+        </div>
+        <div v-else class="filter-empty">没有匹配的色值，请调整筛选条件</div>
       </div>
       <div v-else class="expand-empty">该分组暂无色值，点击右上角「添加色值」开始创建</div>
     </template>
@@ -59,6 +103,18 @@
             placeholder="色值名称（如：品牌主色）"
             class="form-input"
           />
+        </div>
+        <div class="form-field">
+          <label class="form-label">色值类型</label>
+          <select v-model="newColorType" class="form-select">
+            <option
+              v-for="item in colorValueTypes"
+              :key="item.value"
+              :value="item.value"
+            >
+              {{ item.label }}
+            </option>
+          </select>
         </div>
         <div class="form-field">
           <label class="form-label">选择颜色</label>
@@ -106,6 +162,16 @@ import Dialog from '../../components/Dialog.vue';
 import ColorPicker from '../../components/ColorPicker.vue';
 import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 import { loadPalettes, savePalettes } from './paletteStorage.js';
+import {
+  COLOR_VALUE_TYPES,
+  DEFAULT_COLOR_VALUE_TYPE,
+  getColorValueTypeLabel,
+  getColorValueTypeTagClass,
+  getColorValueTypeOption,
+  normalizeColorValueType
+} from '../../data/colorValueTypes.js';
+
+const UNCATEGORIZED_FILTER = '__uncategorized__';
 
 export default {
   name: 'PaletteManagerDetail',
@@ -116,17 +182,29 @@ export default {
   inject: ['setHeaderActions', 'clearHeaderActions'],
   data() {
     return {
+      UNCATEGORIZED_FILTER,
       groups: [],
       group: null,
+      colorValueTypes: COLOR_VALUE_TYPES,
+      activeTypeFilter: null,
       dialogAddColor: false,
       dialogDeleteConfirm: false,
       editingColorIndex: null,
       deleteTargetIndex: null,
       deleteTargetName: '',
       newColorName: '',
+      newColorType: DEFAULT_COLOR_VALUE_TYPE,
       newColorValue: '#1677FF',
       newColorNote: ''
     };
+  },
+  computed: {
+    filteredColorEntries() {
+      if (!this.group) return [];
+      return this.group.colors
+        .map((color, idx) => ({ color, idx }))
+        .filter(({ color }) => this.matchColorTypeFilter(color.colorType));
+    }
   },
   mounted() {
     this.loadGroup();
@@ -145,6 +223,7 @@ export default {
       this.groups = loadPalettes();
       const groupId = this.$route.query.groupId;
       this.group = this.groups.find((item) => item.id === groupId) || null;
+      this.activeTypeFilter = null;
     },
     updateHeaderActions() {
       if (!this.group) {
@@ -163,9 +242,25 @@ export default {
       if (!rgb) return '#000000';
       return gcc(rgb);
     },
+    getColorTypeLabel(type) {
+      if (!getColorValueTypeOption(type)) return '未分类';
+      return getColorValueTypeLabel(type);
+    },
+    getColorTypeTagClass(type) {
+      if (!getColorValueTypeOption(type)) return 'type-default';
+      return getColorValueTypeTagClass(type);
+    },
+    matchColorTypeFilter(type) {
+      if (!this.activeTypeFilter) return true;
+      if (this.activeTypeFilter === UNCATEGORIZED_FILTER) {
+        return !getColorValueTypeOption(type);
+      }
+      return normalizeColorValueType(type) === this.activeTypeFilter;
+    },
     openAddColorDialog() {
       this.editingColorIndex = null;
       this.newColorName = '';
+      this.newColorType = DEFAULT_COLOR_VALUE_TYPE;
       this.newColorValue = '#1677FF';
       this.newColorNote = '';
       this.dialogAddColor = true;
@@ -173,6 +268,7 @@ export default {
     openEditColorDialog(idx, color) {
       this.editingColorIndex = idx;
       this.newColorName = color.name;
+      this.newColorType = normalizeColorValueType(color.colorType);
       this.newColorValue = color.color;
       this.newColorNote = color.note || '';
       this.dialogAddColor = true;
@@ -181,6 +277,7 @@ export default {
       this.dialogAddColor = false;
       this.editingColorIndex = null;
       this.newColorName = '';
+      this.newColorType = DEFAULT_COLOR_VALUE_TYPE;
       this.newColorValue = '#1677FF';
       this.newColorNote = '';
     },
@@ -199,7 +296,8 @@ export default {
       const colorData = {
         name: this.newColorName.trim(),
         color: normalizedHex,
-        note: this.newColorNote.trim()
+        note: this.newColorNote.trim(),
+        colorType: this.newColorType
       };
       if (this.editingColorIndex !== null) {
         this.group.colors[this.editingColorIndex] = colorData;
@@ -245,9 +343,20 @@ export default {
 }
 
 .detail-summary {
-  margin-bottom: 16px;
+  flex-shrink: 0;
+  margin-left: auto;
   font-size: 12px;
   color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.palette-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 0 12px;
 }
 
 .expand-empty,
@@ -267,6 +376,64 @@ export default {
   color: var(--text-secondary);
 }
 
+.palette-list-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filter-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-label {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.filter-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.filter-chip {
+  padding: 6px 14px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.filter-chip.active {
+  background: var(--accent);
+  color: var(--text-invert);
+  border-color: var(--accent);
+}
+
+.filter-empty {
+  padding: 32px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
 .palette-list {
   display: flex;
   flex-direction: column;
@@ -275,7 +442,7 @@ export default {
 
 .palette-item {
   display: grid;
-  grid-template-columns: 60px 180px 1fr auto;
+  grid-template-columns: 48px minmax(120px, 160px) minmax(140px, 1fr) minmax(160px, max-content) auto;
   gap: 12px;
   align-items: center;
   padding: 12px;
@@ -284,9 +451,43 @@ export default {
   border: 1px solid var(--border-primary);
 }
 
+.palette-item > * {
+  justify-self: start;
+  text-align: left;
+}
+
+.palette-item > .palette-swatch {
+  width: 48px;
+}
+
+.palette-item > .palette-name-cell,
+.palette-item > .palette-note-input {
+  width: 100%;
+  max-width: 100%;
+}
+
+.palette-item > .palette-type-cell {
+  width: auto;
+  max-width: none;
+}
+
+.palette-item > .palette-actions-sm {
+  width: auto;
+}
+
+.palette-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
 .palette-swatch {
-  width: 60px;
-  height: 60px;
+  width: 48px;
+  height: 48px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  align-self: start;
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
@@ -299,16 +500,10 @@ export default {
   font-weight: 700;
 }
 
-.palette-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .palette-name-input {
   background: transparent;
   border: 1px solid transparent;
-  padding: 4px 6px;
+  padding: 4px 6px 4px 0;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
@@ -330,7 +525,8 @@ export default {
 .palette-note-input {
   background: transparent;
   border: 1px solid transparent;
-  padding: 4px 6px;
+  padding: 4px 6px 4px 0;
+  width: 100%;
   font-size: 12px;
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
@@ -342,8 +538,64 @@ export default {
   background: var(--bg-muted);
 }
 
+.palette-type-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.color-type-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.type-theme {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-light);
+}
+
+.type-functional {
+  color: #059669;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.24);
+}
+
+.type-text-light {
+  color: #475569;
+  background: rgba(100, 116, 139, 0.12);
+  border-color: rgba(100, 116, 139, 0.24);
+}
+
+.type-text-dark {
+  color: #334155;
+  background: rgba(51, 65, 85, 0.12);
+  border-color: rgba(51, 65, 85, 0.24);
+}
+
+.type-auxiliary {
+  color: #9333ea;
+  background: rgba(147, 51, 234, 0.12);
+  border-color: rgba(147, 51, 234, 0.24);
+}
+
+.type-default {
+  color: var(--text-secondary);
+  background: var(--bg-muted);
+  border-color: var(--border-primary);
+}
+
 .palette-actions-sm {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   gap: 6px;
 }
 
@@ -404,6 +656,20 @@ export default {
   border-color: var(--accent);
 }
 
+.form-select {
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .color-picker-full {
   width: 100%;
 }
@@ -458,13 +724,33 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .palette-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .detail-summary {
+    align-self: flex-end;
+  }
+
+  .filter-main {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .palette-item {
-    grid-template-columns: 60px 1fr;
+    grid-template-columns: 48px 1fr;
   }
 
   .palette-note-input,
+  .palette-type-cell,
   .palette-actions-sm {
     grid-column: 1 / -1;
+  }
+
+  .palette-actions-sm {
+    justify-content: flex-start;
   }
 }
 </style>
