@@ -49,28 +49,27 @@
         <div class="swatch-row">
           <div class="color-swatch" :style="{ background: color.hex }"></div>
           <div class="color-info">
-            <div class="color-info-header">
-              <button
-                class="info-action-btn"
-                :title="'复制颜色名: ' + color.name"
-                @click.stop="copyValue(color.name, color.name)"
-              >
-                <span class="iconfont icon-Copy"></span>
-              </button>
-              <div class="color-name">{{ color.name }}</div>
-              <FavoriteButton :hex="color.hex" :name="color.name" />
-            </div>
+            <div class="color-name">{{ color.name }}</div>
             <div class="color-hex">{{ color.hex }}</div>
           </div>
         </div>
 
-        <!-- 查看颜色按钮 -->
-        <button
-          class="view-color-btn"
-          @click="openColorModal(color)"
-        >
-          查看颜色值
-        </button>
+        <div class="card-action-bar">
+          <button
+            class="view-color-btn"
+            @click="openColorModal(color)"
+          >
+            查看颜色值
+          </button>
+          <button
+            class="card-icon-btn"
+            :title="'复制颜色名: ' + color.name"
+            @click.stop="copyValue(color.name, color.name)"
+          >
+            <span class="iconfont icon-Copy"></span>
+          </button>
+          <FavoriteButton :hex="color.hex" :name="color.name" />
+        </div>
       </div>
     </div>
 
@@ -273,41 +272,7 @@ export default {
   min-width: 0;
 }
 
-.color-info-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.info-action-btn {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--text-tertiary);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.15s ease;
-
-  .iconfont {
-    font-size: 12px;
-    line-height: 1;
-  }
-
-  &:hover {
-    color: var(--accent);
-    background: var(--bg-hover);
-  }
-}
-
 .color-name {
-  flex: 1;
-  min-width: 0;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
@@ -320,7 +285,6 @@ export default {
   color: var(--text-tertiary);
   font-family: 'SF Mono', Consolas, Monaco, monospace;
   margin-top: 2px;
-  padding-left: 28px;
 }
 
 .group-tag {
@@ -342,9 +306,16 @@ export default {
   white-space: nowrap;
 }
 
-/* ============ 查看颜色按钮 ============ */
+/* ============ 底部操作栏 ============ */
+.card-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .view-color-btn {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 6px 10px;
   font-size: 12px;
   background: var(--bg-card);
@@ -360,6 +331,41 @@ export default {
     border-color: var(--accent);
     color: var(--text-invert);
   }
+}
+
+.card-icon-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+
+  .iconfont {
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  &:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-invert);
+  }
+}
+
+.card-action-bar :deep(.favorite-btn) {
+  width: 28px;
+  height: 28px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
 }
 
 /* ============ 空状态 ============ */

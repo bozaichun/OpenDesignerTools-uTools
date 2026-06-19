@@ -1,12 +1,20 @@
 <template>
-  <section class="content-body">
+  <section ref="bodyRef" class="content-body">
     <slot></slot>
   </section>
 </template>
 
 <script>
 export default {
-  name: 'ContentBody'
+  name: 'ContentBody',
+  watch: {
+    '$route.fullPath'() {
+      this.$nextTick(() => {
+        const el = this.$refs.bodyRef;
+        if (el) el.scrollTop = 0;
+      });
+    }
+  }
 };
 </script>
 

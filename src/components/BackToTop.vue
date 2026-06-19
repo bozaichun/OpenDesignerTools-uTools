@@ -3,7 +3,7 @@
     <button
       v-if="visible"
       class="back-to-top-btn"
-      :title="'置顶'"
+      title="置顶"
       @click="scrollToTop"
     >
       <span class="iconfont icon-BackTop"></span>
@@ -13,16 +13,14 @@
 </template>
 
 <script>
+const SCROLL_SELECTOR = '.content-body';
+
 export default {
   name: 'BackToTop',
   props: {
     threshold: {
       type: Number,
       default: 200
-    },
-    smooth: {
-      type: Boolean,
-      default: true
     }
   },
   data() {
@@ -31,64 +29,89 @@ export default {
       scrollTarget: null
     };
   },
+  watch: {
+    '$route.fullPath'() {
+      this.$nextTick(() => {
+        this.bindScrollTarget();
+      });
+    }
+  },
   mounted() {
     this.$nextTick(() => {
-      this.scrollTarget = this.findScrollTarget();
-      const target = this.scrollTarget;
-      target.addEventListener('scroll', this.handleScroll);
-      this.handleScroll();
+      this.bindScrollTarget();
     });
   },
   beforeUnmount() {
-    const target = this.scrollTarget;
-    if (target) {
-      target.removeEventListener('scroll', this.handleScroll);
-    }
+    this.unbindScrollTarget();
+  },
+  beforeDestroy() {
+    this.unbindScrollTarget();
   },
   methods: {
     isScrollable(el) {
       if (!el || el.nodeType !== 1) return false;
       const style = window.getComputedStyle(el);
-      const overflow = (style.overflowY || style.overflow || '').toLowerCase();
-      return overflow === 'auto' || overflow === 'scroll';
+      const overflowY = (style.overflowY || style.overflow || '').toLowerCase();
+      return overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay';
     },
-    findScrollTarget() {
+    getScrollTarget() {
+      const contentBody = document.querySelector(SCROLL_SELECTOR);
+      if (contentBody && this.isScrollable(contentBody)) {
+        return contentBody;
+      }
+
       let el = this.$el && this.$el.parentElement;
       while (el && el.nodeType === 1) {
         if (this.isScrollable(el)) return el;
         el = el.parentElement;
       }
-      const known = document.querySelector('.content-body, .module-preset, .module-color, .module-image, .module-knowledge');
-      if (known && this.isScrollable(known)) return known;
-      const body = document.body;
-      if (this.isScrollable(body)) return body;
+
       return window;
     },
-    handleScroll() {
+    unbindScrollTarget() {
       const target = this.scrollTarget;
-      let current = 0;
+      if (!target) return;
       if (target === window) {
-        current = window.pageYOffset || document.documentElement.scrollTop;
+        window.removeEventListener('scroll', this.handleScroll);
       } else {
-        current = target ? target.scrollTop : 0;
+        target.removeEventListener('scroll', this.handleScroll);
       }
-      this.visible = current > this.threshold;
+    },
+    bindScrollTarget() {
+      this.unbindScrollTarget();
+      this.scrollTarget = this.getScrollTarget();
+      const target = this.scrollTarget;
+      if (target === window) {
+        window.addEventListener('scroll', this.handleScroll, { passive: true });
+      } else if (target) {
+        target.addEventListener('scroll', this.handleScroll, { passive: true });
+      }
+      this.handleScroll();
+    },
+    getScrollTop() {
+      const target = this.scrollTarget || this.getScrollTarget();
+      if (target === window) {
+        return window.pageYOffset || document.documentElement.scrollTop || 0;
+      }
+      return target ? target.scrollTop : 0;
+    },
+    handleScroll() {
+      this.visible = this.getScrollTop() > this.threshold;
     },
     scrollToTop() {
-      const target = this.scrollTarget;
-      if (this.smooth) {
-        if (target === window) {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else if (target) {
-          target.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+      const target = this.getScrollTarget();
+      if (!target) return;
+
+      if (target === window) {
+        window.scrollTo(0, 0);
       } else {
-        if (target === window) {
-          window.scrollTo(0, 0);
-        } else if (target) {
-          target.scrollTop = 0;
-        }
+        target.scrollTop = 0;
       }
+
+      this.scrollTarget = target;
+      this.$nextTick(() => {
+        this.handleScroll();
+      });
     }
   }
 };
