@@ -14,62 +14,73 @@
       </div>
     </div>
 
-    <section v-if="activeTab === 'adjust'" class="panel">
-      <div class="panel-header">
-        <h3 class="panel-title">色阶明度微调</h3>
-        <span class="panel-sub">固定色相，微调明度、饱和度，一键生成同色系色卡</span>
+    <section v-if="activeTab === 'adjust'" class="panel adjust-panel">
+      <div class="adjust-workbench">
+        <div class="adjust-visual-col">
+          <div class="panel-header compact">
+            <h3 class="panel-title">色阶明度微调</h3>
+            <span class="panel-sub">固定色相，微调明度、饱和度，一键生成同色系色卡</span>
+          </div>
+
+          <div class="adjust-input-row">
+            <ColorPicker v-model="adjustColor" />
+            <button class="primary-btn" @click="resetAdjust">重置</button>
+          </div>
+
+          <div class="adjust-compare-row">
+            <div class="adjust-compare-item">
+              <div class="adjust-compare-swatch" :style="{ background: adjustColor }">
+                <span :style="{ color: getContrastColor(adjustColor) }">原色</span>
+              </div>
+              <span class="adjust-compare-hex">{{ adjustColor }}</span>
+            </div>
+            <div class="adjust-compare-arrow">→</div>
+            <div class="adjust-compare-item">
+              <div class="adjust-compare-swatch" :style="{ background: adjustedColor }">
+                <span :style="{ color: getContrastColor(adjustedColor) }">结果</span>
+              </div>
+              <span class="adjust-compare-hex">{{ adjustedColor }}</span>
+            </div>
+          </div>
+
+          <div class="adjust-meta-row">
+            <span>HSL: {{ adjustHue }}° / {{ adjustSaturation }}% / {{ adjustLightness }}%</span>
+            <button class="sm-btn" @click="copyValue(adjustedColor, '调整后色值')">复制结果</button>
+          </div>
+        </div>
+
+        <div class="adjust-control-col">
+          <div class="adjust-sliders compact">
+            <div class="slider-item">
+              <label>色相 Hue <strong>{{ adjustHue }}°</strong></label>
+              <input type="range" v-model="adjustHue" min="0" max="360" class="adjust-slider hue" />
+            </div>
+            <div class="slider-item">
+              <label>饱和度 Saturation <strong>{{ adjustSaturation }}%</strong></label>
+              <input type="range" v-model="adjustSaturation" min="0" max="200" class="adjust-slider sat" />
+            </div>
+            <div class="slider-item">
+              <label>明度 Lightness <strong>{{ adjustLightness }}%</strong></label>
+              <input type="range" v-model="adjustLightness" min="0" max="100" class="adjust-slider light" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="adjust-input-row">
-        <ColorPicker v-model="adjustColor" />
-        <button class="primary-btn" @click="resetAdjust">重置</button>
-      </div>
-
-      <div class="adjust-preview">
-        <div class="adjust-main-swatch" :style="{ background: adjustColor }">
-          <span :style="{ color: getContrastColor(adjustColor) }">{{ adjustColor }}</span>
-        </div>
-      </div>
-
-      <div class="adjust-sliders">
-        <div class="slider-item">
-          <label>色相 Hue: {{ adjustHue }}°</label>
-          <input type="range" v-model="adjustHue" min="0" max="360" class="adjust-slider" />
-        </div>
-        <div class="slider-item">
-          <label>饱和度 Saturation: {{ adjustSaturation }}%</label>
-          <input type="range" v-model="adjustSaturation" min="0" max="200" class="adjust-slider" />
-        </div>
-        <div class="slider-item">
-          <label>明度 Lightness: {{ adjustLightness }}%</label>
-          <input type="range" v-model="adjustLightness" min="0" max="100" class="adjust-slider" />
-        </div>
-      </div>
-
-      <div class="adjust-current">
-        <div class="adjust-result-swatch" :style="{ background: adjustedColor }">
-          <span :style="{ color: getContrastColor(adjustedColor) }">当前调整结果</span>
-        </div>
-        <div class="adjust-result-info">
-          <div><strong>HEX:</strong> {{ adjustedColor }}</div>
-          <div><strong>HSL:</strong> hsl({{ adjustHue }}, {{ adjustSaturation }}%, {{ adjustLightness }}%)</div>
-        </div>
-        <button class="primary-btn" @click="copyValue(adjustedColor, '调整后色值')">复制</button>
-      </div>
-
-      <div class="shade-section">
-        <div class="section-title">同色系 9 阶色卡（UI 分级配色专用）</div>
-        <div class="shade-grid">
+      <div class="shade-strip-section">
+        <div class="section-title inline">同色系 9 阶色卡</div>
+        <div class="shade-strip">
           <div
             v-for="(shade, idx) in adjustedShades"
             :key="idx"
-            class="shade-card"
+            class="shade-strip-cell"
+            :title="shade.color + ' · 点击复制'"
+            @click="copyValue(shade.color, shade.level)"
           >
-            <div class="shade-swatch" :style="{ background: shade.color }">
+            <div class="shade-strip-swatch" :style="{ background: shade.color }">
               <span class="shade-level" :style="{ color: getContrastColor(shade.color) }">{{ shade.level }}</span>
             </div>
-            <div class="shade-hex">{{ shade.color }}</div>
-            <button class="sm-btn" @click="copyValue(shade.color, shade.level)">复制</button>
+            <span class="shade-strip-hex">{{ shade.color }}</span>
           </div>
         </div>
       </div>
@@ -520,65 +531,141 @@ export default {
 }
 
 .section-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 20px 0 12px; }
+.section-title.inline { margin: 0 0 10px; }
 
+.adjust-panel { padding: 16px; }
+.panel-header.compact { margin-bottom: 12px; }
+.adjust-workbench {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(300px, 1.1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.adjust-visual-col,
+.adjust-control-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
 .adjust-input-row {
-  display: flex; gap: 12px; align-items: center; margin-bottom: 20px;
+  display: flex; gap: 12px; align-items: center;
+  :deep(.color-picker) { flex: 1; min-width: 0; }
 }
-
-.adjust-preview {
-  display: flex; justify-content: center; margin-bottom: 20px;
+.adjust-compare-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 14px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
 }
-.adjust-main-swatch {
-  width: 200px; height: 80px; border-radius: var(--radius-md);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 600; border: 1px solid var(--border-primary);
+.adjust-compare-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
-
-.adjust-sliders {
-  display: flex; flex-direction: column; gap: 16px;
-  padding: 20px; background: var(--bg-muted); border-radius: var(--radius-md);
-  margin-bottom: 20px;
+.adjust-compare-swatch {
+  width: 100%;
+  max-width: 120px;
+  height: 72px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border-primary);
+}
+.adjust-compare-hex {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-tertiary);
+}
+.adjust-compare-arrow {
+  font-size: 22px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.adjust-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.adjust-sliders.compact {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  height: 100%;
+  justify-content: center;
+  margin-bottom: 0;
 }
 .slider-item {
   display: flex; flex-direction: column; gap: 8px;
 }
 .slider-item label {
-  font-size: 13px; font-weight: 500; color: var(--text-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  strong { color: var(--accent); font-weight: 600; }
 }
 .adjust-slider {
   width: 100%; height: 6px;
 }
-
-.adjust-current {
-  display: flex; align-items: center; gap: 20px;
-  padding: 20px; background: var(--bg-muted); border-radius: var(--radius-md);
-  margin-bottom: 20px;
+.shade-strip-section {
+  padding-top: 4px;
+  border-top: 1px dashed var(--border-primary);
 }
-.adjust-result-swatch {
-  width: 80px; height: 80px; border-radius: var(--radius-md);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 600; border: 1px solid var(--border-primary);
+.shade-strip {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 6px;
+}
+.shade-strip-cell {
+  cursor: pointer;
   text-align: center;
+  transition: transform 0.15s ease;
+  &:hover { transform: translateY(-2px); }
 }
-.adjust-result-info {
-  flex: 1;
-  font-size: 13px; color: var(--text-secondary); line-height: 1.8;
+.shade-strip-swatch {
+  height: 52px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 4px;
+  border: 1px solid var(--border-primary);
+  margin-bottom: 4px;
 }
-
-.shade-grid {
-  display: grid; grid-template-columns: repeat(9, 1fr); gap: 8px;
-}
-.shade-card {
-  padding: 8px; background: var(--bg-muted); border-radius: var(--radius-sm);
-  text-align: center;
-}
-.shade-swatch {
-  width: 100%; height: 60px; border-radius: 4px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 6px; border: 1px solid var(--border-primary);
+.shade-strip-hex {
+  font-size: 9px;
+  font-family: monospace;
+  color: var(--text-tertiary);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .shade-level { font-size: 10px; font-weight: 600; }
-.shade-hex { font-size: 10px; font-family: monospace; color: var(--text-tertiary); margin-bottom: 4px; }
 
 .gradient-inputs {
   display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;
@@ -724,7 +811,8 @@ export default {
 .diff-transition-hex { font-size: 9px; font-family: monospace; color: var(--text-tertiary); display: block; margin-bottom: 4px; }
 
 @media (max-width: 1024px) {
-  .shade-grid { grid-template-columns: repeat(5, 1fr); }
+  .adjust-workbench { grid-template-columns: 1fr; }
+  .shade-strip { grid-template-columns: repeat(5, 1fr); }
   .extracted-grid { grid-template-columns: repeat(4, 1fr); }
   .diff-transition-grid { grid-template-columns: repeat(5, 1fr); }
   .diff-inputs { grid-template-columns: 1fr; }
@@ -733,7 +821,8 @@ export default {
   .diff-results { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 640px) {
-  .shade-grid, .extracted-grid, .diff-transition-grid { grid-template-columns: repeat(3, 1fr); }
+  .shade-strip { grid-template-columns: repeat(3, 1fr); }
+  .extracted-grid, .diff-transition-grid { grid-template-columns: repeat(3, 1fr); }
   .diff-results { grid-template-columns: 1fr; }
   .diff-colors-info { grid-template-columns: 1fr; }
 }

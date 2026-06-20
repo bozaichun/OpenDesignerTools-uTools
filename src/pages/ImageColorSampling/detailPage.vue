@@ -11,9 +11,9 @@
     <div v-else>
       <!-- 图片预览 + 取色区 + 吸管取色结果 -->
       <div class="analysis-top-row">
-        <div class="image-preview-section">
-          <SectionTitle
-            mode="secondary"
+        <div class="section-block image-preview-section">
+          <ModuleTitle
+            mode="section"
             title="图片取色"
             subtitle="点击图片任意位置可获取该点颜色值"
           />
@@ -32,9 +32,9 @@
         </div>
 
         <!-- 吸管取色结果 -->
-        <div v-if="pickedColor" class="picker-result-section">
-          <SectionTitle
-            mode="secondary"
+        <div v-if="pickedColor" class="section-block picker-result-section">
+          <ModuleTitle
+            mode="section"
             title="吸管取色结果"
             subtitle="点击图片任意位置可获取该点颜色值"
           />
@@ -76,9 +76,9 @@
         </div>
 
         <!-- 占位：未取色时显示空态提示 -->
-        <div v-else class="picker-result-section">
-          <SectionTitle
-            mode="secondary"
+        <div v-else class="section-block picker-result-section">
+          <ModuleTitle
+            mode="section"
             title="吸管取色结果"
             subtitle="点击图片任意位置可获取该点颜色值"
           />
@@ -87,9 +87,9 @@
       </div>
 
       <!-- 主色调结果 -->
-      <div class="colors-result-section">
-        <SectionTitle
-          mode="secondary"
+      <div class="section-block colors-result-section">
+        <ModuleTitle
+          mode="section"
           title="图片主色调"
           :subtitle="'共提取 ' + mainColors.length + ' 种主要颜色 · 点击色卡复制 HEX'"
         />
@@ -161,14 +161,14 @@ import {
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
   copyToClipboard, showToast
 } from '../../utils/colorUtils';
-import SectionTitle from '../../components/SectionTitle.vue';
+import ModuleTitle from '../../components/ModuleTitle.vue';
 
 const STORAGE_KEY = 'imageAnalysisData';
 
 export default {
   name: 'ImageColorSamplingDetail',
   components: {
-    SectionTitle
+    ModuleTitle
   },
   data() {
     return {
@@ -357,6 +357,12 @@ export default {
 }
 
 /* ============ 顶部行：图片预览 + 吸管取色结果 ============ */
+.section-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .analysis-top-row {
   display: flex;
   align-items: flex-start;
@@ -436,22 +442,6 @@ export default {
 .colors-result-section,
 .picker-result-section {
   margin-top: 24px;
-}
-
-.section-header {
-  margin-bottom: 14px;
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.section-subtitle {
-  font-size: 12px;
-  color: var(--text-tertiary);
 }
 
 /* ============ 主色调卡片网格 ============ */

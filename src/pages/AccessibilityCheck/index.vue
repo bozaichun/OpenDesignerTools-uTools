@@ -16,70 +16,103 @@
     </div>
 
     <!-- WCAG 对比度检测 -->
-    <section v-if="activeTab === 'wcag'" class="panel">
-      <div class="panel-header">
-        <h3 class="panel-title">WCAG 2.1 对比度自动测算</h3>
-        <span class="panel-sub">区分正文与大字号，判定 AA / AAA 合规</span>
-      </div>
-
-      <div class="color-input-grid">
-        <div class="color-input-card">
-          <div class="color-input-label">前景色（文字）</div>
-          <div class="color-input-row">
-            <ColorPicker v-model="fgColor" />
+    <section v-if="activeTab === 'wcag'" class="panel wcag-panel">
+      <div class="wcag-workbench">
+        <div class="wcag-col wcag-input-col">
+          <div class="panel-header compact">
+            <h3 class="panel-title">WCAG 2.1 对比度自动测算</h3>
+            <span class="panel-sub">区分正文与大字号，判定 AA / AAA 合规</span>
           </div>
-          <div class="color-swatch" :style="{ background: fgColor }"></div>
-        </div>
 
-        <div class="color-input-card">
-          <div class="color-input-label">背景色</div>
-          <div class="color-input-row">
-            <ColorPicker v-model="bgColor" />
+          <div class="wcag-color-pair">
+            <div class="wcag-color-item">
+              <span class="wcag-color-tag">前景色</span>
+              <div class="wcag-color-row">
+                <span class="wcag-mini-swatch" :style="{ background: fgColor }"></span>
+                <ColorPicker v-model="fgColor" />
+              </div>
+            </div>
+            <div class="wcag-color-item">
+              <span class="wcag-color-tag">背景色</span>
+              <div class="wcag-color-row">
+                <span class="wcag-mini-swatch" :style="{ background: bgColor }"></span>
+                <ColorPicker v-model="bgColor" />
+              </div>
+            </div>
           </div>
-          <div class="color-swatch" :style="{ background: bgColor }"></div>
-        </div>
-      </div>
 
-      <div class="contrast-preview" :style="{ background: bgColor, color: fgColor }">
-        <div class="contrast-line-lg">大字号文字 24px / 18px 粗体</div>
-        <div class="contrast-line-base">正文文字 14px / 常规字重</div>
-        <div class="contrast-line-sm">小字 / 辅助说明 12px</div>
-      </div>
+          <div class="quick-test-row compact">
+            <div class="quick-test-label">快速参考</div>
+            <div class="quick-chip-list">
+              <div
+                v-for="pair in quickPairs"
+                :key="pair.label"
+                class="quick-chip"
+                @click="applyPair(pair)"
+              >
+                <span class="quick-chip-fg" :style="{ background: pair.fg }"></span>
+                <span class="quick-chip-bg" :style="{ background: pair.bg }"></span>
+                {{ pair.label }}
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <div class="contrast-result-grid">
-        <div class="result-card" :class="resultNormal.class">
-          <div class="result-label">正文（AA）</div>
-          <div class="result-value">{{ contrastRatio.toFixed(2) }}:1</div>
-          <div class="result-status">{{ resultNormal.status }} / 标准 4.5:1</div>
-        </div>
-        <div class="result-card" :class="resultLarge.class">
-          <div class="result-label">大字号（AA）</div>
-          <div class="result-value">{{ contrastRatio.toFixed(2) }}:1</div>
-          <div class="result-status">{{ resultLarge.status }} / 标准 3:1</div>
-        </div>
-        <div class="result-card" :class="resultNormalAAA.class">
-          <div class="result-label">正文（AAA）</div>
-          <div class="result-value">{{ contrastRatio.toFixed(2) }}:1</div>
-          <div class="result-status">{{ resultNormalAAA.status }} / 标准 7:1</div>
-        </div>
-        <div class="result-card" :class="resultLargeAAA.class">
-          <div class="result-label">大字号（AAA）</div>
-          <div class="result-value">{{ contrastRatio.toFixed(2) }}:1</div>
-          <div class="result-status">{{ resultLargeAAA.status }} / 标准 4.5:1</div>
-        </div>
-      </div>
+        <div class="wcag-col wcag-chart-col">
+          <div class="contrast-gauge-card">
+            <div class="gauge-head">
+              <span class="gauge-title">对比度比值</span>
+              <span class="gauge-value">{{ contrastRatio.toFixed(2) }}:1</span>
+            </div>
+            <div class="gauge-track">
+              <div class="gauge-fill" :style="{ width: contrastGaugePercent + '%' }"></div>
+              <div
+                v-for="mark in contrastGaugeMarks"
+                :key="mark.label"
+                class="gauge-mark"
+                :style="{ left: mark.left + '%' }"
+                :title="mark.name"
+              >
+                <span class="gauge-mark-line"></span>
+                <span class="gauge-mark-label">{{ mark.label }}</span>
+              </div>
+            </div>
+            <div class="gauge-legend">
+              <span v-for="mark in contrastGaugeMarks" :key="'lg-' + mark.label">{{ mark.name }} {{ mark.label }}</span>
+            </div>
+          </div>
 
-      <div class="quick-test-row">
-        <div class="quick-test-label">快速参考：</div>
-        <div
-          v-for="pair in quickPairs"
-          :key="pair.label"
-          class="quick-chip"
-          @click="applyPair(pair)"
-        >
-          <span class="quick-chip-fg" :style="{ background: pair.fg }"></span>
-          <span class="quick-chip-bg" :style="{ background: pair.bg }"></span>
-          {{ pair.label }} · {{ pair.ratio }}:1
+          <div class="contrast-preview compact" :style="{ background: bgColor, color: fgColor }">
+            <div class="contrast-line-lg">大字号 24px</div>
+            <div class="contrast-line-base">正文 14px</div>
+            <div class="contrast-line-sm">辅助 12px</div>
+          </div>
+        </div>
+
+        <div class="wcag-col wcag-result-col">
+          <div class="result-matrix-title">合规判定</div>
+          <div class="contrast-result-matrix">
+            <div class="result-card compact" :class="resultNormal.class">
+              <div class="result-label">正文 AA</div>
+              <div class="result-value">{{ contrastRatio.toFixed(2) }}:1</div>
+              <div class="result-status">{{ resultNormal.status }} · 4.5:1</div>
+            </div>
+            <div class="result-card compact" :class="resultLarge.class">
+              <div class="result-label">大字号 AA</div>
+              <div class="result-value">{{ contrastRatio.toFixed(2) }}:1</div>
+              <div class="result-status">{{ resultLarge.status }} · 3:1</div>
+            </div>
+            <div class="result-card compact" :class="resultNormalAAA.class">
+              <div class="result-label">正文 AAA</div>
+              <div class="result-value">{{ contrastRatio.toFixed(2) }}:1</div>
+              <div class="result-status">{{ resultNormalAAA.status }} · 7:1</div>
+            </div>
+            <div class="result-card compact" :class="resultLargeAAA.class">
+              <div class="result-label">大字号 AAA</div>
+              <div class="result-value">{{ contrastRatio.toFixed(2) }}:1</div>
+              <div class="result-status">{{ resultLargeAAA.status }} · 4.5:1</div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -288,6 +321,16 @@ export default {
     contrastRatio() {
       return contrast(this.fgColor, this.bgColor);
     },
+    contrastGaugePercent() {
+      return Math.min((this.contrastRatio / 21) * 100, 100);
+    },
+    contrastGaugeMarks() {
+      return [
+        { label: '3:1', left: (3 / 21) * 100, name: 'AA 大字号' },
+        { label: '4.5:1', left: (4.5 / 21) * 100, name: 'AA 正文' },
+        { label: '7:1', left: (7 / 21) * 100, name: 'AAA 正文' }
+      ];
+    },
     resultNormal() {
       return this.buildContrastResult(this.contrastRatio, 4.5);
     },
@@ -494,6 +537,118 @@ export default {
 .panel-title { font-size: 15px; font-weight: 600; margin: 0 0 4px 0; color: var(--text-primary); }
 .panel-sub { font-size: 12px; color: var(--text-tertiary); }
 
+.wcag-panel { padding: 16px; }
+.panel-header.compact { margin-bottom: 12px; }
+.wcag-workbench {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(260px, 1.2fr) minmax(200px, 0.9fr);
+  gap: 16px;
+  align-items: stretch;
+}
+.wcag-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.wcag-color-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+}
+.wcag-color-item { display: flex; flex-direction: column; gap: 6px; }
+.wcag-color-tag { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+.wcag-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  :deep(.color-picker) { flex: 1; min-width: 0; }
+}
+.wcag-mini-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  flex-shrink: 0;
+}
+.contrast-gauge-card {
+  padding: 14px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+}
+.gauge-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.gauge-title { font-size: 12px; color: var(--text-secondary); }
+.gauge-value { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+.gauge-track {
+  position: relative;
+  height: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-pill);
+  overflow: visible;
+  margin-bottom: 28px;
+}
+.gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #EF4444 0%, #F59E0B 35%, #10B981 70%, var(--accent) 100%);
+  border-radius: var(--radius-pill);
+  transition: width 0.2s ease;
+}
+.gauge-mark {
+  position: absolute;
+  top: -2px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+.gauge-mark-line {
+  width: 2px;
+  height: 16px;
+  background: var(--text-tertiary);
+  border-radius: 1px;
+}
+.gauge-mark-label {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.gauge-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+.result-matrix-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.contrast-result-matrix {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  flex: 1;
+}
+.result-card.compact {
+  padding: 10px 8px;
+  .result-value { font-size: 16px; margin-bottom: 2px; }
+  .result-label { margin-bottom: 4px; }
+}
+
 .color-input-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -526,10 +681,24 @@ export default {
 .contrast-preview {
   padding: 20px; border-radius: var(--radius-md);
   border: 1px solid var(--border-primary); margin-bottom: 16px;
+  &.compact {
+    padding: 14px 16px;
+    margin-bottom: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 96px;
+  }
 }
 .contrast-line-lg { font-size: 24px; font-weight: 700; margin-bottom: 10px; }
 .contrast-line-base { font-size: 14px; margin-bottom: 10px; }
 .contrast-line-sm { font-size: 12px; }
+.contrast-preview.compact {
+  .contrast-line-lg { font-size: 20px; margin-bottom: 6px; }
+  .contrast-line-base { font-size: 13px; margin-bottom: 6px; }
+  .contrast-line-sm { font-size: 11px; }
+}
 
 .contrast-result-grid {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
@@ -549,6 +718,19 @@ export default {
   display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
   margin-top: 16px; padding-top: 16px;
   border-top: 1px dashed var(--border-primary);
+  &.compact {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    gap: 6px;
+  }
+}
+.quick-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .quick-test-label { font-size: 12px; color: var(--text-secondary); }
 .quick-chip {
@@ -719,8 +901,10 @@ export default {
 }
 
 @media (max-width: 960px) {
+  .wcag-workbench { grid-template-columns: 1fr; }
   .color-input-grid { grid-template-columns: 1fr; }
   .contrast-result-grid { grid-template-columns: repeat(2, 1fr); }
+  .contrast-result-matrix { grid-template-columns: repeat(2, 1fr); }
   .gov-check-grid { grid-template-columns: 1fr; }
   .sim-grid { grid-template-columns: repeat(2, 1fr); }
   .text-suggest-grid { grid-template-columns: repeat(2, 1fr); }
