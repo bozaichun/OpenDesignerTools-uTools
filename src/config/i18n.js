@@ -179,6 +179,10 @@ export const TAB_BY_ROUTE = {
   '/PaletteManager': 'PaletteManager',
   '/PaletteManager/viewGroupingDetail': 'PaletteManager',
   '/PrintTools': 'PrintTools',
+  '/PrintTools/CmykDetail': 'PrintTools',
+  '/PrintTools/PantoneDetail': 'PrintTools',
+  '/PrintTools/OverprintPreviewDetail': 'PrintTools',
+  '/PrintTools/ScreenTintConverDetail': 'PrintTools',
   '/ColorTools': 'ColorTools'
 };
 

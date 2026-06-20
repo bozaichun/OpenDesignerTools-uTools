@@ -1,0 +1,207 @@
+<template>
+  <div class="print-detail">
+    <PrintToolsDetailShell
+      current-module="cmyk"
+      :color="draftColor"
+      :query-extra="shellQueryExtra"
+      @update:color="draftColor = $event"
+      @analyze="handleAnalyze"
+    >
+      <template #extra>
+        <Selector v-model="draftProfile" :block="false" :flex="true">
+          <option value="srgb">sRGB / 通用</option>
+          <option value="cmyk_us">US Web Coated (SWOP) v2</option>
+          <option value="cmyk_eu">Euroscale Coated v2</option>
+          <option value="cmyk_jp">Japan Color 2001 Coated</option>
+        </Selector>
+      </template>
+    </PrintToolsDetailShell>
+
+    <section v-if="analyzed" class="panel module-panel">
+      <div class="module-head">
+        <h3 class="panel-title">CMYK 校准</h3>
+        <span class="module-tag">屏幕色 → 印刷色</span>
+      </div>
+      <span class="panel-sub">RGB/HEX 转带 ICC 配置 CMYK，预览印刷色差与溢色预警</span>
+
+      <div class="cmyk-preview">
+        <div class="cmyk-preview-item">
+          <div class="cmyk-preview-swatch" :style="{ background: activeColor }">
+            <span class="cmyk-preview-text" :style="{ color: getContrastColor(activeColor) }">屏幕色</span>
+          </div>
+          <div class="cmyk-preview-label">原始 RGB</div>
+          <div class="cmyk-preview-value">{{ activeColor }}</div>
+        </div>
+        <div class="cmyk-arrow">→</div>
+        <div class="cmyk-preview-item">
+          <div class="cmyk-preview-swatch" :style="{ background: cmykConvertedHex }">
+            <span class="cmyk-preview-text" :style="{ color: getContrastColor(cmykConvertedHex) }">印刷色</span>
+          </div>
+          <div class="cmyk-preview-label">CMYK 模拟</div>
+          <div class="cmyk-preview-value">cmyk({{ cmykResult.c }}%, {{ cmykResult.m }}%, {{ cmykResult.y }}%, {{ cmykResult.k }}%)</div>
+        </div>
+      </div>
+
+      <div class="cmyk-result-grid">
+        <div class="result-card" :class="cmykResult.outOfGamut ? 'warn' : 'ok'">
+          <div class="result-label">色域检测</div>
+          <div class="result-value">{{ cmykResult.outOfGamut ? '⚠ 溢色' : '✓ 正常' }}</div>
+          <div class="result-status">超出 CMYK 色域的颜色印刷后会变暗</div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">C 青色</div>
+          <div class="result-value">{{ cmykResult.c }}%</div>
+          <div class="cmyk-bar"><div class="cmyk-bar-fill c" :style="{ width: cmykResult.c + '%' }"></div></div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">M 品红</div>
+          <div class="result-value">{{ cmykResult.m }}%</div>
+          <div class="cmyk-bar"><div class="cmyk-bar-fill m" :style="{ width: cmykResult.m + '%' }"></div></div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">Y 黄色</div>
+          <div class="result-value">{{ cmykResult.y }}%</div>
+          <div class="cmyk-bar"><div class="cmyk-bar-fill y" :style="{ width: cmykResult.y + '%' }"></div></div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">K 黑色</div>
+          <div class="result-value">{{ cmykResult.k }}%</div>
+          <div class="cmyk-bar"><div class="cmyk-bar-fill k" :style="{ width: cmykResult.k + '%' }"></div></div>
+        </div>
+      </div>
+
+      <div v-if="cmykResult.outOfGamut" class="warning-box">
+        ⚠ 此颜色超出 CMYK 印刷色域，实际印刷效果可能与屏幕显示有明显差异。建议降低饱和度后使用。
+      </div>
+    </section>
+  </div>
+</template>
+
+<script>
+import Selector from '../../components/Selector.vue';
+import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
+import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
+import { computeCmykResult, computeCmykConvertedHex, readDetailQuery, shouldAutoAnalyze } from './printToolsUtils';
+
+export default {
+  name: 'CmykDetail',
+  components: { Selector, PrintToolsDetailShell },
+  data() {
+    return {
+      draftColor: '#1677FF',
+      draftProfile: 'srgb',
+      activeColor: '#1677FF',
+      activeProfile: 'srgb',
+      analyzed: false
+    };
+  },
+  computed: {
+    shellQueryExtra() {
+      return { profile: this.draftProfile, paper: 'coated' };
+    },
+    cmykResult() {
+      return computeCmykResult(this.activeColor);
+    },
+    cmykConvertedHex() {
+      return computeCmykConvertedHex(this.cmykResult);
+    }
+  },
+  mounted() {
+    this.applyRouteQuery();
+  },
+  watch: {
+    '$route.query'() {
+      this.applyRouteQuery();
+    }
+  },
+  methods: {
+    applyRouteQuery() {
+      const q = readDetailQuery(this.$route);
+      this.draftColor = q.color;
+      this.draftProfile = q.profile;
+      if (shouldAutoAnalyze(this.$route)) {
+        this.handleAnalyze();
+      }
+    },
+    handleAnalyze() {
+      this.activeColor = this.draftColor;
+      this.activeProfile = this.draftProfile;
+      this.analyzed = true;
+    },
+    getContrastColor(hex) {
+      const rgb = parseColor(hex);
+      if (!rgb) return '#000000';
+      return gcc(rgb);
+    },
+    copyValue(value, label) {
+      copyToClipboard(value);
+      showToast(this, '已复制 ' + label + ': ' + value, 'success');
+    }
+  }
+};
+</script>
+
+<style lang="scss" scoped>
+.print-detail { width: 100%; min-width: 0; }
+.panel {
+  background: var(--bg-card); border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px;
+}
+.panel-title { font-size: 15px; font-weight: 600; margin: 0 0 4px 0; color: var(--text-primary); }
+.panel-sub { font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 16px; margin-top: -8px; }
+.module-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.module-tag {
+  padding: 2px 8px; font-size: 11px; font-weight: 500;
+  background: var(--accent-soft); color: var(--accent); border-radius: var(--radius-pill);
+}
+.cmyk-preview {
+  display: flex; align-items: center; justify-content: center; gap: 24px;
+  padding: 24px; background: var(--bg-muted); border-radius: var(--radius-md); margin-bottom: 20px;
+}
+.cmyk-preview-item { text-align: center; }
+.cmyk-preview-swatch {
+  width: 120px; height: 120px; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px; border: 1px solid var(--border-primary);
+}
+.cmyk-preview-text { font-size: 14px; font-weight: 600; }
+.cmyk-preview-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; }
+.cmyk-preview-value { font-size: 11px; font-family: monospace; color: var(--text-tertiary); }
+.cmyk-arrow { font-size: 24px; color: var(--text-tertiary); }
+.cmyk-result-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px;
+}
+.result-card {
+  padding: 14px; border-radius: var(--radius-md); text-align: center;
+  border: 1px solid var(--border-primary); background: var(--bg-muted);
+  &.ok { border-color: #10B981; background: rgba(16,185,129,0.08); }
+  &.warn { border-color: #F59E0B; background: rgba(245,158,11,0.08); }
+}
+.result-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+.result-value { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+.result-status { font-size: 11px; color: var(--text-tertiary); }
+.cmyk-bar {
+  height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden; margin-top: 8px;
+}
+.cmyk-bar-fill {
+  height: 100%; border-radius: 4px;
+  &.c { background: #00AEEF; }
+  &.m { background: #EC008C; }
+  &.y { background: #FFF200; }
+  &.k { background: #231F20; }
+}
+.warning-box {
+  padding: 14px 18px; background: rgba(245, 158, 11, 0.1);
+  border: 1px solid #F59E0B; border-radius: var(--radius-md);
+  font-size: 13px; color: #B45309;
+}
+@media (max-width: 1024px) {
+  .cmyk-result-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .cmyk-result-grid { grid-template-columns: 1fr; }
+  .cmyk-preview { flex-direction: column; }
+}
+</style>

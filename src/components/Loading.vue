@@ -61,7 +61,7 @@ export default {
 }
 
 .loading-text {
-  font-size: 14px;
+  font-size: 12px;
   color: #fff;
   font-weight: 500;
   white-space: nowrap;

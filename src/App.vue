@@ -204,11 +204,16 @@ export default {
       if (this.route.path === '/PaletteManager/viewGroupingDetail') {
         return this.route.query.name || '分组详情';
       }
+      if (this.route.path === '/PrintTools/CmykDetail') return 'CMYK 校准';
+      if (this.route.path === '/PrintTools/PantoneDetail') return '潘通匹配';
+      if (this.route.path === '/PrintTools/OverprintPreviewDetail') return '叠印预览';
+      if (this.route.path === '/PrintTools/ScreenTintConverDetail') return '网点换算';
       return this.currentTabLabel;
     },
     isDetailRoute() {
       return this.route.path === '/ImageColorSampling/detailPage'
-        || this.route.path === '/PaletteManager/viewGroupingDetail';
+        || this.route.path === '/PaletteManager/viewGroupingDetail'
+        || this.route.path.startsWith('/PrintTools/');
     }
   },
   provide() {
@@ -243,6 +248,10 @@ export default {
     handleBackFromDetail() {
       if (this.route.path === '/PaletteManager/viewGroupingDetail') {
         this.router.push('/PaletteManager');
+        return;
+      }
+      if (this.route.path.startsWith('/PrintTools/')) {
+        this.router.push('/PrintTools');
         return;
       }
       this.router.push('/ImageColorSampling');

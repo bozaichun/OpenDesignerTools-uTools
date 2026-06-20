@@ -100,7 +100,11 @@
 
       <div class="sim-grid">
         <div v-for="sim in simResults" :key="sim.key" class="sim-card">
-          <div class="sim-title">{{ sim.label }}</div>
+          <div class="sim-card-head">
+            <div class="sim-title">{{ sim.label }}</div>
+            <span class="sim-prompt iconfont icon-Prompt"></span>
+            <span class="sim-prompt-tip">{{ sim.label }}：设计稿配色是否在该人群中清晰可辨？</span>
+          </div>
           <div class="sim-colors">
             <div
               v-for="(c, i) in sim.colors"
@@ -111,19 +115,8 @@
             ></div>
           </div>
           <div class="sim-hex">{{ sim.hex }}</div>
-        </div>
-      </div>
-
-      <div class="sim-sample-text">
-        <div class="sim-sample-title">文字可读性测试（使用模拟后的主色 vs 白底）</div>
-        <div class="sim-sample-row">
-          <div
-            v-for="sim in simResults"
-            :key="sim.key"
-            class="sim-sample-item"
-            :style="{ color: sim.hex }"
-          >
-            {{ sim.label }}：设计稿配色是否在该人群中清晰可辨？
+          <div class="sim-readability">
+            <span class="sim-readability-text" :style="{ color: sim.hex }">Aa 示例文字 · 14px</span>
           </div>
         </div>
       </div>
@@ -573,25 +566,83 @@ export default {
 .sim-color-input { margin-bottom: 16px; }
 .sim-grid {
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px;
+  overflow: visible;
 }
 .sim-card {
+  position: relative;
   background: var(--bg-muted); border: 1px solid var(--border-primary);
   border-radius: var(--radius-md); padding: 12px; text-align: center;
+  overflow: visible;
 }
-.sim-title { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
+.sim-card-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 18px;
+  margin-bottom: 8px;
+  overflow: visible;
+}
+.sim-title { font-size: 12px; font-weight: 600; color: var(--text-primary); margin: 0; }
+.sim-prompt {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: help;
+  user-select: none;
+  line-height: 1;
+  transition: color 0.15s ease;
+  z-index: 2;
+  &:hover { color: var(--accent); }
+}
+.sim-prompt-tip {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  width: auto;
+  max-width: 100%;
+  padding: 8px 10px;
+  background: rgba(30, 33, 38, 0.95);
+  color: #fff;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+.sim-prompt:hover + .sim-prompt-tip {
+  visibility: visible;
+  opacity: 1;
+}
 .sim-colors {
   display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; margin-bottom: 8px;
 }
 .sim-color-cell { height: 24px; border-radius: 2px; }
-.sim-hex { font-size: 11px; color: var(--text-tertiary); font-family: monospace; }
-
-.sim-sample-text {
-  padding: 16px; background: var(--bg-muted); border-radius: var(--radius-md);
+.sim-hex { font-size: 11px; color: var(--text-tertiary); font-family: monospace; margin-bottom: 8px; }
+.sim-readability {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 6px;
+  background: #fff;
   border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
 }
-.sim-sample-title { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
-.sim-sample-row { display: flex; flex-direction: column; gap: 10px; background: #fff; padding: 14px; border-radius: var(--radius-sm); }
-.sim-sample-item { font-size: 13px; line-height: 1.5; }
+.sim-readability-text {
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
 
 /* gov */
 .gov-input-row {

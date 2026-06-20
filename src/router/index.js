@@ -78,6 +78,30 @@ const routes = [
     meta: { title: '印刷工具' }
   },
   {
+    path: '/PrintTools/CmykDetail',
+    name: 'PrintToolsCmykDetail',
+    component: () => import('../pages/PrintTools/CmykDetail.vue'),
+    meta: { title: 'CMYK 校准' }
+  },
+  {
+    path: '/PrintTools/PantoneDetail',
+    name: 'PrintToolsPantoneDetail',
+    component: () => import('../pages/PrintTools/PantoneDetail.vue'),
+    meta: { title: '潘通匹配' }
+  },
+  {
+    path: '/PrintTools/OverprintPreviewDetail',
+    name: 'PrintToolsOverprintDetail',
+    component: () => import('../pages/PrintTools/OverprintPreviewDetail.vue'),
+    meta: { title: '叠印预览' }
+  },
+  {
+    path: '/PrintTools/ScreenTintConverDetail',
+    name: 'PrintToolsScreenTintDetail',
+    component: () => import('../pages/PrintTools/ScreenTintConverDetail.vue'),
+    meta: { title: '网点换算' }
+  },
+  {
     path: '/ColorTools',
     name: 'ColorTools',
     component: () => import('../pages/ColorTools/index.vue'),
