@@ -48,7 +48,7 @@ export default {
       default: true
     }
   },
-  emits: ['update:modelValue', 'change'],
+  emits: ['update:modelValue', 'change', 'clear-all'],
   data() {
     return {
       invalid: false,
@@ -110,6 +110,7 @@ export default {
       this.invalid = false;
       this.editingHex = false;
       this.emitColor('#FFFFFF');
+      this.$emit('clear-all');
     }
   }
 };

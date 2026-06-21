@@ -27,6 +27,7 @@
             <ColorPicker
               v-model="inputs.hex"
               @change="onColorPickerChange"
+              @clear-all="clearInputs"
             />
             <button
               class="copy-icon-btn"
@@ -130,10 +131,6 @@
           </div>
 
           <div v-if="errorMsg" class="error-message">{{ errorMsg }}</div>
-
-          <div class="action-row">
-            <button @click="clearInputs" class="clear-btn">清空输入</button>
-          </div>
         </div>
       </div>
 
@@ -285,7 +282,7 @@ export default {
 
 .convert-layout {
   display: grid;
-  grid-template-columns: 1fr 1.3fr;
+  grid-template-columns: 0.8fr 1.5fr;
   gap: 20px;
   min-width: 0;
 
@@ -297,6 +294,7 @@ export default {
 
 .col-preview {
   min-width: 0;
+  align-items: center;
 }
 
 .col-input {
@@ -323,8 +321,8 @@ export default {
 }
 
 .col-preview .color-preview {
-  aspect-ratio: 1 / 1.3;
-  width: 100%;
+  aspect-ratio: 1 / 1;
+  width: 70%;
   margin-bottom: 0;
 }
 
@@ -441,27 +439,6 @@ export default {
   border-left: 3px solid var(--text-error);
 }
 
-.action-row {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.clear-btn {
-  padding: 8px 16px;
-  background: var(--bg-muted);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 13px;
-
-  &:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-  }
-}
-
 @media (max-width: 960px) {
   .convert-layout {
     grid-template-columns: 1fr;
@@ -470,6 +447,7 @@ export default {
 
   .col-preview .color-preview {
     aspect-ratio: 3 / 1;
+    width: 100%;
   }
 }
 
