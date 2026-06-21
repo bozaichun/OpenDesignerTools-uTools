@@ -20,6 +20,7 @@
       >
         <template #extra>
           <div id="print-tools-header-slot" class="print-tools-header-slot"></div>
+          <div id="color-tools-header-slot" class="color-tools-header-slot"></div>
         </template>
         <template #actions>
           <template v-for="(btn, idx) in headerActionButtons" :key="idx">
@@ -49,6 +50,9 @@
       <content-body-layout>
         <router-view />
       </content-body-layout>
+
+      <!-- 页脚 -->
+      <footer-layout />
     </main-content-layout>
 
     <!-- Toast -->
@@ -134,12 +138,14 @@ import SidebarLayout from './layout/Sidebar/index.vue';
 import HeaderLayout from './layout/Header/index.vue';
 import MainContentLayout from './layout/MainConter/index.vue';
 import ContentBodyLayout from './layout/ContentBody/index.vue';
+import FooterLayout from './layout/Footer/index.vue';
 import Toast from './components/Toast.vue';
 import Dialog from './components/Dialog.vue';
 import Drawer from './components/Drawer.vue';
 import { NAV_MENU_ITEMS } from './data/navMenu.js';
 import { I18N_DICT, TAB_BY_ROUTE, translate } from './config/i18n.js';
-import { getDetailModuleDescription } from './pages/PrintTools/printToolsUtils.js';
+import { getDetailModuleDescription as getPrintDetailModuleDescription } from './pages/PrintTools/printToolsUtils.js';
+import { getDetailModuleDescription as getColorDetailModuleDescription } from './pages/ColorTools/colorToolsUtils.js';
 
 export default {
   name: 'App',
@@ -148,6 +154,7 @@ export default {
     HeaderLayout,
     MainContentLayout,
     ContentBodyLayout,
+    FooterLayout,
     Toast,
     Dialog,
     Drawer
@@ -213,16 +220,25 @@ export default {
       if (this.route.path === '/PrintTools/PantoneDetail') return '潘通匹配';
       if (this.route.path === '/PrintTools/OverprintPreviewDetail') return '叠印预览';
       if (this.route.path === '/PrintTools/ScreenTintConverDetail') return '网点换算';
+      if (this.route.path === '/ColorTools/AdjustDetail') return '色阶微调';
+      if (this.route.path === '/ColorTools/GradientDetail') return '渐变编辑';
+      if (this.route.path === '/ColorTools/DifferenceDetail') return '色差比对';
       return this.currentTabLabel;
     },
     pageSubtitle() {
-      if (!this.route.path.startsWith('/PrintTools/')) return '';
-      return getDetailModuleDescription(this.route.path, this.route.query || {});
+      if (this.route.path.startsWith('/PrintTools/')) {
+        return getPrintDetailModuleDescription(this.route.path, this.route.query || {});
+      }
+      if (this.route.path.startsWith('/ColorTools/')) {
+        return getColorDetailModuleDescription(this.route.path);
+      }
+      return '';
     },
     isDetailRoute() {
       return this.route.path === '/ImageColorSampling/detailPage'
         || this.route.path === '/PaletteManager/viewGroupingDetail'
-        || this.route.path.startsWith('/PrintTools/');
+        || this.route.path.startsWith('/PrintTools/')
+        || this.route.path.startsWith('/ColorTools/');
     }
   },
   provide() {
@@ -261,6 +277,10 @@ export default {
       }
       if (this.route.path.startsWith('/PrintTools/')) {
         this.router.push('/PrintTools');
+        return;
+      }
+      if (this.route.path.startsWith('/ColorTools/')) {
+        this.router.push('/ColorTools');
         return;
       }
       this.router.push('/ImageColorSampling');
@@ -366,7 +386,8 @@ export default {
   pointer-events: none;
 }
 
-.print-tools-header-slot {
+.print-tools-header-slot,
+.color-tools-header-slot {
   display: flex;
   align-items: center;
 
@@ -412,13 +433,13 @@ export default {
   }
 
   &.secondary {
-    background: var(--bg-card);
-    color: var(--text-secondary);
-    border-color: var(--border-primary);
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent-light);
 
     &:hover {
-      background: var(--bg-hover);
-      color: var(--text-primary);
+      background: var(--accent-light);
+      color: var(--accent-hover);
       border-color: var(--accent);
     }
   }

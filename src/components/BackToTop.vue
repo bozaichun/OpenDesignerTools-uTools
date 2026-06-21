@@ -121,7 +121,7 @@ export default {
 .back-to-top-btn {
   position: fixed;
   right: 32px;
-  bottom: 40px;
+  bottom: 52px;
   width: 44px;
   height: 44px;
   padding: 0;

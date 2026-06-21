@@ -106,6 +106,24 @@ const routes = [
     name: 'ColorTools',
     component: () => import('../pages/ColorTools/index.vue'),
     meta: { title: '调色工具' }
+  },
+  {
+    path: '/ColorTools/AdjustDetail',
+    name: 'ColorToolsAdjustDetail',
+    component: () => import('../pages/ColorTools/AdjustDetail.vue'),
+    meta: { title: '色阶微调' }
+  },
+  {
+    path: '/ColorTools/GradientDetail',
+    name: 'ColorToolsGradientDetail',
+    component: () => import('../pages/ColorTools/GradientDetail.vue'),
+    meta: { title: '渐变编辑' }
+  },
+  {
+    path: '/ColorTools/DifferenceDetail',
+    name: 'ColorToolsDifferenceDetail',
+    component: () => import('../pages/ColorTools/DifferenceDetail.vue'),
+    meta: { title: '色差比对' }
   }
 ];
 

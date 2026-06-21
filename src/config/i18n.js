@@ -27,7 +27,8 @@ export const I18N_DICT = {
     langJa: '日语',
     langKo: '韩语',
     langRu: '俄语',
-    settingsSaved: '设置已自动保存'
+    settingsSaved: '设置已自动保存',
+    footerCopyright: '© {year} 波仔椿 · 颜色值转换器'
   },
   'zh-TW': {
     functionOverview: '功能概覽',
@@ -54,7 +55,8 @@ export const I18N_DICT = {
     langJa: '日語',
     langKo: '韓語',
     langRu: '俄語',
-    settingsSaved: '設定已自動保存'
+    settingsSaved: '設定已自動保存',
+    footerCopyright: '© {year} 波仔椿 · 顏色值轉換器'
   },
   en: {
     functionOverview: 'Function Overview',
@@ -81,7 +83,8 @@ export const I18N_DICT = {
     langJa: 'Japanese',
     langKo: 'Korean',
     langRu: 'Russian',
-    settingsSaved: 'Settings are saved automatically'
+    settingsSaved: 'Settings are saved automatically',
+    footerCopyright: '© {year} Bozanchun · Color Value Converter'
   },
   ja: {
     functionOverview: '機能概要',
@@ -108,7 +111,8 @@ export const I18N_DICT = {
     langJa: '日本語',
     langKo: '韓国語',
     langRu: 'ロシア語',
-    settingsSaved: '設定は自動的に保存されます'
+    settingsSaved: '設定は自動的に保存されます',
+    footerCopyright: '© {year} 波仔椿 · カラー値コンバーター'
   },
   ko: {
     functionOverview: '기능 개요',
@@ -135,7 +139,8 @@ export const I18N_DICT = {
     langJa: '일본어',
     langKo: '한국어',
     langRu: '러시아어',
-    settingsSaved: '설정이 자동으로 저장됩니다'
+    settingsSaved: '설정이 자동으로 저장됩니다',
+    footerCopyright: '© {year} 波仔椿 · 색상값 변환기'
   },
   ru: {
     functionOverview: 'Обзор функций',
@@ -162,7 +167,8 @@ export const I18N_DICT = {
     langJa: 'Японский',
     langKo: 'Корейский',
     langRu: 'Русский',
-    settingsSaved: 'Настройки сохраняются автоматически'
+    settingsSaved: 'Настройки сохраняются автоматически',
+    footerCopyright: '© {year} Bozanchun · Конвертер цветов'
   }
 };
 
@@ -183,7 +189,10 @@ export const TAB_BY_ROUTE = {
   '/PrintTools/PantoneDetail': 'PrintTools',
   '/PrintTools/OverprintPreviewDetail': 'PrintTools',
   '/PrintTools/ScreenTintConverDetail': 'PrintTools',
-  '/ColorTools': 'ColorTools'
+  '/ColorTools': 'ColorTools',
+  '/ColorTools/AdjustDetail': 'ColorTools',
+  '/ColorTools/GradientDetail': 'ColorTools',
+  '/ColorTools/DifferenceDetail': 'ColorTools'
 };
 
 export function translate(language, key) {

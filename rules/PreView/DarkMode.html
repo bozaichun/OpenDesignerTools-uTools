@@ -1,298 +1,218 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="dark-mode">
+<html lang="zh-CN" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OpenResumeTemplate · VibeCoding 设计规范（深色模式）</title>
-  <link rel="stylesheet" href="../../src/assets/styles/index.css" />
-  <link rel="stylesheet" href="../../src/assets/iconfont/iconfont.css" />
-  <link rel="stylesheet" href="../../src/assets/fonts/index.css" />
+  <title>颜色值转换器 · VibeCoding 设计规范（深色模式）</title>
+  <link rel="stylesheet" href="../../src/main.css" />
+  <link rel="stylesheet" href="../../src/iconfont/iconfont.css" />
   <style>
-    /* ===== VibeCoding 预览页专用样式（演示组件，非生产代码） ===== */
-    .preview-page { min-height: 100vh; }
-    .preview-grid-bg {
-      position: fixed; inset: 0; pointer-events: none; z-index: 0;
-      opacity: var(--theme-grid-opacity);
-      background-image:
-        linear-gradient(var(--theme-grid-line) 1px, transparent 1px),
-        linear-gradient(90deg, var(--theme-grid-line) 1px, transparent 1px);
-      background-size: 48px 48px;
-      mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 70%);
+    /* 预览页使用浏览器级滚动条（覆盖 main.css 的 overflow: hidden） */
+    html {
+      overflow-y: auto;
+      overflow-x: hidden;
+      height: auto;
+      min-height: 100%;
     }
+    body.preview-page {
+      overflow: visible;
+      height: auto;
+      min-height: 100vh;
+      background: var(--bg-primary);
+    }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: var(--radius-pill);
+      border: 2px solid var(--bg-primary);
+    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+    html { scrollbar-width: thin; scrollbar-color: var(--border-strong) var(--bg-primary); }
+
+    .preview-page { min-height: 100vh; background: var(--bg-primary); }
     .preview-header {
       position: sticky; top: 0; z-index: 100;
-      padding: 16px 40px;
-      background: var(--theme-header-bg);
-      border-bottom: 1px solid var(--theme-header-border);
-      backdrop-filter: blur(12px);
+      padding: 16px 24px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-primary);
       display: flex; align-items: center; justify-content: space-between; gap: 16px;
     }
-    .preview-header h1 {
-      font-size: var(--fs-18); font-weight: 600;
-      background: var(--theme-title-gradient);
-      -webkit-background-clip: text; background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .preview-header p { font-size: var(--fs-12); color: var(--theme-text-tertiary); }
+    .preview-header h1 { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0; }
+    .preview-header p { font-size: 12px; color: var(--text-tertiary); margin: 4px 0 0; }
     .preview-badge {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 12px; border-radius: 999px; font-size: var(--fs-12); font-weight: 500;
-      background: var(--theme-tag-bg); border: 1px solid var(--theme-tag-border); color: var(--theme-tag-text);
-      text-decoration: none; cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      padding: 6px 14px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 500;
+      background: var(--accent-soft); border: 1px solid var(--accent-light); color: var(--accent);
+      text-decoration: none; transition: all 0.15s ease;
     }
-    .preview-badge:hover {
-      background: var(--theme-nav-bg-hover);
-      border-color: var(--theme-card-hover-border);
-      color: var(--theme-accent-secondary);
-    }
-    .preview-badge i { font-size: 14px; line-height: 1; }
-    .preview-main { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 32px 40px 80px; }
-    .preview-section { margin-bottom: 48px; }
-    .section-label {
-      font-size: var(--fs-12); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--theme-accent-secondary); margin-bottom: 8px;
-    }
-    .section-title {
-      font-size: var(--fs-18); font-weight: 600; line-height: 26px; margin-bottom: 20px;
-      text-shadow: 1px 1px 0 rgba(var(--primary-rgb), 0.42), 2px 2px 0 rgba(var(--primary-rgb), 0.34),
-        3px 3px 0 rgba(var(--secondary-rgb), 0.26), 0 8px 14px rgba(var(--primary-rgb), 0.14);
-    }
-    .section-desc { font-size: var(--fs-14); color: var(--theme-text-secondary); margin: -12px 0 20px; }
+    .preview-badge:hover { background: var(--accent-light); color: var(--accent-hover); }
+    .preview-main { max-width: 960px; margin: 0 auto; padding: 24px 24px 64px; }
+    .preview-section { margin-bottom: 40px; }
+    .section-label { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 6px; }
+    .section-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0 0 16px; }
+    .section-desc { font-size: 13px; color: var(--text-secondary); margin: -8px 0 16px; line-height: 1.6; }
 
-    .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+    .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
     .swatch {
       border-radius: var(--radius-md); overflow: hidden;
-      border: 1px solid var(--theme-border); background: var(--theme-card-bg);
+      border: 1px solid var(--border-primary); background: var(--bg-card);
+      box-shadow: var(--shadow-sm);
     }
-    .swatch-color { height: 56px; }
+    .swatch-color { height: 48px; }
     .swatch-info { padding: 8px 10px; }
-    .swatch-name { font-size: var(--fs-12); font-weight: 600; color: var(--theme-text-primary); }
-    .swatch-token { font-size: 11px; color: var(--theme-text-tertiary); font-family: monospace; margin-top: 2px; }
-
-    .type-scale { display: flex; flex-direction: column; gap: 12px; }
-    .type-row {
-      display: flex; align-items: baseline; gap: 16px; padding: 12px 16px;
-      background: var(--theme-card-bg); border: 1px solid var(--theme-card-border); border-radius: var(--radius-md);
-    }
-    .type-meta { width: 100px; flex-shrink: 0; font-size: var(--fs-12); color: var(--theme-text-tertiary); font-family: monospace; }
-
-    .spacing-row { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
-    .spacing-bar { height: 24px; background: var(--theme-accent-gradient); border-radius: 4px; flex-shrink: 0; }
-    .spacing-label { font-size: var(--fs-12); color: var(--theme-text-secondary); font-family: monospace; min-width: 120px; }
-
-    .demo-row { display: flex; flex-wrap: wrap; gap: 16px; }
-    .shadow-box, .border-box {
-      width: 140px; height: 80px; border-radius: var(--radius-md);
-      background: var(--theme-card-bg); display: flex; align-items: center; justify-content: center;
-      font-size: var(--fs-12); color: var(--theme-text-secondary);
-    }
-    .shadow-box { box-shadow: var(--theme-card-shadow); }
-    .shadow-box.brand { box-shadow: var(--theme-shadow-lg); }
-    .border-box.line { border: var(--line); }
-    .border-box.solid { border: var(--solid); }
-    .border-box.dashed { border: var(--dashed); }
+    .swatch-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+    .swatch-token { font-size: 11px; color: var(--text-tertiary); font-family: monospace; margin-top: 2px; }
 
     .demo-card {
-      background: var(--theme-card-bg); border: 1px solid var(--theme-card-border);
-      border-radius: var(--radius-lg); padding: 24px; backdrop-filter: blur(8px);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      background: var(--bg-card); border: 1px solid var(--border-primary);
+      border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm);
     }
-    .demo-card:hover { border-color: var(--theme-card-hover-border); box-shadow: var(--theme-card-hover-shadow); }
-    .demo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .demo-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 
-    .title-primary {
-      font-size: 26px; font-weight: 600; text-align: center; margin-bottom: 24px;
-      background: var(--theme-title-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    .btn-primary {
+      padding: 8px 16px; border: 1px solid var(--accent); border-radius: var(--radius-md);
+      background: var(--accent); color: var(--text-invert); font-size: 13px; font-weight: 500; cursor: pointer;
     }
-    .title-secondary-head { display: flex; align-items: center; gap: 8px; }
-    .title-secondary-text { font-size: 16px; font-weight: 600; color: var(--theme-text-primary); }
-    .title-secondary-dash { width: 20px; height: 2px; border-radius: 999px; background: var(--theme-accent-gradient); }
-    .title-secondary-underline { display: block; height: 4px; border-radius: 999px; background: var(--theme-accent-gradient); margin-top: 4px; width: 120px; }
-    .title-bar { display: flex; align-items: center; gap: 8px; }
-    .title-bar-line { width: 3px; height: 16px; border-radius: 1px; background: var(--theme-accent-gradient); }
-    .title-bar-text { font-size: 16px; font-weight: 600; color: var(--theme-text-primary); }
+    .btn-secondary {
+      padding: 8px 16px; border: 1px solid var(--accent-light); border-radius: var(--radius-md);
+      background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+    .btn-outline {
+      padding: 8px 16px; border: 1px solid var(--border-primary); border-radius: var(--radius-md);
+      background: var(--bg-muted); color: var(--text-secondary); font-size: 13px; cursor: pointer;
+    }
+    .copy-icon {
+      width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+      background: var(--bg-muted); border: 1px solid var(--border-primary); border-radius: var(--radius-sm);
+      color: var(--text-secondary); cursor: pointer;
+    }
+    .copy-icon .iconfont { font-size: 12px; }
 
-    .tag {
-      display: inline-block; padding: 2px 10px; font-size: var(--fs-12); border-radius: 999px;
-      background: var(--theme-tag-bg); border: 1px solid var(--theme-tag-border); color: var(--theme-tag-text);
+    .color-block {
+      width: 100%; height: 56px; border-radius: var(--radius-md);
+      border: 1px solid var(--border-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'SF Mono', Consolas, Monaco, monospace;
+      font-size: 13px; font-weight: 600;
     }
-    .badge {
-      display: inline-block; padding: 4px 12px; font-size: var(--fs-12); border-radius: var(--radius-sm);
-      background: var(--theme-badge-bg); color: var(--theme-badge-text);
+    .code-block {
+      background: #1e1e2e; color: #cdd6f4; padding: 16px; border-radius: var(--radius-md);
+      font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6;
+      overflow-x: auto;
     }
-    .btn-cta {
-      padding: 10px 24px; border: none; border-radius: var(--radius-md); cursor: pointer;
-      background: var(--theme-cta-gradient); color: #fff; font-size: var(--fs-14); font-weight: 500;
-      box-shadow: var(--theme-cta-shadow); transition: box-shadow 0.2s ease;
+    .radius-demo { display: flex; gap: 16px; flex-wrap: wrap; }
+    .radius-box {
+      width: 72px; height: 48px; background: var(--bg-muted); border: 1px solid var(--border-primary);
+      display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-secondary);
     }
-    .btn-cta:hover { box-shadow: var(--theme-cta-shadow-hover); }
-    .btn-accent {
-      padding: 8px 16px; border-radius: var(--radius-md); cursor: pointer; font-size: var(--fs-14);
-      background: var(--theme-accent-btn-bg); border: 1px solid var(--theme-accent-btn-border);
-      color: var(--theme-accent-btn-color); transition: background 0.2s ease;
+    .shadow-demo { display: flex; gap: 16px; flex-wrap: wrap; }
+    .shadow-box {
+      width: 100px; height: 64px; background: var(--bg-card); border-radius: var(--radius-md);
+      border: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--text-secondary);
     }
-    .btn-accent:hover { background: var(--theme-nav-bg-hover); }
-    .back-link {
-      display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px 6px 8px;
-      border-radius: 999px; font-size: 13px; font-weight: 500; text-decoration: none;
-      color: var(--theme-text-secondary); border: 1px solid var(--theme-border-subtle); background: var(--theme-card-bg);
+    .shadow-box.sm { box-shadow: var(--shadow-sm); }
+    .shadow-box.md { box-shadow: var(--shadow-md); }
+    .shadow-box.lg { box-shadow: var(--shadow-lg); }
+
+    .type-row {
+      display: flex; align-items: baseline; gap: 16px; padding: 10px 14px;
+      background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius-md); margin-bottom: 8px;
     }
-    .back-link:hover { color: var(--theme-accent-secondary); border-color: var(--theme-card-hover-border); background: var(--theme-nav-bg-hover); }
-    .nav-demo { display: flex; gap: 8px; flex-wrap: wrap; }
-    .nav-item {
-      padding: 8px 16px; border-radius: var(--radius-md); font-size: var(--fs-14); text-decoration: none;
-      color: var(--theme-nav); transition: all 0.2s ease;
-    }
-    .nav-item:hover { color: var(--theme-nav-hover); background: var(--theme-nav-bg-hover); }
-    .nav-item.active { color: var(--theme-nav-active); background: var(--theme-nav-bg-active); font-weight: 500; }
-    .icon-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
-    .icon-demo { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--theme-text-secondary); }
-    .icon-demo i { color: var(--theme-accent); }
-    .icon-demo span { font-size: 11px; color: var(--theme-text-tertiary); }
+    .type-meta { width: 120px; flex-shrink: 0; font-size: 12px; color: var(--text-tertiary); font-family: monospace; }
+
     .code-hint {
-      margin-top: 32px; padding: 16px 20px; border-radius: var(--radius-md);
-      background: var(--theme-bg-muted); border: 1px dashed var(--theme-border);
-      font-size: var(--fs-12); color: var(--theme-text-secondary); line-height: 1.8;
+      padding: 16px; border-radius: var(--radius-md);
+      background: var(--bg-muted); border: 1px dashed var(--border-primary);
+      font-size: 12px; color: var(--text-secondary); line-height: 1.8;
     }
-    .code-hint code { font-family: monospace; color: var(--theme-accent-secondary); background: var(--theme-tag-bg); padding: 1px 6px; border-radius: 4px; }
-    @media (max-width: 640px) {
-      .preview-header, .preview-main { padding-left: 16px; padding-right: 16px; }
-    }
+    .code-hint code { font-family: monospace; color: var(--accent); background: var(--accent-soft); padding: 1px 6px; border-radius: 4px; }
   </style>
 </head>
 <body class="preview-page">
-  <div class="preview-grid-bg" aria-hidden="true"></div>
-
   <header class="preview-header">
     <div>
-      <h1>OpenResumeTemplate · VibeCoding 设计规范</h1>
-      <p>星空蓝深色模式 · 参考 rules/DESIGN.md 编码</p>
+      <h1>颜色值转换器 · VibeCoding 设计规范</h1>
+      <p>深色模式 · <code style="font-family:monospace;font-size:11px">data-theme="dark"</code></p>
     </div>
-    <a class="preview-badge" href="./LightMode.html" title="切换到浅色模式预览">
-      <i class="iconfont icon-LightColor" aria-hidden="true"></i>
-      浅色模式
-    </a>
+    <a class="preview-badge" href="./LightMode.html">← 浅色模式</a>
   </header>
 
   <main class="preview-main">
     <section class="preview-section">
       <div class="section-label">01 · Colors</div>
-      <h2 class="section-title">主题色与功能色（深色）</h2>
-      <p class="section-desc">深色模式通过 <code style="font-family:monospace;color:var(--theme-accent-secondary)">html.dark-mode</code> 切换，组件无需写两套样式。</p>
+      <h2 class="section-title">背景 · 文本 · 强调色（深色）</h2>
+      <p class="section-desc">深色变量定义于 <code>src/main.css</code> 的 <code>[data-theme="dark"]</code> 块。</p>
       <div class="swatch-grid">
-        <div class="swatch"><div class="swatch-color" style="background:var(--primary)"></div><div class="swatch-info"><div class="swatch-name">主色 Primary</div><div class="swatch-token">--primary</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--secondary)"></div><div class="swatch-info"><div class="swatch-name">辅色 Secondary</div><div class="swatch-token">--secondary</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--success)"></div><div class="swatch-info"><div class="swatch-name">成功 Success</div><div class="swatch-token">--success</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--warning)"></div><div class="swatch-info"><div class="swatch-name">警告 Warning</div><div class="swatch-token">--warning</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--error)"></div><div class="swatch-info"><div class="swatch-name">错误 Error</div><div class="swatch-token">--error</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--theme-bg)"></div><div class="swatch-info"><div class="swatch-name">页面背景 #0a1628</div><div class="swatch-token">--theme-bg</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--theme-bg-card)"></div><div class="swatch-info"><div class="swatch-name">半透明卡片</div><div class="swatch-token">--theme-bg-card</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--theme-accent-gradient)"></div><div class="swatch-info"><div class="swatch-name">品牌渐变</div><div class="swatch-token">--theme-accent-gradient</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--bg-primary)"></div><div class="swatch-info"><div class="swatch-name">页面底</div><div class="swatch-token">--bg-primary #1a1a1a</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--bg-card)"></div><div class="swatch-info"><div class="swatch-name">卡片</div><div class="swatch-token">--bg-card #2d2d2d</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--bg-muted)"></div><div class="swatch-info"><div class="swatch-name">弱化区</div><div class="swatch-token">--bg-muted</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--accent)"></div><div class="swatch-info"><div class="swatch-name">强调色</div><div class="swatch-token">--accent #60a5fa</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--accent-soft)"></div><div class="swatch-info"><div class="swatch-name">浅蓝底</div><div class="swatch-token">--accent-soft</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--border-primary)"></div><div class="swatch-info"><div class="swatch-name">边框</div><div class="swatch-token">--border-primary</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--text-primary)"></div><div class="swatch-info"><div class="swatch-name">主文字</div><div class="swatch-token">--text-primary</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--text-error)"></div><div class="swatch-info"><div class="swatch-name">错误</div><div class="swatch-token">--text-error</div></div></div>
       </div>
     </section>
 
     <section class="preview-section">
       <div class="section-label">02 · Typography</div>
-      <h2 class="section-title">字体层级</h2>
-      <div class="type-scale">
-        <div class="type-row"><span class="type-meta">--fs-12</span><span style="font-size:12px;color:var(--theme-text-tertiary)">辅助文字 · 标签 · 版本号</span></div>
-        <div class="type-row"><span class="type-meta">--fs-14</span><span style="font-size:14px;color:var(--theme-text-secondary)">正文 · 段落 · 列表</span></div>
-        <div class="type-row"><span class="type-meta">--fs-16</span><span style="font-size:16px;font-weight:600;color:var(--theme-text-primary)">小标题 · 卡片标题</span></div>
-        <div class="type-row"><span class="type-meta">--fs-18</span><span style="font-size:18px;font-weight:600;color:var(--theme-text-primary)">ModuleTitle · 区域标题</span></div>
-        <div class="type-row"><span class="type-meta">--fs-26</span><span style="font-size:26px;font-weight:600;background:var(--theme-title-gradient);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">ProjectTitle primary</span></div>
+      <h2 class="section-title">深色模式文字对比</h2>
+      <div class="type-row"><span class="type-meta">primary</span><span style="font-size:14px;color:var(--text-primary)">主标题与正文 — 确保与卡片背景对比充足</span></div>
+      <div class="type-row"><span class="type-meta">secondary</span><span style="font-size:13px;color:var(--text-secondary)">说明文字 · 表单标签</span></div>
+      <div class="type-row"><span class="type-meta">tertiary</span><span style="font-size:12px;color:var(--text-tertiary)">辅助 · HEX 副文案</span></div>
+      <div class="type-row"><span class="type-meta">mono</span><span style="font-family:'SF Mono',Consolas,monospace;font-size:13px;color:var(--accent)">#60A5FA</span></div>
+    </section>
+
+    <section class="preview-section">
+      <div class="section-label">03 · Radius & Shadow</div>
+      <h2 class="section-title">圆角与阴影（深色加强）</h2>
+      <div class="radius-demo" style="margin-bottom:16px">
+        <div class="radius-box" style="border-radius:var(--radius-sm)">sm</div>
+        <div class="radius-box" style="border-radius:var(--radius-md)">md</div>
+        <div class="radius-box" style="border-radius:var(--radius-lg)">lg</div>
+      </div>
+      <div class="shadow-demo">
+        <div class="shadow-box sm">shadow-sm</div>
+        <div class="shadow-box md">shadow-md</div>
+        <div class="shadow-box lg">shadow-lg</div>
       </div>
     </section>
 
     <section class="preview-section">
-      <div class="section-label">03 · Spacing</div>
-      <h2 class="section-title">间距 Token</h2>
-      <div class="spacing-row"><span class="spacing-label">--size-8 · 元素</span><div class="spacing-bar" style="width:40px"></div></div>
-      <div class="spacing-row"><span class="spacing-label">--size-16 · 栏目</span><div class="spacing-bar" style="width:60px"></div></div>
-      <div class="spacing-row"><span class="spacing-label">--size-24 · 模块</span><div class="spacing-bar" style="width:80px"></div></div>
-      <div class="spacing-row"><span class="spacing-label">--size-40 · 页面</span><div class="spacing-bar" style="width:110px"></div></div>
-    </section>
-
-    <section class="preview-section">
-      <div class="section-label">04 · Shadow & Border</div>
-      <h2 class="section-title">阴影与边框线（深色发光）</h2>
-      <div class="demo-row">
-        <div class="shadow-box">--theme-card-shadow</div>
-        <div class="shadow-box brand">--theme-shadow-lg</div>
-        <div class="border-box line">--line</div>
-        <div class="border-box solid">--solid</div>
-        <div class="border-box dashed">--dashed</div>
-      </div>
-    </section>
-
-    <section class="preview-section">
-      <div class="section-label">05 · ProjectTitle</div>
-      <h2 class="section-title">标题组件示例</h2>
-      <div class="demo-grid">
-        <div class="demo-card">
-          <div class="title-primary">一级标题 Primary</div>
-          <p style="font-size:12px;color:var(--theme-text-tertiary);text-align:center">渐变标题在深色下自动切换为亮色渐变</p>
-        </div>
-        <div class="demo-card">
-          <div class="title-secondary-head"><span class="title-secondary-text">二级标题 Secondary</span><span class="title-secondary-dash"></span></div>
-          <span class="title-secondary-underline"></span>
-        </div>
-        <div class="demo-card">
-          <div class="title-bar"><span class="title-bar-line"></span><span class="title-bar-text">竖线标题 Bar</span></div>
+      <div class="section-label">04 · Buttons</div>
+      <h2 class="section-title">页头与面板按钮（深色）</h2>
+      <div class="demo-card">
+        <div class="demo-row">
+          <button class="btn-primary" type="button">主按钮</button>
+          <button class="btn-secondary" type="button">次要 · 已收藏</button>
+          <button class="btn-outline" type="button">线框按钮</button>
+          <button class="copy-icon" type="button"><span class="iconfont icon-Copy"></span></button>
         </div>
       </div>
     </section>
 
     <section class="preview-section">
-      <div class="section-label">06 · Card & Button</div>
-      <h2 class="section-title">卡片 · 标签 · 按钮</h2>
-      <div class="demo-grid">
-        <div class="demo-card">
-          <div class="title-bar" style="margin-bottom:12px"><span class="title-bar-line"></span><span class="title-bar-text">CardLayout 卡片</span></div>
-          <p style="font-size:14px;color:var(--theme-text-secondary);margin-bottom:16px">半透明卡片 + 品牌色 hover 发光边框</p>
-          <span class="tag">标签 Tag</span> <span class="badge" style="margin-left:8px">徽章 Badge</span>
-        </div>
-        <div class="demo-card">
-          <div style="display:flex;gap:12px;flex-wrap:wrap">
-            <button class="btn-cta" type="button">CTA 主按钮</button>
-            <button class="btn-accent" type="button">Accent 次按钮</button>
-          </div>
-        </div>
-        <div class="demo-card">
-          <a class="back-link" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>返回列表</a>
-        </div>
+      <div class="section-label">05 · Panels</div>
+      <h2 class="section-title">面板与色块</h2>
+      <div class="demo-card">
+        <p style="font-size:14px;color:var(--text-secondary);margin:0 0 12px">面板：<code>background: var(--bg-card)</code> · <code>border: var(--border-primary)</code></p>
+        <div class="color-block" style="background:#2563EB;color:#fff;max-width:200px">#2563EB</div>
       </div>
     </section>
 
     <section class="preview-section">
-      <div class="section-label">07 · Navigation</div>
-      <h2 class="section-title">顶栏导航项</h2>
-      <nav class="nav-demo">
-        <a class="nav-item active" href="#">首页</a>
-        <a class="nav-item" href="#">AIQ能力</a>
-        <a class="nav-item" href="#">UI作品集</a>
-        <a class="nav-item" href="#">AI社群</a>
-        <a class="nav-item" href="#">关于我</a>
-      </nav>
-    </section>
-
-    <section class="preview-section">
-      <div class="section-label">08 · Icon</div>
-      <h2 class="section-title">Iconfont 常用图标</h2>
-      <div class="icon-row">
-        <div class="icon-demo"><i class="iconfont icon-LightColor" style="font-size:24px"></i><span>主题切换</span></div>
-        <div class="icon-demo"><i class="iconfont icon-DarkColor" style="font-size:20px"></i><span>主题切换</span></div>
-        <div class="icon-demo"><i class="iconfont icon-Top" style="font-size:16px"></i><span>BackToTop</span></div>
-        <div class="icon-demo"><i class="iconfont icon-Specification" style="font-size:32px"></i><span>设计规范</span></div>
-        <div class="icon-demo"><i class="iconfont icon-Crowd" style="font-size:12px"></i><span>社群</span></div>
-      </div>
+      <div class="section-label">06 · Code Block</div>
+      <h2 class="section-title">代码区（固定深色底，两模式通用）</h2>
+      <pre class="code-block">background: linear-gradient(to right, #1677FF, #8B5CF6);</pre>
     </section>
 
     <div class="code-hint">
-      <strong>VibeCoding 编码提示（深色模式）</strong><br>
-      1. App.vue 通过 <code>html.dark-mode</code> 切换，localStorage key: <code>theme-dark</code><br>
-      2. 深色独有：网格背景 <code>--theme-grid-opacity: 1</code>（见本页背景）<br>
-      3. BackToTop hover 使用 <code>--theme-accent-secondary</code> 而非 primary<br>
-      4. 浅色对照见 <code>rules/PreView/LightMode.html</code>
+      <strong>深色模式切换</strong><br>
+      1. 设置页选择主题，或 <code>document.documentElement.setAttribute('data-theme','dark')</code><br>
+      2. system 模式跟随 <code>prefers-color-scheme</code><br>
+      3. 规范文档 <code>rules/DESIGN.md</code> · 对照 <code>LightMode.html</code>
     </div>
   </main>
 </body>
