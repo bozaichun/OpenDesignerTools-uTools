@@ -8,9 +8,8 @@
     <template #header>
       <div class="modal-title-row">
         <div class="modal-swatch" :style="{ background: color.hex }"></div>
-        <div>
-          <div class="modal-title">{{ color.name || color.hex }}</div>
-          <div class="modal-hex">{{ color.hex }}</div>
+        <div class="modal-title-wrap">
+          <div class="modal-title">{{ color.hex }}</div>
         </div>
       </div>
     </template>
@@ -97,18 +96,17 @@ export default {
   box-shadow: var(--shadow-sm);
 }
 
+.modal-title-wrap {
+  min-width: 0;
+}
+
 .modal-title {
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
-  line-height: 1.2;
-}
-
-.modal-hex {
-  font-size: 13px;
-  color: var(--text-tertiary);
   font-family: 'SF Mono', Consolas, Monaco, monospace;
-  margin-top: 4px;
+  line-height: 1.2;
+  word-break: break-all;
 }
 
 .modal-format-row {

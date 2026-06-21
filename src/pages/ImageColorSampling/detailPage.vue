@@ -85,28 +85,58 @@
               <div class="pr-row">
                 <span class="pr-label">HEX</span>
                 <span class="pr-value">{{ pickedColor.hex }}</span>
-                <button class="pr-copy" @click="copyValue(pickedColor.hex, 'HEX')">复制</button>
+                <button
+                  class="code-copy"
+                  title="复制 HEX"
+                  @click="copyValue(pickedColor.hex, 'HEX')"
+                >
+                  <span class="iconfont icon-Copy"></span>
+                </button>
                 <button class="pr-search" @click="searchOnBaidu(pickedColor.hex)">色彩搭配</button>
               </div>
               <div class="pr-row">
                 <span class="pr-label">RGB</span>
                 <span class="pr-value">{{ pickedColor.rgb }}</span>
-                <button class="pr-copy" @click="copyValue(pickedColor.rgb, 'RGB')">复制</button>
+                <button
+                  class="code-copy"
+                  title="复制 RGB"
+                  @click="copyValue(pickedColor.rgb, 'RGB')"
+                >
+                  <span class="iconfont icon-Copy"></span>
+                </button>
               </div>
               <div class="pr-row">
                 <span class="pr-label">HSL</span>
                 <span class="pr-value">{{ pickedColor.hsl }}</span>
-                <button class="pr-copy" @click="copyValue(pickedColor.hsl, 'HSL')">复制</button>
+                <button
+                  class="code-copy"
+                  title="复制 HSL"
+                  @click="copyValue(pickedColor.hsl, 'HSL')"
+                >
+                  <span class="iconfont icon-Copy"></span>
+                </button>
               </div>
               <div class="pr-row">
                 <span class="pr-label">CMYK</span>
                 <span class="pr-value">{{ pickedColor.cmyk }}</span>
-                <button class="pr-copy" @click="copyValue(pickedColor.cmyk, 'CMYK')">复制</button>
+                <button
+                  class="code-copy"
+                  title="复制 CMYK"
+                  @click="copyValue(pickedColor.cmyk, 'CMYK')"
+                >
+                  <span class="iconfont icon-Copy"></span>
+                </button>
               </div>
               <div class="pr-row">
                 <span class="pr-label">HSV</span>
                 <span class="pr-value">{{ pickedColor.hsv }}</span>
-                <button class="pr-copy" @click="copyValue(pickedColor.hsv, 'HSV')">复制</button>
+                <button
+                  class="code-copy"
+                  title="复制 HSV"
+                  @click="copyValue(pickedColor.hsv, 'HSV')"
+                >
+                  <span class="iconfont icon-Copy"></span>
+                </button>
               </div>
             </div>
           </div>
@@ -200,6 +230,11 @@ import {
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
   copyToClipboard, showToast
 } from '../../utils/colorUtils';
+import {
+  isFavorite,
+  toggleFavorite,
+  normalizeFavoriteHex
+} from '../../utils/favoriteStorage';
 import ModuleTitle from '../../components/ModuleTitle.vue';
 import Dialog from '../../components/Dialog.vue';
 import Straw from '../../components/Straw.vue';
@@ -241,11 +276,17 @@ export default {
   mounted() {
     this.loadAnalysisData();
     this.updateHeaderActions();
+    this.handleFavoritesChanged = () => this.updateHeaderActions();
+    window.addEventListener('color-favorites-changed', this.handleFavoritesChanged);
   },
   unmounted() {
     this.clearHeaderActions();
+    window.removeEventListener('color-favorites-changed', this.handleFavoritesChanged);
   },
   watch: {
+    pickedColor() {
+      this.updateHeaderActions();
+    },
     mainColors: {
       deep: false,
       handler() {
@@ -313,10 +354,36 @@ export default {
         this.clearHeaderActions();
         return;
       }
+      const hex = this.pickedColor?.hex;
+      const favorited = hex ? isFavorite(hex) : false;
       this.setHeaderActions([
+        {
+          label: favorited ? '★ 已收藏' : '☆ 收藏',
+          onClick: () => this.handleFavoritePicked(),
+          secondary: true
+        },
         { label: '重新选择', onClick: () => this.handleReselect(), secondary: true },
         { label: '生成色卡', onClick: () => this.openPaletteDialog() }
       ]);
+    },
+    handleFavoritePicked() {
+      if (!this.pickedColor?.hex) {
+        showToast(this, '请先在图片上取色', 'error');
+        return;
+      }
+      const hex = normalizeFavoriteHex(this.pickedColor.hex) || this.pickedColor.hex;
+      const wasFavorited = isFavorite(hex);
+      const result = toggleFavorite({ hex, name: hex });
+      if (!result.ok) {
+        showToast(this, result.message || '操作失败', 'error');
+        return;
+      }
+      showToast(
+        this,
+        wasFavorited ? '已取消收藏' : `已将 “${hex}” 加入我的收藏`,
+        'success'
+      );
+      this.updateHeaderActions();
     },
     handleReselect() {
       this.$refs.fileInput.value = '';
@@ -863,29 +930,16 @@ export default {
   white-space: nowrap;
 }
 
-.pr-copy,
 .pr-search {
   padding: 4px 12px;
-  background: var(--bg-muted);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-primary);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 12px;
   flex-shrink: 0;
   transition: all 0.15s ease;
-
-  &:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--text-invert);
-  }
-}
-
-.pr-search {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
 
   &:hover {
     background: var(--accent);

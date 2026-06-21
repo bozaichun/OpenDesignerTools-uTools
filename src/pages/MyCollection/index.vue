@@ -12,24 +12,14 @@
         class="favorite-card"
       >
         <div class="swatch-row">
-          <div class="color-swatch" :style="{ background: item.hex }"></div>
-          <div class="color-info">
-            <div class="color-info-header">
-              <button
-                class="info-action-btn"
-                :title="'复制: ' + item.hex"
-                @click.stop="copyValue(item.hex, item.hex)"
-              >
-                <span class="iconfont icon-Copy"></span>
-              </button>
-              <div class="color-name">{{ item.name }}</div>
-              <FavoriteButton
-                :hex="item.hex"
-                :name="item.name"
-                @unfavorited="loadFavorites"
-              />
-            </div>
-            <div class="color-hex">{{ item.hex }}</div>
+          <div
+            class="color-swatch"
+            :style="{
+              background: item.hex,
+              color: getContrastColor(item.hex)
+            }"
+          >
+            <span class="swatch-hex">{{ item.hex }}</span>
           </div>
         </div>
 
@@ -37,13 +27,20 @@
           <button class="action-btn" @click="openAddToPaletteDialog(item)">
             添加到色板
           </button>
+          <button
+            class="card-copy-btn"
+            :title="'复制 ' + item.hex"
+            @click="copyHex(item.hex)"
+          >
+            <span class="iconfont icon-Copy"></span>
+          </button>
           <button class="action-btn danger" @click="handleUnfavorite(item)">
             取消收藏
           </button>
         </div>
 
         <button class="view-color-btn" @click="openColorModal(item)">
-          查看颜色值
+          更多格式
         </button>
       </div>
     </div>
@@ -101,7 +98,6 @@
 import Dialog from '../../components/Dialog.vue';
 import Input from '../../components/Input.vue';
 import Selector from '../../components/Selector.vue';
-import FavoriteButton from '../../components/FavoriteButton.vue';
 import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
 import Banner from '../../components/Banner.vue';
 import {
@@ -109,7 +105,7 @@ import {
   removeFavorite
 } from '../../utils/favoriteStorage';
 import { loadPalettes, savePalettes } from '../PaletteManager/paletteStorage.js';
-import { copyToClipboard, showToast } from '../../utils/colorUtils';
+import { copyToClipboard, showToast, parseColor, getContrastColor as gcc } from '../../utils/colorUtils';
 
 export default {
   name: 'MyCollection',
@@ -117,7 +113,6 @@ export default {
     Dialog,
     Input,
     Selector,
-    FavoriteButton,
     ColorFormatDialog,
     Banner
   },
@@ -149,9 +144,14 @@ export default {
       this.modalColor = { name: item.name, hex: item.hex };
       this.modalVisible = true;
     },
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label + ': ' + value, 'success');
+    copyHex(hex) {
+      copyToClipboard(hex);
+      showToast(this, '已复制 ' + hex, 'success');
+    },
+    getContrastColor(hex) {
+      const rgb = parseColor(hex);
+      if (!rgb) return '#000000';
+      return gcc(rgb);
     },
     handleUnfavorite(item) {
       const result = removeFavorite(item.hex);
@@ -165,7 +165,7 @@ export default {
     openAddToPaletteDialog(item) {
       this.paletteGroups = loadPalettes();
       this.paletteTargetColor = item;
-      this.paletteColorName = item.name || item.hex;
+      this.paletteColorName = item.hex;
       this.selectedGroupId = this.paletteGroups[0]?.id || '';
       this.paletteDialogVisible = true;
     },
@@ -226,45 +226,51 @@ export default {
 }
 
 .swatch-row {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
   margin-bottom: 10px;
 }
 
 .color-swatch {
-  width: 40px;
-  height: 40px;
+  width: 100%;
+  height: 56px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);
   box-shadow: var(--shadow-sm);
-  flex-shrink: 0;
-}
-
-.color-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.color-info-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  padding: 0 10px;
 }
 
-.info-action-btn {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--text-tertiary);
-  cursor: pointer;
+.swatch-hex {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  text-align: center;
+  line-height: 1.3;
+  word-break: break-all;
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.card-copy-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   flex-shrink: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
   transition: all 0.15s ease;
 
   .iconfont {
@@ -273,37 +279,14 @@ export default {
   }
 
   &:hover {
-    color: var(--accent);
-    background: var(--bg-hover);
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-invert);
   }
 }
 
-.color-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  word-break: break-all;
-  line-height: 1.3;
-}
-
-.color-hex {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  font-family: 'SF Mono', Consolas, Monaco, monospace;
-  margin-top: 2px;
-  padding-left: 28px;
-}
-
-.card-actions {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
 .action-btn {
-  flex: 1;
+  flex-shrink: 0;
   padding: 5px 8px;
   font-size: 12px;
   background: var(--bg-card);
@@ -458,7 +441,8 @@ export default {
   }
 
   .card-actions {
-    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: space-between;
   }
 }
 </style>

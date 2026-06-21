@@ -74,13 +74,27 @@
             v-for="(shade, idx) in adjustedShades"
             :key="idx"
             class="shade-strip-cell"
-            :title="shade.color + ' · 点击复制'"
-            @click="copyValue(shade.color, shade.level)"
           >
             <div class="shade-strip-swatch" :style="{ background: shade.color }">
               <span class="shade-level" :style="{ color: getContrastColor(shade.color) }">{{ shade.level }}</span>
             </div>
-            <span class="shade-strip-hex">{{ shade.color }}</span>
+            <div class="shade-strip-meta">
+              <span class="shade-strip-hex">{{ shade.color }}</span>
+              <div class="shade-strip-actions">
+                <FavoriteButton
+                  :hex="shade.color"
+                  :name="'色阶 ' + shade.level"
+                  class="shade-favorite-btn"
+                />
+                <button
+                  class="shade-copy-btn"
+                  :title="'复制 ' + shade.color"
+                  @click="copyShadeHex(shade.color)"
+                >
+                  <span class="iconfont icon-Copy"></span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -248,6 +262,7 @@
 <script>
 import ColorPicker from '../../components/ColorPicker.vue';
 import Selector from '../../components/Selector.vue';
+import FavoriteButton from '../../components/FavoriteButton.vue';
 import { parseColor, rgbToHex, rgbToHsl, hslToRgb, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 
 function rgbToLab({ r, g, b }) {
@@ -266,7 +281,7 @@ function rgbToLab({ r, g, b }) {
 
 export default {
   name: 'ColorTools',
-  components: { ColorPicker, Selector },
+  components: { ColorPicker, Selector, FavoriteButton },
   data() {
     return {
       activeTab: 'adjust',
@@ -474,6 +489,10 @@ export default {
     copyValue(value, label) {
       copyToClipboard(value);
       showToast(this, '已复制 ' + label, 'success');
+    },
+    copyShadeHex(hex) {
+      copyToClipboard(hex);
+      showToast(this, '已复制 ' + hex, 'success');
     }
   }
 };
@@ -641,10 +660,15 @@ export default {
   gap: 6px;
 }
 .shade-strip-cell {
-  cursor: pointer;
   text-align: center;
-  transition: transform 0.15s ease;
-  &:hover { transform: translateY(-2px); }
+}
+.shade-strip-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 4px;
+  min-width: 0;
 }
 .shade-strip-swatch {
   height: 52px;
@@ -657,13 +681,63 @@ export default {
   margin-bottom: 4px;
 }
 .shade-strip-hex {
+  flex: 1;
   font-size: 9px;
   font-family: monospace;
   color: var(--text-tertiary);
-  display: block;
+  text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+.shade-strip-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+:deep(.shade-favorite-btn.favorite-btn) {
+  width: 16px;
+  height: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  .favorite-icon {
+    font-size: 10px;
+  }
+  &:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-primary);
+  }
+  &.active {
+    background: var(--bg-card);
+    border-color: #faad14;
+  }
+}
+.shade-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  .iconfont {
+    font-size: 9px;
+    line-height: 1;
+  }
+  &:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-invert);
+  }
 }
 .shade-level { font-size: 10px; font-weight: 600; }
 

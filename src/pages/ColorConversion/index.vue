@@ -147,10 +147,16 @@ import {
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
   copyToClipboard, showToast
 } from '../../utils/colorUtils';
+import {
+  isFavorite,
+  toggleFavorite,
+  normalizeFavoriteHex
+} from '../../utils/favoriteStorage';
 
 export default {
   name: 'ColorConversion',
   components: { ColorPicker, Input, Banner },
+  inject: ['setHeaderActions', 'clearHeaderActions'],
   data() {
     return {
       currentRGB: { r: 255, g: 255, b: 255, a: 1 },
@@ -183,8 +189,50 @@ export default {
   },
   mounted() {
     this.syncAllFromRGB();
+    this.updateHeaderActions();
+    this.handleFavoritesChanged = () => this.updateHeaderActions();
+    window.addEventListener('color-favorites-changed', this.handleFavoritesChanged);
+  },
+  unmounted() {
+    this.clearHeaderActions();
+    window.removeEventListener('color-favorites-changed', this.handleFavoritesChanged);
+  },
+  watch: {
+    'inputs.hex'() {
+      this.updateHeaderActions();
+    }
   },
   methods: {
+    updateHeaderActions() {
+      const hex = normalizeFavoriteHex(this.inputs.hex);
+      const favorited = hex ? isFavorite(hex) : false;
+      this.setHeaderActions([
+        {
+          label: favorited ? '已收藏' : '收藏',
+          onClick: () => this.handleToggleFavorite(),
+          secondary: favorited
+        }
+      ]);
+    },
+    handleToggleFavorite() {
+      const hex = normalizeFavoriteHex(this.inputs.hex);
+      if (!hex) {
+        showToast(this, '颜色格式无效，无法收藏', 'error');
+        return;
+      }
+      const wasFavorited = isFavorite(hex);
+      const result = toggleFavorite({ hex, name: hex });
+      if (!result.ok) {
+        showToast(this, result.message || '操作失败', 'error');
+        return;
+      }
+      showToast(
+        this,
+        wasFavorited ? '已取消收藏' : `已将 “${hex}” 加入我的收藏`,
+        'success'
+      );
+      this.updateHeaderActions();
+    },
     onInputChange(format) {
       if (this.isUpdating) return;
       this.isUpdating = true;

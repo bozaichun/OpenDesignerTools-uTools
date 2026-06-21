@@ -12,7 +12,8 @@
 <script>
 import {
   isFavorite,
-  toggleFavorite
+  toggleFavorite,
+  normalizeFavoriteHex
 } from '../utils/favoriteStorage';
 import { showToast } from '../utils/colorUtils';
 
@@ -63,7 +64,12 @@ export default {
         return;
       }
       this.favorited = !wasFavorited;
-      showToast(this, wasFavorited ? '已取消收藏' : '已加入我的收藏', 'success');
+      const displayHex = normalizeFavoriteHex(this.hex) || this.hex;
+      showToast(
+        this,
+        wasFavorited ? '已取消收藏' : `已将 “${displayHex}” 加入我的收藏`,
+        'success'
+      );
       this.$emit(wasFavorited ? 'unfavorited' : 'favorited', {
         hex: this.hex,
         name: this.name || this.hex

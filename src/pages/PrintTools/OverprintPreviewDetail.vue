@@ -21,7 +21,7 @@
       </template>
     </PrintToolsDetailShell>
 
-    <section class="panel module-panel">
+    <section ref="printPanel" class="panel module-panel">
       <div class="overprint-preview">
         <div class="overprint-item">
           <div
@@ -49,6 +49,7 @@
         <div class="overprint-equals">=</div>
         <div class="overprint-item overprint-result">
           <div
+            ref="printSwatch"
             class="overprint-swatch large overprint-swatch-with-action"
             :style="overprintMixedStyle"
           >
@@ -168,10 +169,13 @@ export default {
       const colorB = this.colorB;
       const opacity = this.opacity;
       const textColor = this.getContrastColor(hex);
+      const { width, height } = this.getPrintSwatchDimensions();
       const swatchDataUrl = this.buildOverprintSwatchImage(
         hex,
         textColor,
         "叠印效果",
+        width,
+        height,
       );
 
       let iframe = document.getElementById("overprint-print-frame");
@@ -188,10 +192,17 @@ export default {
       doc.write(
         '<!DOCTYPE html><html><head><meta charset="utf-8"><title>叠印效果打印</title>' +
           "<style>" +
-          "*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}" +
-          "body{margin:0;padding:32px 24px;font-family:sans-serif;display:flex;justify-content:center;}" +
-          ".print-card{width:120px;text-align:center;}" +
-          ".swatch-img{display:block;width:120px;height:80px;border-radius:8px;border:1px solid #d1d5db;}" +
+          "*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box;}" +
+          "@page{size:A4 portrait;margin:12mm;}" +
+          "body{margin:0;padding:0;font-family:sans-serif;}" +
+          ".print-card{width:" +
+          width +
+          "px;margin:0 auto;text-align:center;}" +
+          ".swatch-img{display:block;width:" +
+          width +
+          "px;height:" +
+          height +
+          "px;border-radius:8px;border:1px solid #d1d5db;}" +
           ".hex-label{margin-top:8px;font-size:11px;font-family:monospace;color:#666;}" +
           ".meta{margin-top:20px;font-size:11px;line-height:1.7;color:#888;text-align:left;}" +
           "@media print{body{padding:0;}.print-card{page-break-inside:avoid;}}" +
@@ -234,21 +245,52 @@ export default {
         doPrint();
       }
     },
-    buildOverprintSwatchImage(hex, textColor, label) {
+    getPrintSwatchDimensions() {
+      const swatchEl = this.$refs.printSwatch;
+      const panelEl = this.$refs.printPanel;
+      const fallback = { width: 120, height: 80 };
+
+      const swatchRect = swatchEl?.getBoundingClientRect?.();
+      const aspectRatio =
+        swatchRect && swatchRect.width > 0
+          ? swatchRect.height / swatchRect.width
+          : fallback.height / fallback.width;
+
+      if (!panelEl) {
+        return swatchRect
+          ? {
+              width: Math.round(swatchRect.width),
+              height: Math.round(swatchRect.height),
+            }
+          : fallback;
+      }
+
+      const panelStyle = window.getComputedStyle(panelEl);
+      const paddingX =
+        parseFloat(panelStyle.paddingLeft) + parseFloat(panelStyle.paddingRight);
+      const width = Math.max(
+        Math.round(panelEl.clientWidth - paddingX),
+        fallback.width,
+      );
+      const height = Math.max(Math.round(width * aspectRatio), fallback.height);
+
+      return { width, height };
+    },
+    buildOverprintSwatchImage(hex, textColor, label, width, height) {
       const canvas = document.createElement("canvas");
-      const width = 360;
-      const height = 240;
-      canvas.width = width;
-      canvas.height = height;
+      const scale = 3;
+      canvas.width = width * scale;
+      canvas.height = height * scale;
       const ctx = canvas.getContext("2d");
       if (!ctx) return "";
+      ctx.scale(scale, scale);
       ctx.fillStyle = hex;
       ctx.fillRect(0, 0, width, height);
       ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(1, 1, width - 2, height - 2);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
       ctx.fillStyle = textColor;
-      ctx.font = "bold 32px sans-serif";
+      ctx.font = `bold ${Math.max(13, Math.round(height * 0.16))}px sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(label, width / 2, height / 2);
