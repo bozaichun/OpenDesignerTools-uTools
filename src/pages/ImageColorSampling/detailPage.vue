@@ -1,5 +1,14 @@
 <template>
   <div class="module-detail">
+    <!-- 隐藏文件选择器，用于「重新选择」按钮触发 -->
+    <input
+      ref="fileInput"
+      type="file"
+      accept="image/*"
+      style="display: none;"
+      @change="handleFileSelect"
+    />
+
     <!-- 色卡弹框 -->
     <Dialog
       :visible="paletteDialogVisible"
@@ -38,15 +47,8 @@
       </div>
     </Dialog>
 
-    <!-- 空状态 -->
-    <div v-if="!hasData" class="empty-state">
-      <div class="empty-icon">⚠️</div>
-      <div class="empty-text">没有分析数据，请先上传图片并分析</div>
-      <button class="empty-action" @click="goBack">返回上传</button>
-    </div>
-
-    <!-- 分析结果内容 -->
-    <div v-else>
+    <!-- 分析结果内容（始终显示，重选时保留旧数据） -->
+    <div>
       <!-- 图片预览 + 取色区 + 吸管取色结果 -->
       <div class="analysis-top-row">
         <div class="section-block image-preview-section">
@@ -55,12 +57,15 @@
             title="图片取色"
             subtitle="点击图片任意位置可获取该点颜色值"
           />
-          <Straw
-            :image-src="imageSrc"
-            :natural-width="imageNaturalWidth"
-            :natural-height="imageNaturalHeight"
-            @pick="handleStrawPick"
-          />
+          <div class="image-preview-wrap">
+            <Straw
+              v-if="imageSrc"
+              :image-src="imageSrc"
+              :natural-width="imageNaturalWidth"
+              :natural-height="imageNaturalHeight"
+              @pick="handleStrawPick"
+            />
+          </div>
         </div>
 
         <!-- 吸管取色结果 -->
@@ -185,6 +190,8 @@
       </div>
 
     </div>
+
+    <Loading :visible="isAnalyzing" text="正在分析图片中的颜色..." />
   </div>
 </template>
 
@@ -196,6 +203,7 @@ import {
 import ModuleTitle from '../../components/ModuleTitle.vue';
 import Dialog from '../../components/Dialog.vue';
 import Straw from '../../components/Straw.vue';
+import Loading from '../../components/Loading.vue';
 
 const STORAGE_KEY = 'imageAnalysisData';
 
@@ -204,7 +212,8 @@ export default {
   components: {
     ModuleTitle,
     Dialog,
-    Straw
+    Straw,
+    Loading
   },
   inject: ['setHeaderActions', 'clearHeaderActions'],
   data() {
@@ -214,6 +223,7 @@ export default {
       imageNaturalHeight: 0,
       mainColors: [],
       pickedColor: null,
+      isAnalyzing: false,
       paletteDialogVisible: false
     };
   },
@@ -304,8 +314,166 @@ export default {
         return;
       }
       this.setHeaderActions([
+        { label: '重新选择', onClick: () => this.handleReselect(), secondary: true },
         { label: '生成色卡', onClick: () => this.openPaletteDialog() }
       ]);
+    },
+    handleReselect() {
+      this.$refs.fileInput.value = '';
+      this.$refs.fileInput.click();
+    },
+    handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) this.loadImage(file);
+    },
+    loadImage(file) {
+      const self = this;
+      const MIN_LOADING_MS = 1000;
+      const startTime = Date.now();
+      this.isAnalyzing = true;
+      this.pickedColor = null;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          self.parseImageData(img);
+          self.extractMainColors(e.target.result, startTime, MIN_LOADING_MS);
+        };
+        img.onerror = function() {
+          self.isAnalyzing = false;
+          showToast(self, '图片加载失败', 'error');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    },
+    parseImageData(img) {
+      const maxSize = 600;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxSize || height > maxSize) {
+        const ratio = Math.min(maxSize / width, maxSize / height);
+        width = Math.floor(width * ratio);
+        height = Math.floor(height * ratio);
+      }
+
+      this._pendingNaturalWidth = width;
+      this._pendingNaturalHeight = height;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      this._pendingImageData = ctx.getImageData(0, 0, width, height);
+    },
+    extractMainColors(newImageSrc, startTime, minLoadingMs) {
+      const self = this;
+      if (!this._pendingImageData) {
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, minLoadingMs - elapsed);
+        setTimeout(function() {
+          self.isAnalyzing = false;
+        }, remaining);
+        return;
+      }
+
+      try {
+        const data = this._pendingImageData.data;
+        const step = 4;
+        const buckets = {};
+
+        for (let i = 0; i < data.length; i += 4 * step) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          const a = data[i + 3];
+
+          if (a < 50) continue;
+
+          const qr = Math.round(r / 32) * 32;
+          const qg = Math.round(g / 32) * 32;
+          const qb = Math.round(b / 32) * 32;
+          const key = qr + ',' + qg + ',' + qb;
+
+          if (!buckets[key]) {
+            buckets[key] = { sumR: 0, sumG: 0, sumB: 0, count: 0 };
+          }
+          buckets[key].sumR += r;
+          buckets[key].sumG += g;
+          buckets[key].sumB += b;
+          buckets[key].count++;
+        }
+
+        const sorted = Object.entries(buckets)
+          .sort((a, b) => b[1].count - a[1].count)
+          .slice(0, 12);
+
+        const results = sorted.map(([, d]) => {
+          const avgR = Math.round(d.sumR / d.count);
+          const avgG = Math.round(d.sumG / d.count);
+          const avgB = Math.round(d.sumB / d.count);
+          return { r: avgR, g: avgG, b: avgB };
+        });
+
+        const unique = [];
+        for (let i = 0; i < results.length; i++) {
+          const c = results[i];
+          let isSimilar = false;
+          for (let j = 0; j < unique.length; j++) {
+            const u = unique[j];
+            if (Math.abs(u.r - c.r) < 30 && Math.abs(u.g - c.g) < 30 && Math.abs(u.b - c.b) < 30) {
+              isSimilar = true;
+              break;
+            }
+          }
+          if (!isSimilar) unique.push(c);
+        }
+
+        const newMainColors = unique.slice(0, 8).map(c => {
+          const rgba = { r: c.r, g: c.g, b: c.b, a: 1 };
+          return {
+            hex: formatHEX(rgba),
+            rgb: formatRGB(rgba),
+            hsl: formatHSL(rgba),
+            cmyk: formatCMYK(rgba),
+            hsv: formatHSV(rgba)
+          };
+        });
+
+        // 分析完成：确保 loading 达到最短展示时间后，再同时更新数据和关闭 loading
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, minLoadingMs - elapsed);
+        setTimeout(function() {
+          self.imageSrc = newImageSrc;
+          self.imageNaturalWidth = self._pendingNaturalWidth;
+          self.imageNaturalHeight = self._pendingNaturalHeight;
+          self.mainColors = newMainColors;
+          self.saveAnalysisData();
+          self.isAnalyzing = false;
+        }, remaining);
+      } catch (err) {
+        console.error('主色调提取失败', err);
+        this.isAnalyzing = false;
+        showToast(this, '颜色提取失败', 'error');
+      }
+    },
+    saveAnalysisData() {
+      try {
+        const data = {
+          imageSrc: this.imageSrc,
+          imageNaturalWidth: this.imageNaturalWidth,
+          imageNaturalHeight: this.imageNaturalHeight,
+          mainColors: this.mainColors,
+          timestamp: Date.now()
+        };
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (err) {
+        console.error('数据存储失败', err);
+        showToast(this, '数据存储失败，请重试', 'error');
+      }
     },
 
     openPaletteDialog() {
@@ -498,6 +666,12 @@ export default {
 /* ============ 图片预览区 ============ */
 .image-preview-section {
   margin-bottom: 24px;
+}
+
+.image-preview-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
 }
 
 /* ============ 结果通用样式 ============ */

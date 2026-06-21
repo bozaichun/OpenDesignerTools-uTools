@@ -31,7 +31,7 @@
       </div>
     </div>
 
-    <!-- 全局文件选择器（始终在 DOM 中，便于从页头按钮触发） -->
+    <!-- 全局文件选择器 -->
     <input
       ref="fileInput"
       type="file"
@@ -48,7 +48,7 @@
 <script>
 import {
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
-  copyToClipboard, showToast
+  showToast
 } from '../../utils/colorUtils';
 import Loading from '../../components/Loading.vue';
 import Banner from '../../components/Banner.vue';
@@ -86,7 +86,6 @@ export default {
     updateHeaderActions() {
       if (this.imageLoaded) {
         this.setHeaderActions([
-          { label: '一键分析', onClick: () => this.analyzeImage() },
           { label: '重新选择', onClick: () => this.triggerFileInput(), secondary: true }
         ]);
       } else {
@@ -123,6 +122,8 @@ export default {
           self.imageLoaded = true;
           self.$nextTick(function() {
             self.parseImageData(img);
+            // 图片解析完成后自动开始分析
+            self.analyzeImage();
           });
         };
         img.onerror = function() {

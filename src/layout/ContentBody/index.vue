@@ -23,10 +23,10 @@ export default {
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
-  background: var(--bg-card);
   padding: 20px;
   overflow: auto;
   overflow-x: hidden;
+  background: var(--bg-card);
 }
 
 @media (max-width: 640px) {

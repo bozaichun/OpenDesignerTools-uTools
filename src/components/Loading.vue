@@ -1,5 +1,5 @@
 <template>
-  <div v-if="visible" class="loading-overlay">
+  <div v-if="visible" class="loading-overlay" :class="{ 'loading-inline': inline, 'loading-local': local }">
     <div class="loading-content">
       <img class="loading-spinner" src="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/icon/project/loading.gif" alt="loading" />
       <div class="loading-text">{{ text }}</div>
@@ -18,6 +18,14 @@ export default {
     text: {
       type: String,
       default: '加载中...'
+    },
+    inline: {
+      type: Boolean,
+      default: false
+    },
+    local: {
+      type: Boolean,
+      default: false
     }
   }
 };
@@ -36,6 +44,26 @@ export default {
   justify-content: center;
   z-index: 9999;
   animation: fadeIn 0.2s ease;
+
+  &.loading-inline {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 8px;
+    z-index: 10;
+  }
+
+  &.loading-local {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 0;
+    z-index: 10;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .loading-overlay.loading-inline {
+    background: rgba(30, 30, 30, 0.75);
+  }
 }
 
 @keyframes fadeIn {
@@ -65,6 +93,16 @@ export default {
   color: #fff;
   font-weight: 500;
   white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.loading-overlay.loading-inline .loading-text {
+  color: rgb(88, 164, 246);
+  text-shadow: none;
+}
+
+.loading-overlay.loading-local .loading-text {
+  color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 </style>

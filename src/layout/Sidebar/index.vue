@@ -1,25 +1,15 @@
 <template>
   <aside class="sidebar" :class="{ collapsed: collapsed }">
     <nav class="sidebar-menu">
-      <div
-        v-for="item in menuItems"
-        :key="item.id"
-        class="menu-item"
-        :class="{ active: currentTab === item.id }"
-        @click="handleItemClick(item)"
-        :title="item.label"
-      >
+      <div v-for="item in menuItems" :key="item.id" class="menu-item" :class="{ active: currentTab === item.id }"
+        @click="handleItemClick(item)" :title="item.label">
         <span class="menu-icon" v-html="item.icon"></span>
         <span class="menu-label">{{ item.label }}</span>
       </div>
     </nav>
 
     <div class="sidebar-footer">
-      <button
-        class="collapse-toggle"
-        @click="toggleCollapse"
-        :title="collapsed ? '展开导航' : '收起导航'"
-      >
+      <button class="collapse-toggle" @click="toggleCollapse" :title="collapsed ? '展开导航' : '收起导航'">
         <span class="iconfont collapse-icon" :class="collapsed ? 'icon-Expand' : 'icon-Fold'"></span>
         <span class="collapse-label">{{ collapsed ? '展开' : '收起' }}</span>
       </button>
@@ -68,12 +58,16 @@ export default {
   flex: 0 0 168px;
   height: 100%;
   min-height: 0;
-  background: var(--bg-card);
   border-right: 1px solid var(--border-primary);
+  border-top: 1px solid var(--border-primary);
   display: flex;
   flex-direction: column;
+  background: var(--bg-card);
   transition: flex-basis 0.25s ease, width 0.25s ease;
   overflow: hidden;
+  // box-shadow: 4px 0 14px -6px rgba(0, 0, 0, 0.12);
+  position: relative;
+  z-index: 1;
 }
 
 .sidebar.collapsed {
@@ -162,7 +156,7 @@ export default {
 
 .sidebar-footer {
   flex: 0 0 auto;
-  padding: 12px;
+  padding: 16px 12px 20px;
   border-top: 1px solid var(--border-primary);
 }
 
@@ -197,6 +191,10 @@ export default {
 .sidebar.collapsed {
   .collapse-label {
     display: none;
+  }
+
+  .sidebar-footer {
+    padding: 12px 8px 14px;
   }
 
   .collapse-toggle {
