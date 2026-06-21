@@ -24,8 +24,6 @@ export default {
   min-height: 0;
   min-width: 0;
   background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-primary);
   padding: 20px;
   overflow: auto;
   overflow-x: hidden;

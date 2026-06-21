@@ -1,11 +1,41 @@
 import { parseColor } from '../../utils/colorUtils';
 
 export const DETAIL_MODULES = [
-  { id: 'cmyk', label: 'CMYK 校准', route: '/PrintTools/CmykDetail' },
-  { id: 'pantone', label: '潘通匹配', route: '/PrintTools/PantoneDetail' },
-  { id: 'overprint', label: '叠印预览', route: '/PrintTools/OverprintPreviewDetail' },
-  { id: 'screenTint', label: '网点换算', route: '/PrintTools/ScreenTintConverDetail' }
+  {
+    id: 'cmyk',
+    label: 'CMYK 校准',
+    route: '/PrintTools/CmykDetail',
+    description: 'RGB/HEX 转带 ICC 配置 CMYK，预览印刷色差与溢色预警'
+  },
+  {
+    id: 'pantone',
+    label: '潘通匹配',
+    route: '/PrintTools/PantoneDetail',
+    description: '基于当前颜色自动匹配最接近的潘通色号'
+  },
+  {
+    id: 'overprint',
+    label: '叠印预览',
+    route: '/PrintTools/OverprintPreviewDetail',
+    description: '主色作为底层，可调整叠印色与透明度预览印刷叠加效果'
+  },
+  {
+    id: 'screenTint',
+    label: '网点换算',
+    route: '/PrintTools/ScreenTintConverDetail',
+    description: '基于当前主色换算各网点百分比对应色值，适配画册、包装印刷制版'
+  }
 ];
+
+export function getDetailModuleDescription(path, query = {}) {
+  const mod = DETAIL_MODULES.find((m) => m.route === path);
+  if (!mod) return '';
+  if (path === '/PrintTools/PantoneDetail') {
+    const paperLabel = query.paper === 'uncoated' ? '胶版纸' : '铜版纸';
+    return mod.description + '（' + paperLabel + '）';
+  }
+  return mod.description;
+}
 
 export const PANTONE_COATED = [
   { code: 'PANTONE Yellow C', name: '潘通黄 C', hex: '#FFCD00', lab: { l: 88, a: -6, b: 110 } },
@@ -162,9 +192,4 @@ export function readDetailQuery(route) {
     useDPI: q.useDPI === '1',
     dpi: q.dpi || '175'
   };
-}
-
-/** 从概览页或模块切换进入时，路由会携带 color 参数，此时应直接展示分析结果 */
-export function shouldAutoAnalyze(route) {
-  return Boolean(route.query && route.query.color);
 }

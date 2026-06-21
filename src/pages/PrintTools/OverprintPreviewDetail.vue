@@ -2,96 +2,49 @@
   <div class="print-detail">
     <PrintToolsDetailShell
       current-module="overprint"
-      :color="draftColor"
+      :color="inputColor"
       :query-extra="shellQueryExtra"
-      @update:color="draftColor = $event"
-      @analyze="handleAnalyze"
+      @update:color="inputColor = $event"
     >
       <template #extra>
-        <ColorPicker v-model="draftColorB" />
+        <ColorPicker v-model="colorB" />
         <div class="opacity-control">
           <input
             type="range"
-            v-model="draftOpacity"
+            v-model="opacity"
             min="10"
             max="100"
             class="opacity-slider"
           />
-          <span>{{ draftOpacity }}%</span>
+          <span>{{ opacity }}%</span>
         </div>
       </template>
     </PrintToolsDetailShell>
 
-    <section v-if="analyzed" class="panel module-panel">
-      <div class="module-head">
-        <h3 class="panel-title">叠印预览</h3>
-        <span class="module-tag">透印模拟</span>
-      </div>
-      <span class="panel-sub"
-        >主色作为底层，可调整叠印色与透明度预览印刷叠加效果</span
-      >
-
-      <div class="overprint-inputs">
-        <div class="overprint-input-group">
-          <div class="input-label">颜色 A（底层 · 当前主色）</div>
-          <div class="input-row">
-            <div class="locked-color">
-              <span
-                class="locked-swatch"
-                :style="{ background: activeColor }"
-              ></span>
-              <span class="locked-hex">{{ activeColor }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="overprint-input-group">
-          <div class="input-label">颜色 B（上层叠印色）</div>
-          <div class="input-row">
-            <ColorPicker
-              v-model="activeColorB"
-              @update:model-value="handleOverprintAdjust"
-            />
-          </div>
-        </div>
-        <div class="overprint-input-group">
-          <div class="input-label">上层透明度</div>
-          <div class="input-row">
-            <input
-              type="range"
-              v-model="activeOpacity"
-              min="10"
-              max="100"
-              class="opacity-slider"
-              @input="handleOverprintAdjust"
-            />
-            <span>{{ activeOpacity }}%</span>
-          </div>
-        </div>
-      </div>
-
+    <section class="panel module-panel">
       <div class="overprint-preview">
         <div class="overprint-item">
           <div
             class="overprint-swatch large"
-            :style="{ background: activeColor }"
+            :style="{ background: inputColor }"
           >
-            <span :style="{ color: getContrastColor(activeColor) }"
+            <span :style="{ color: getContrastColor(inputColor) }"
               >颜色 A</span
             >
           </div>
-          <div class="overprint-label">{{ activeColor }}</div>
+          <div class="overprint-label">{{ inputColor }}</div>
         </div>
         <div class="overprint-plus">+</div>
         <div class="overprint-item">
           <div
             class="overprint-swatch large"
-            :style="{ background: activeColorB }"
+            :style="{ background: colorB }"
           >
-            <span :style="{ color: getContrastColor(activeColorB) }"
+            <span :style="{ color: getContrastColor(colorB) }"
               >颜色 B</span
             >
           </div>
-          <div class="overprint-label">{{ activeColorB }}</div>
+          <div class="overprint-label">{{ colorB }}</div>
         </div>
         <div class="overprint-equals">=</div>
         <div class="overprint-item overprint-result">
@@ -135,7 +88,6 @@ import {
 import {
   computeOverprintMixed,
   readDetailQuery,
-  shouldAutoAnalyze,
 } from "./printToolsUtils";
 
 export default {
@@ -144,29 +96,25 @@ export default {
   inject: ["setHeaderActions", "clearHeaderActions"],
   data() {
     return {
-      draftColor: "#1677FF",
-      draftColorB: "#FFFFFF",
-      draftOpacity: 70,
-      activeColor: "#1677FF",
-      activeColorB: "#FFFFFF",
-      activeOpacity: 70,
-      analyzed: false,
+      inputColor: "#1677FF",
+      colorB: "#FFFFFF",
+      opacity: 70,
     };
   },
   computed: {
     shellQueryExtra() {
       return {
-        colorB: this.draftColorB,
-        opacity: String(this.draftOpacity),
+        colorB: this.colorB,
+        opacity: String(this.opacity),
         profile: "srgb",
         paper: "coated",
       };
     },
     overprintMixed() {
       return computeOverprintMixed(
-        this.activeColor,
-        this.activeColorB,
-        this.activeOpacity,
+        this.inputColor,
+        this.colorB,
+        this.opacity,
       );
     },
     overprintMixedStyle() {
@@ -187,41 +135,23 @@ export default {
     "$route.query"() {
       this.applyRouteQuery();
     },
-    analyzed() {
-      this.updateHeaderActions();
-    },
   },
   methods: {
     updateHeaderActions() {
-      if (!this.analyzed) {
-        this.clearHeaderActions();
-        return;
-      }
       this.setHeaderActions([
         {
           label: "打印叠印",
           icon: "icon-Areality-PrintingTool",
+          iconOnly: true,
           onClick: () => this.handlePrintOverprint(),
         },
       ]);
     },
     applyRouteQuery() {
       const q = readDetailQuery(this.$route);
-      this.draftColor = q.color;
-      this.draftColorB = q.colorB;
-      this.draftOpacity = q.opacity;
-      if (shouldAutoAnalyze(this.$route)) {
-        this.handleAnalyze();
-      }
-    },
-    handleAnalyze() {
-      this.activeColor = this.draftColor;
-      this.activeColorB = this.draftColorB;
-      this.activeOpacity = this.draftOpacity;
-      this.analyzed = true;
-    },
-    handleOverprintAdjust() {
-      // 详情内微调 B 色与透明度时实时更新预览
+      this.inputColor = q.color;
+      this.colorB = q.colorB;
+      this.opacity = q.opacity;
     },
     getContrastColor(hex) {
       const rgb = parseColor(hex);
@@ -234,9 +164,9 @@ export default {
     },
     handlePrintOverprint() {
       const hex = this.overprintMixedHex;
-      const colorA = this.activeColor;
-      const colorB = this.activeColorB;
-      const opacity = this.activeOpacity;
+      const colorA = this.inputColor;
+      const colorB = this.colorB;
+      const opacity = this.opacity;
       const textColor = this.getContrastColor(hex);
       const swatchDataUrl = this.buildOverprintSwatchImage(
         hex,
@@ -351,83 +281,6 @@ export default {
   padding: 20px;
   margin-bottom: 20px;
 }
-.panel-title {
-  font-size: 15px;
-  font-weight: 600;
-  margin: 0 0 4px 0;
-  color: var(--text-primary);
-}
-.panel-sub {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  display: block;
-  margin-bottom: 16px;
-  margin-top: -8px;
-}
-.module-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 4px;
-}
-.module-tag {
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 500;
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-radius: var(--radius-pill);
-}
-.overprint-inputs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-}
-.overprint-input-group {
-  background: var(--bg-muted);
-  padding: 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-primary);
-}
-.input-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-}
-.input-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.input-row :deep(.color-picker) {
-  flex: 1;
-  min-width: 0;
-}
-.locked-color {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-}
-.locked-swatch {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-primary);
-  flex-shrink: 0;
-}
-.locked-hex {
-  font-size: 12px;
-  font-family: monospace;
-  color: var(--text-primary);
-}
 .opacity-slider {
   flex: 1;
 }
@@ -516,11 +369,6 @@ export default {
   font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.6;
-}
-@media (max-width: 1024px) {
-  .overprint-inputs {
-    grid-template-columns: 1fr;
-  }
 }
 @media (max-width: 640px) {
   .overprint-preview {

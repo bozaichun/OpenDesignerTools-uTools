@@ -11,7 +11,7 @@
       variant="mono"
       :block="false"
       :flex="true"
-      :clearable="false"
+      :clearable="clearable"
       :model-value="displayValue"
       :placeholder="placeholder"
       :disabled="disabled"
@@ -41,6 +41,10 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    },
+    clearable: {
+      type: Boolean,
+      default: true
     }
   },
   emits: ['update:modelValue', 'change'],

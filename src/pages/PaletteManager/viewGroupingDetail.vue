@@ -61,13 +61,10 @@
               />
               <div class="palette-hex">{{ entry.color.color }}</div>
             </div>
-            <Textarea
-              v-model="entry.color.note"
-              variant="ghost"
-              :rows="2"
-              placeholder="备注 / 使用场景"
-              @blur="saveAll()"
-            />
+            <span
+              class="palette-note-text"
+              :class="{ 'is-empty': !hasColorNote(entry.color.note) }"
+            >{{ formatColorNote(entry.color.note) }}</span>
             <div class="palette-type-cell">
               <span
                 class="color-type-tag"
@@ -93,6 +90,8 @@
       v-model:visible="dialogAddColor"
       :title="editingColorIndex !== null ? '修改色值' : '添加色值'"
       max-width="480px"
+      :confirm-on-enter="true"
+      @confirm="saveColor"
     >
       <div class="dialog-form">
         <div class="form-field">
@@ -243,6 +242,13 @@ export default {
       const rgb = parseColor(hex);
       if (!rgb) return '#000000';
       return gcc(rgb);
+    },
+    hasColorNote(note) {
+      return Boolean(String(note ?? '').trim());
+    },
+    formatColorNote(note) {
+      const value = String(note ?? '').trim();
+      return value || '--';
     },
     getColorTypeLabel(type) {
       if (!getColorValueTypeOption(type)) return '未分类';
@@ -407,7 +413,8 @@ export default {
 }
 
 .filter-chip {
-  padding: 6px 14px;
+  height: 28px;
+  padding: 0px 12px;
   background: var(--bg-muted);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-pill);
@@ -460,6 +467,7 @@ export default {
 
 .palette-item > .palette-swatch,
 .palette-item > .palette-name-cell,
+.palette-item > .palette-note-text,
 .palette-item > .palette-type-cell,
 .palette-item > .palette-actions-sm {
   align-self: center;
@@ -470,10 +478,22 @@ export default {
 }
 
 .palette-item > .palette-name-cell,
-.palette-item > :deep(.app-input-wrap),
-.palette-item > :deep(.app-textarea-wrap) {
+.palette-item > .palette-note-text {
   width: 100%;
   max-width: 100%;
+  min-width: 0;
+}
+
+.palette-note-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-note-text.is-empty {
+  color: var(--text-tertiary);
 }
 
 .palette-item > .palette-type-cell {
@@ -693,8 +713,7 @@ export default {
     grid-template-columns: 48px 1fr;
   }
 
-  .palette-item > :deep(.app-input-wrap),
-  .palette-item > :deep(.app-textarea-wrap),
+  .palette-item > .palette-note-text,
   .palette-type-cell,
   .palette-actions-sm {
     grid-column: 1 / -1;

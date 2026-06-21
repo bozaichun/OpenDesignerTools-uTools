@@ -21,13 +21,11 @@ export default {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 20px;
   overflow: hidden;
 }
 
 @media (max-width: 640px) {
   .main-content {
-    padding: 12px;
     height: auto;
     flex: 1 1 auto;
   }

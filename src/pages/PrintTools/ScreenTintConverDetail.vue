@@ -2,17 +2,16 @@
   <div class="print-detail">
     <PrintToolsDetailShell
       current-module="screenTint"
-      :color="draftColor"
+      :color="inputColor"
       :query-extra="shellQueryExtra"
-      @update:color="draftColor = $event"
-      @analyze="handleAnalyze"
+      @update:color="inputColor = $event"
     >
       <template #extra>
         <label class="checkbox-label">
-          <input type="checkbox" v-model="draftUseDPI" />
+          <input type="checkbox" v-model="useDPI" />
           <span>DPI 精确</span>
         </label>
-        <Selector v-if="draftUseDPI" v-model="draftDPI" :block="false" :flex="true">
+        <Selector v-if="useDPI" v-model="dpi" :block="false" :flex="true">
           <option value="150">150 lpi</option>
           <option value="175">175 lpi</option>
           <option value="200">200 lpi</option>
@@ -21,26 +20,7 @@
       </template>
     </PrintToolsDetailShell>
 
-    <section v-if="analyzed" class="panel module-panel">
-      <div class="module-head">
-        <h3 class="panel-title">网点换算</h3>
-        <span class="module-tag">制版参考</span>
-      </div>
-      <span class="panel-sub">基于当前主色换算各网点百分比对应色值，适配画册、包装印刷制版</span>
-
-      <div class="halftone-options">
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="activeUseDPI" />
-          <span>根据 DPI 精确计算</span>
-        </label>
-        <Selector v-if="activeUseDPI" v-model="activeDPI" :block="false" :flex="true">
-          <option value="150">150 lpi（粗网点）</option>
-          <option value="175">175 lpi（标准）</option>
-          <option value="200">200 lpi（精细）</option>
-          <option value="300">300 lpi（超精细）</option>
-        </Selector>
-      </div>
-
+    <section class="panel module-panel">
       <div class="halftone-table-wrap">
         <table class="data-table">
           <thead>
@@ -75,33 +55,29 @@
 import Selector from '../../components/Selector.vue';
 import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
 import { copyToClipboard, showToast } from '../../utils/colorUtils';
-import { computeHalftoneLevels, readDetailQuery, shouldAutoAnalyze } from './printToolsUtils';
+import { computeHalftoneLevels, readDetailQuery } from './printToolsUtils';
 
 export default {
   name: 'ScreenTintConverDetail',
   components: { Selector, PrintToolsDetailShell },
   data() {
     return {
-      draftColor: '#1677FF',
-      draftUseDPI: false,
-      draftDPI: '175',
-      activeColor: '#1677FF',
-      activeUseDPI: false,
-      activeDPI: '175',
-      analyzed: false
+      inputColor: '#1677FF',
+      useDPI: false,
+      dpi: '175'
     };
   },
   computed: {
     shellQueryExtra() {
       return {
-        useDPI: this.draftUseDPI ? '1' : '0',
-        dpi: this.draftDPI,
+        useDPI: this.useDPI ? '1' : '0',
+        dpi: this.dpi,
         profile: 'srgb',
         paper: 'coated'
       };
     },
     halftoneLevels() {
-      return computeHalftoneLevels(this.activeColor);
+      return computeHalftoneLevels(this.inputColor);
     }
   },
   mounted() {
@@ -115,18 +91,9 @@ export default {
   methods: {
     applyRouteQuery() {
       const q = readDetailQuery(this.$route);
-      this.draftColor = q.color;
-      this.draftUseDPI = q.useDPI;
-      this.draftDPI = q.dpi;
-      if (shouldAutoAnalyze(this.$route)) {
-        this.handleAnalyze();
-      }
-    },
-    handleAnalyze() {
-      this.activeColor = this.draftColor;
-      this.activeUseDPI = this.draftUseDPI;
-      this.activeDPI = this.draftDPI;
-      this.analyzed = true;
+      this.inputColor = q.color;
+      this.useDPI = q.useDPI;
+      this.dpi = q.dpi;
     },
     copyValue(value, label) {
       copyToClipboard(value);
@@ -145,18 +112,6 @@ export default {
 .panel {
   background: var(--bg-card); border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px;
-}
-.panel-title { font-size: 15px; font-weight: 600; margin: 0 0 4px 0; color: var(--text-primary); }
-.panel-sub { font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 16px; margin-top: -8px; }
-.module-head {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;
-}
-.module-tag {
-  padding: 2px 8px; font-size: 11px; font-weight: 500;
-  background: var(--accent-soft); color: var(--accent); border-radius: var(--radius-pill);
-}
-.halftone-options {
-  display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;
 }
 .halftone-table-wrap { overflow-x: auto; margin-bottom: 12px; }
 .data-table {

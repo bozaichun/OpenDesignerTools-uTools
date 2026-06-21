@@ -1,12 +1,20 @@
 <template>
+  <Teleport to="#print-tools-header-slot">
+    <Selector
+      class="header-module-selector"
+      :model-value="currentModule"
+      :block="false"
+      :flex="false"
+      @update:model-value="handleModuleChange"
+    >
+      <option v-for="m in modules" :key="m.id" :value="m.id">{{ m.label }}</option>
+    </Selector>
+  </Teleport>
+
   <section class="panel detail-control-panel">
     <div class="detail-control-row">
-      <Selector :model-value="currentModule" :block="false" :flex="true" @update:model-value="handleModuleChange">
-        <option v-for="m in modules" :key="m.id" :value="m.id">{{ m.label }}</option>
-      </Selector>
       <ColorPicker :model-value="color" @update:model-value="$emit('update:color', $event)" />
       <slot name="extra"></slot>
-      <button class="primary-btn" @click="$emit('analyze')">开始分析</button>
     </div>
   </section>
 </template>
@@ -24,7 +32,7 @@ export default {
     color: { type: String, required: true },
     queryExtra: { type: Object, default: () => ({}) }
   },
-  emits: ['update:color', 'analyze'],
+  emits: ['update:color'],
   data() {
     return { modules: DETAIL_MODULES };
   },
@@ -51,12 +59,5 @@ export default {
 .detail-control-row {
   display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
   :deep(.color-picker) { flex: 1; min-width: 180px; }
-}
-.primary-btn {
-  padding: 8px 18px; background: var(--accent); color: var(--text-invert);
-  border: 1px solid var(--accent); border-radius: var(--radius-md);
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: all 0.15s ease; white-space: nowrap;
-  &:hover { opacity: 0.9; }
 }
 </style>

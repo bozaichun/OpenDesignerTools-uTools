@@ -2,26 +2,19 @@
   <div class="print-detail">
     <PrintToolsDetailShell
       current-module="pantone"
-      :color="draftColor"
+      :color="inputColor"
       :query-extra="shellQueryExtra"
-      @update:color="draftColor = $event"
-      @analyze="handleAnalyze"
+      @update:color="inputColor = $event"
     >
       <template #extra>
-        <Selector v-model="draftPaper" :block="false" :flex="true">
+        <Selector v-model="paperType" :block="false" :flex="true">
           <option value="coated">铜版纸 Coated</option>
           <option value="uncoated">胶版纸 Uncoated</option>
         </Selector>
       </template>
     </PrintToolsDetailShell>
 
-    <section v-if="analyzed" class="panel module-panel">
-      <div class="module-head">
-        <h3 class="panel-title">潘通匹配</h3>
-        <span class="module-tag">Pantone 专色</span>
-      </div>
-      <span class="panel-sub">基于当前颜色自动匹配最接近的潘通色号（{{ activePaper === 'coated' ? '铜版纸' : '胶版纸' }}）</span>
-
+    <section class="panel module-panel">
       <div v-if="pantoneResults.length > 0" class="pantone-results">
         <div class="pantone-table-wrap">
           <table class="data-table">
@@ -59,26 +52,23 @@
 import Selector from '../../components/Selector.vue';
 import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
 import { copyToClipboard, showToast } from '../../utils/colorUtils';
-import { computePantoneResults, readDetailQuery, shouldAutoAnalyze } from './printToolsUtils';
+import { computePantoneResults, readDetailQuery } from './printToolsUtils';
 
 export default {
   name: 'PantoneDetail',
   components: { Selector, PrintToolsDetailShell },
   data() {
     return {
-      draftColor: '#1677FF',
-      draftPaper: 'coated',
-      activeColor: '#1677FF',
-      activePaper: 'coated',
-      analyzed: false
+      inputColor: '#1677FF',
+      paperType: 'coated'
     };
   },
   computed: {
     shellQueryExtra() {
-      return { paper: this.draftPaper, profile: 'srgb' };
+      return { paper: this.paperType, profile: 'srgb' };
     },
     pantoneResults() {
-      return computePantoneResults(this.activeColor, this.activePaper);
+      return computePantoneResults(this.inputColor, this.paperType);
     }
   },
   mounted() {
@@ -92,16 +82,8 @@ export default {
   methods: {
     applyRouteQuery() {
       const q = readDetailQuery(this.$route);
-      this.draftColor = q.color;
-      this.draftPaper = q.paper;
-      if (shouldAutoAnalyze(this.$route)) {
-        this.handleAnalyze();
-      }
-    },
-    handleAnalyze() {
-      this.activeColor = this.draftColor;
-      this.activePaper = this.draftPaper;
-      this.analyzed = true;
+      this.inputColor = q.color;
+      this.paperType = q.paper;
     },
     copyValue(value, label) {
       copyToClipboard(value);
@@ -116,15 +98,6 @@ export default {
 .panel {
   background: var(--bg-card); border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px;
-}
-.panel-title { font-size: 15px; font-weight: 600; margin: 0 0 4px 0; color: var(--text-primary); }
-.panel-sub { font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 16px; margin-top: -8px; }
-.module-head {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;
-}
-.module-tag {
-  padding: 2px 8px; font-size: 11px; font-weight: 500;
-  background: var(--accent-soft); color: var(--accent); border-radius: var(--radius-pill);
 }
 .pantone-table-wrap { overflow-x: auto; margin-bottom: 12px; }
 .data-table {

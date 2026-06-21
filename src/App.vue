@@ -13,20 +13,24 @@
       <!-- 页头 -->
       <header-layout
         :title="pageTitle"
+        :subtitle="pageSubtitle"
         :is-detail="isDetailRoute"
         @back="handleBackFromDetail"
         @show-setting="settingVisible = true"
       >
+        <template #extra>
+          <div id="print-tools-header-slot" class="print-tools-header-slot"></div>
+        </template>
         <template #actions>
           <template v-for="(btn, idx) in headerActionButtons" :key="idx">
             <button
               class="header-action-btn"
-              :class="{ secondary: btn.secondary }"
+              :class="{ secondary: btn.secondary, 'icon-only': btn.iconOnly }"
               @click="btn.onClick"
               :title="btn.label"
             >
               <span v-if="btn.icon" :class="['iconfont', btn.icon]"></span>
-              <span>{{ btn.label }}</span>
+              <span v-if="!btn.iconOnly">{{ btn.label }}</span>
             </button>
           </template>
         </template>
@@ -135,6 +139,7 @@ import Dialog from './components/Dialog.vue';
 import Drawer from './components/Drawer.vue';
 import { NAV_MENU_ITEMS } from './data/navMenu.js';
 import { I18N_DICT, TAB_BY_ROUTE, translate } from './config/i18n.js';
+import { getDetailModuleDescription } from './pages/PrintTools/printToolsUtils.js';
 
 export default {
   name: 'App',
@@ -209,6 +214,10 @@ export default {
       if (this.route.path === '/PrintTools/OverprintPreviewDetail') return '叠印预览';
       if (this.route.path === '/PrintTools/ScreenTintConverDetail') return '网点换算';
       return this.currentTabLabel;
+    },
+    pageSubtitle() {
+      if (!this.route.path.startsWith('/PrintTools/')) return '';
+      return getDetailModuleDescription(this.route.path, this.route.query || {});
     },
     isDetailRoute() {
       return this.route.path === '/ImageColorSampling/detailPage'
@@ -357,19 +366,34 @@ export default {
   pointer-events: none;
 }
 
+.print-tools-header-slot {
+  display: flex;
+  align-items: center;
+
+  :deep(.app-selector) {
+    min-width: 148px;
+  }
+
+  :deep(.app-selector__trigger) {
+    height: 30px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
 .header-action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   padding: 0 14px;
-  height: 36px;
+  height: 30px;
   background: var(--accent);
   color: var(--text-invert);
   border: 1px solid var(--accent);
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   transition: all 0.15s ease;
 
@@ -396,6 +420,16 @@ export default {
       background: var(--bg-hover);
       color: var(--text-primary);
       border-color: var(--accent);
+    }
+  }
+
+  &.icon-only {
+    width: 30px;
+    padding: 0;
+    gap: 0;
+
+    .iconfont {
+      font-size: 16px;
     }
   }
 }

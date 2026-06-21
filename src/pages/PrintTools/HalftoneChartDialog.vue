@@ -9,7 +9,17 @@
             :style="{ width: level.percent + '%', background: level.color }"
           ></div>
         </div>
-        <span class="halftone-chart-hex">{{ level.color }}</span>
+        <div class="halftone-chart-hex-cell">
+          <span class="halftone-chart-hex">{{ level.color }}</span>
+          <button
+            type="button"
+            class="halftone-chart-copy-btn"
+            title="复制"
+            @click="handleCopy(level.color, level.percent)"
+          >
+            <span class="iconfont icon-Copy"></span>
+          </button>
+        </div>
       </div>
     </div>
   </Dialog>
@@ -17,6 +27,7 @@
 
 <script>
 import Dialog from '../../components/Dialog.vue';
+import { copyToClipboard, showToast } from '../../utils/colorUtils';
 
 export default {
   name: 'HalftoneChartDialog',
@@ -35,6 +46,12 @@ export default {
         this.$emit('update:visible', val);
       }
     }
+  },
+  methods: {
+    handleCopy(value, percent) {
+      copyToClipboard(value);
+      showToast(this, `已复制 ${percent}% 网点色: ${value}`, 'success');
+    }
   }
 };
 </script>
@@ -50,7 +67,41 @@ export default {
   border-radius: 4px; overflow: hidden;
 }
 .halftone-chart-bar { height: 100%; min-width: 2px; border-radius: 4px; }
+.halftone-chart-hex-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
 .halftone-chart-hex {
-  width: 72px; font-size: 11px; font-family: monospace; color: var(--text-tertiary);
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-tertiary);
+}
+.halftone-chart-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+
+  .iconfont {
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
 }
 </style>

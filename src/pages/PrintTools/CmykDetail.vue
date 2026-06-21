@@ -2,13 +2,12 @@
   <div class="print-detail">
     <PrintToolsDetailShell
       current-module="cmyk"
-      :color="draftColor"
+      :color="inputColor"
       :query-extra="shellQueryExtra"
-      @update:color="draftColor = $event"
-      @analyze="handleAnalyze"
+      @update:color="inputColor = $event"
     >
       <template #extra>
-        <Selector v-model="draftProfile" :block="false" :flex="true">
+        <Selector v-model="profile" :block="false" :flex="true">
           <option value="srgb">sRGB / 通用</option>
           <option value="cmyk_us">US Web Coated (SWOP) v2</option>
           <option value="cmyk_eu">Euroscale Coated v2</option>
@@ -17,20 +16,14 @@
       </template>
     </PrintToolsDetailShell>
 
-    <section v-if="analyzed" class="panel module-panel">
-      <div class="module-head">
-        <h3 class="panel-title">CMYK 校准</h3>
-        <span class="module-tag">屏幕色 → 印刷色</span>
-      </div>
-      <span class="panel-sub">RGB/HEX 转带 ICC 配置 CMYK，预览印刷色差与溢色预警</span>
-
+    <section class="panel module-panel">
       <div class="cmyk-preview">
         <div class="cmyk-preview-item">
-          <div class="cmyk-preview-swatch" :style="{ background: activeColor }">
-            <span class="cmyk-preview-text" :style="{ color: getContrastColor(activeColor) }">屏幕色</span>
+          <div class="cmyk-preview-swatch" :style="{ background: inputColor }">
+            <span class="cmyk-preview-text" :style="{ color: getContrastColor(inputColor) }">屏幕色</span>
           </div>
           <div class="cmyk-preview-label">原始 RGB</div>
-          <div class="cmyk-preview-value">{{ activeColor }}</div>
+          <div class="cmyk-preview-value">{{ inputColor }}</div>
         </div>
         <div class="cmyk-arrow">→</div>
         <div class="cmyk-preview-item">
@@ -80,27 +73,24 @@
 <script>
 import Selector from '../../components/Selector.vue';
 import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
-import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
-import { computeCmykResult, computeCmykConvertedHex, readDetailQuery, shouldAutoAnalyze } from './printToolsUtils';
+import { parseColor, getContrastColor as gcc } from '../../utils/colorUtils';
+import { computeCmykResult, computeCmykConvertedHex, readDetailQuery } from './printToolsUtils';
 
 export default {
   name: 'CmykDetail',
   components: { Selector, PrintToolsDetailShell },
   data() {
     return {
-      draftColor: '#1677FF',
-      draftProfile: 'srgb',
-      activeColor: '#1677FF',
-      activeProfile: 'srgb',
-      analyzed: false
+      inputColor: '#1677FF',
+      profile: 'srgb'
     };
   },
   computed: {
     shellQueryExtra() {
-      return { profile: this.draftProfile, paper: 'coated' };
+      return { profile: this.profile, paper: 'coated' };
     },
     cmykResult() {
-      return computeCmykResult(this.activeColor);
+      return computeCmykResult(this.inputColor);
     },
     cmykConvertedHex() {
       return computeCmykConvertedHex(this.cmykResult);
@@ -117,25 +107,13 @@ export default {
   methods: {
     applyRouteQuery() {
       const q = readDetailQuery(this.$route);
-      this.draftColor = q.color;
-      this.draftProfile = q.profile;
-      if (shouldAutoAnalyze(this.$route)) {
-        this.handleAnalyze();
-      }
-    },
-    handleAnalyze() {
-      this.activeColor = this.draftColor;
-      this.activeProfile = this.draftProfile;
-      this.analyzed = true;
+      this.inputColor = q.color;
+      this.profile = q.profile;
     },
     getContrastColor(hex) {
       const rgb = parseColor(hex);
       if (!rgb) return '#000000';
       return gcc(rgb);
-    },
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label + ': ' + value, 'success');
     }
   }
 };
@@ -146,15 +124,6 @@ export default {
 .panel {
   background: var(--bg-card); border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px;
-}
-.panel-title { font-size: 15px; font-weight: 600; margin: 0 0 4px 0; color: var(--text-primary); }
-.panel-sub { font-size: 12px; color: var(--text-tertiary); display: block; margin-bottom: 16px; margin-top: -8px; }
-.module-head {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;
-}
-.module-tag {
-  padding: 2px 8px; font-size: 11px; font-weight: 500;
-  background: var(--accent-soft); color: var(--accent); border-radius: var(--radius-pill);
 }
 .cmyk-preview {
   display: flex; align-items: center; justify-content: center; gap: 24px;
