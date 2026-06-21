@@ -1,5 +1,10 @@
 <template>
   <div class="module-convert">
+    <Banner
+      title="任输一个色值，五种格式同步转换"
+      description="在 HEX / RGB / HSL / CMYK / HSV 任一格式框输入颜色，其余四栏自动同步换算结果"
+      icon="icon-Areality-ColorConversion"
+    />
     <div class="convert-layout">
       <!-- 左：颜色预览 -->
       <div class="col col-preview">
@@ -38,6 +43,7 @@
               v-model="inputs.rgb"
               :block="false"
               :flex="true"
+              :clearable="false"
               :invalid="invalidFormat === 'rgb'"
               placeholder="rgb(r, g, b)"
               @input="onInputChange('rgb')"
@@ -57,6 +63,7 @@
               v-model="inputs.hsl"
               :block="false"
               :flex="true"
+              :clearable="false"
               :invalid="invalidFormat === 'hsl'"
               placeholder="hsl(h, s%, l%)"
               @input="onInputChange('hsl')"
@@ -76,6 +83,7 @@
               v-model="inputs.cmyk"
               :block="false"
               :flex="true"
+              :clearable="false"
               :invalid="invalidFormat === 'cmyk'"
               placeholder="cmyk(c%, m%, y%, k%)"
               @input="onInputChange('cmyk')"
@@ -95,6 +103,7 @@
               v-model="inputs.hsv"
               :block="false"
               :flex="true"
+              :clearable="false"
               :invalid="invalidFormat === 'hsv'"
               placeholder="hsv(h, s%, v%)"
               @input="onInputChange('hsv')"
@@ -135,6 +144,7 @@
 <script>
 import ColorPicker from '../../components/ColorPicker.vue';
 import Input from '../../components/Input.vue';
+import Banner from '../../components/Banner.vue';
 import {
   detectColorFormat, parseColor, formatRGBA, formatHSLA,
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
@@ -143,7 +153,7 @@ import {
 
 export default {
   name: 'ColorConversion',
-  components: { ColorPicker, Input },
+  components: { ColorPicker, Input, Banner },
   data() {
     return {
       currentRGB: { r: 255, g: 255, b: 255, a: 1 },

@@ -1,5 +1,10 @@
 <template>
   <div class="module-preset">
+    <Banner
+      title="按色系浏览，一键获取颜色值"
+      description="覆盖红橙黄绿蓝紫黑白灰等常用色系，支持名称与 HEX 搜索快速定位"
+      icon="icon-Areality-Color"
+    />
     <!-- 筛选与搜索 -->
     <div class="preset-filter-bar">
       <div class="group-chips">
@@ -81,10 +86,11 @@ import { copyToClipboard, showToast } from '../../utils/colorUtils';
 import FavoriteButton from '../../components/FavoriteButton.vue';
 import Input from '../../components/Input.vue';
 import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
+import Banner from '../../components/Banner.vue';
 
 export default {
   name: 'PresetColors',
-  components: { FavoriteButton, Input, ColorFormatDialog },
+  components: { FavoriteButton, Input, ColorFormatDialog, Banner },
   data() {
     return {
       presetColors: PRESET_COLORS,

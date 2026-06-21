@@ -1,5 +1,10 @@
 <template>
   <div class="module-favorites">
+    <Banner
+      title="收藏常用色，快速取用"
+      description="在预置颜色或其他页面点击收藏图标，将颜色保存到这里统一管理，可一键添加到色板"
+      icon="icon-Areality-Color"
+    />
     <div v-if="favorites.length > 0" class="favorites-grid">
       <div
         v-for="item in favorites"
@@ -98,6 +103,7 @@ import Input from '../../components/Input.vue';
 import Selector from '../../components/Selector.vue';
 import FavoriteButton from '../../components/FavoriteButton.vue';
 import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
+import Banner from '../../components/Banner.vue';
 import {
   getAllFavorites,
   removeFavorite
@@ -112,7 +118,8 @@ export default {
     Input,
     Selector,
     FavoriteButton,
-    ColorFormatDialog
+    ColorFormatDialog,
+    Banner
   },
   data() {
     return {

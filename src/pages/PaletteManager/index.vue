@@ -1,5 +1,10 @@
 <template>
   <div class="module-palette">
+    <Banner
+      title="统一管理品牌色与项目色板"
+      description="支持个人 / 项目 / 品牌三类分组，自动查重合并、一键生成代码并与团队共享色板"
+      icon="icon-Areality-Palette"
+    />
     <DataTable
         :data="paginatedGroups"
         :columns="tableColumns"
@@ -252,6 +257,7 @@ import Input from '../../components/Input.vue';
 import Selector from '../../components/Selector.vue';
 import Pagination from '../../components/Pagination.vue';
 import CodeExportPanel from '../../components/CodeExportPanel.vue';
+import Banner from '../../components/Banner.vue';
 import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 import { loadPalettes, savePalettes } from './paletteStorage.js';
 
@@ -263,7 +269,8 @@ export default {
     Input,
     Selector,
     Pagination,
-    CodeExportPanel
+    CodeExportPanel,
+    Banner
   },
   inject: ['setHeaderActions', 'clearHeaderActions'],
   data() {

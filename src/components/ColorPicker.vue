@@ -18,6 +18,7 @@
       :invalid="invalid"
       @update:model-value="handleHexInput"
       @blur="handleHexBlur"
+      @clear="handleClear"
     />
   </div>
 </template>
@@ -104,6 +105,11 @@ export default {
       } else if (this.modelValue.trim()) {
         this.invalid = true;
       }
+    },
+    handleClear() {
+      this.invalid = false;
+      this.editingHex = false;
+      this.emitColor('#FFFFFF');
     }
   }
 };

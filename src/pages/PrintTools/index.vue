@@ -1,8 +1,8 @@
 <template>
   <div class="module-printtools">
     <Banner
-      title="印刷色值一站式分析"
-      description="选择或输入颜色一次，同步查看 CMYK 校准、潘通匹配、叠印预览、网点换算四项结果"
+      title="输入色值，四项印刷分析一步完成"
+      description="选择或输入颜色，同步查看 CMYK 校准、潘通匹配、叠印预览、网点换算结果"
       icon="icon-Areality-PrintingTool"
     />
     <!-- 统一色值输入 -->

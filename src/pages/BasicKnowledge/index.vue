@@ -1,5 +1,10 @@
 <template>
   <div class="module-knowledge">
+    <Banner
+      title="从零了解色彩设计基础"
+      description="掌握三原色原理、色环规律与颜色格式知识，帮你更科学地运用色彩"
+      icon="icon-Areality-ColorMixing"
+    />
     <div class="knowledge-grid">
       <div
         v-for="item in KNOWLEDGE_DATA"
@@ -12,6 +17,8 @@
             <span
               class="prompt-icon iconfont icon-Prompt"
               @click.stop="toggleTooltip($event, item.id, item.summary)"
+              @mouseenter.stop="showTooltipOnHover($event, item.id, item.summary)"
+              @mouseleave.stop="hideTooltipOnHover($event, item.id)"
             ></span>
           </div>
           <div class="knowledge-header-right">
@@ -51,10 +58,11 @@
 import * as echarts from 'echarts';
 import { KNOWLEDGE_DATA } from '../../data/knowledge';
 import Dialog from '../../components/Dialog.vue';
+import Banner from '../../components/Banner.vue';
 
 export default {
   name: 'BasicKnowledge',
-  components: { Dialog },
+  components: { Dialog, Banner },
   data() {
     return {
       KNOWLEDGE_DATA,
@@ -65,6 +73,8 @@ export default {
       tooltipText: '',
       tooltipStyle: { top: '0px', left: '0px' },
       activeTooltipId: null,
+      isHoverTooltip: false,
+      _hoverTimeout: null,
       detailVisible: false,
       currentDetailItem: null
     };
@@ -82,6 +92,7 @@ export default {
       });
     };
     this._docClickHandler = () => {
+      if (self.isHoverTooltip) return;
       self.activeTooltipId = null;
       self.tooltipVisible = false;
     };
@@ -96,6 +107,10 @@ export default {
     if (this._docClickHandler) {
       document.removeEventListener('click', this._docClickHandler);
     }
+    if (this._hoverTimeout) {
+      clearTimeout(this._hoverTimeout);
+      this._hoverTimeout = null;
+    }
   },
   beforeDestroy() {
     this.disposeAllCharts();
@@ -104,6 +119,10 @@ export default {
     }
     if (this._docClickHandler) {
       document.removeEventListener('click', this._docClickHandler);
+    }
+    if (this._hoverTimeout) {
+      clearTimeout(this._hoverTimeout);
+      this._hoverTimeout = null;
     }
   },
   methods: {
@@ -247,14 +266,45 @@ export default {
       if (this.activeTooltipId === id) {
         this.activeTooltipId = null;
         this.tooltipVisible = false;
+        this.isHoverTooltip = false;
         return;
       }
       this.activeTooltipId = id;
       this.tooltipText = text;
-      const x = event.clientX + 12;
-      const y = event.clientY + 12;
-      this.tooltipStyle = { top: y + 'px', left: x + 'px' };
+      this.isHoverTooltip = false;
+      const pos = this.calcTooltipPos(event.currentTarget);
+      this.tooltipStyle = { top: pos.top + 'px', left: pos.left + 'px' };
       this.tooltipVisible = true;
+    },
+    showTooltipOnHover(event, id, text) {
+      if (this._hoverTimeout) {
+        clearTimeout(this._hoverTimeout);
+        this._hoverTimeout = null;
+      }
+      if (this.activeTooltipId === id) return;
+      this.activeTooltipId = id;
+      this.tooltipText = text;
+      this.isHoverTooltip = true;
+      const pos = this.calcTooltipPos(event.currentTarget);
+      this.tooltipStyle = { top: pos.top + 'px', left: pos.left + 'px' };
+      this.tooltipVisible = true;
+    },
+    hideTooltipOnHover(event, id) {
+      if (!this.isHoverTooltip) return;
+      if (this.activeTooltipId !== id) return;
+      const self = this;
+      this._hoverTimeout = setTimeout(() => {
+        self.activeTooltipId = null;
+        self.tooltipVisible = false;
+        self.isHoverTooltip = false;
+        self._hoverTimeout = null;
+      }, 120);
+    },
+    calcTooltipPos(targetEl) {
+      const rect = targetEl.getBoundingClientRect();
+      const left = rect.left + Math.floor(rect.width / 2) - 16;
+      const top = rect.bottom + 8;
+      return { top, left };
     },
     openDetail(item) {
       this.currentDetailItem = item;
@@ -388,13 +438,36 @@ export default {
   z-index: 9999;
   background: rgba(30, 33, 38, 0.95);
   color: #fff;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  line-height: 1.5;
-  max-width: 340px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  max-width: 360px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  animation: tooltipFadeIn 0.18s ease forwards;
+  white-space: pre-line;
+}
+
+.tooltip-box::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 18px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid rgba(30, 33, 38, 0.95);
+}
+
+@keyframes tooltipFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 1024px) {

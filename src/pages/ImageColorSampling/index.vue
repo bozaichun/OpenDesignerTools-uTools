@@ -2,8 +2,8 @@
   <div class="module-image">
     <Banner
       v-if="!imageLoaded"
-      title="图片取色"
-      description="上传图片后点击或拖拽取色，自动提取主色调并生成完整色值分析报告"
+      title="上传图片，一键提取配色"
+      description="支持拖拽或点击上传，自动分析主色调并生成完整色值报告"
       icon="icon-Areality-Picture"
     />
 
@@ -18,7 +18,7 @@
       @drop.prevent="handleDrop"
     >
       <div class="upload-icon">
-        <span class="iconfont icon-Areality-Picture"></span>
+        <span class="iconfont icon-PictureAddition"></span>
       </div>
       <div class="upload-text">点击选择图片，或拖拽图片到此处</div>
       <div class="upload-hint">支持 PNG / JPG / WEBP / GIF</div>
@@ -295,7 +295,7 @@ export default {
 .upload-area {
   border: 2px dashed var(--border-strong);
   border-radius: var(--radius-lg);
-  padding: 48px 20px;
+  padding: 100px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -320,7 +320,7 @@ export default {
   justify-content: center;
 
   .iconfont {
-    font-size: 56px;
+    font-size: 44px;
   }
 }
 

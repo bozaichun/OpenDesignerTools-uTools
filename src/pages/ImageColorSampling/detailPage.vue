@@ -19,7 +19,16 @@
               class="palette-swatch"
               :style="{ background: color.hex }"
             ></div>
-            <div class="palette-value">{{ color.hex }}</div>
+            <div class="palette-value">
+              <span>{{ color.hex }}</span>
+              <button
+                class="palette-copy"
+                @click.stop="copyValue(color.hex, 'HEX')"
+                title="复制颜色值"
+              >
+                <span class="iconfont icon-Copy"></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -787,10 +796,39 @@ export default {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  text-align: center;
   letter-spacing: 0.5px;
   background: var(--bg-muted);
   border-top: 1px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.palette-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  padding: 0;
+
+  &:hover {
+    background: var(--accent);
+    color: #ffffff;
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
 }
 
 .palette-dialog-footer {
