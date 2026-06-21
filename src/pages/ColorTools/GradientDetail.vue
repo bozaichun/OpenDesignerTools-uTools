@@ -253,6 +253,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use './colorStripCard.scss' as *;
+
 .color-detail { width: 100%; min-width: 0; }
 .panel {
   background: var(--bg-card); border: 1px solid var(--border-primary);
@@ -285,7 +287,6 @@ export default {
   &.danger:hover { border-color: #EF4444; color: #EF4444; }
 }
 .section-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 20px 0 12px; }
-@import './colorStripCard.scss';
 .gradient-workbench {
   display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
   gap: 16px; margin-bottom: 20px;

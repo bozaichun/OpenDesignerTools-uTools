@@ -187,6 +187,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use './colorStripCard.scss' as *;
+
 .color-detail { width: 100%; min-width: 0; }
 .panel {
   background: var(--bg-card);
@@ -245,7 +247,6 @@ export default {
   strong { color: var(--accent); font-weight: 600; }
 }
 .adjust-slider { width: 100%; height: 6px; }
-@import './colorStripCard.scss';
 @media (max-width: 1024px) {
   .adjust-workbench { grid-template-columns: 1fr; }
 }

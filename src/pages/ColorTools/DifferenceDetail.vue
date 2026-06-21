@@ -241,6 +241,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use './colorStripCard.scss' as *;
+
 .color-detail { width: 100%; min-width: 0; }
 .panel {
   background: var(--bg-card); border: 1px solid var(--border-primary);
@@ -262,7 +264,6 @@ export default {
   :deep(.color-picker) { flex: 1; min-width: 0; }
 }
 .section-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 20px 0 12px; }
-@import './colorStripCard.scss';
 .diff-workbench {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.2fr);
