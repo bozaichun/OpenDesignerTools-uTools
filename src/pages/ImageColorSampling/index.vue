@@ -1,5 +1,12 @@
 <template>
   <div class="module-image">
+    <Banner
+      v-if="!imageLoaded"
+      title="图片取色"
+      description="上传图片后点击或拖拽取色，自动提取主色调并生成完整色值分析报告"
+      icon="icon-Areality-Picture"
+    />
+
     <!-- 上传区域（图片已加载后隐藏） -->
     <div
       v-if="!imageLoaded"
@@ -44,12 +51,13 @@ import {
   copyToClipboard, showToast
 } from '../../utils/colorUtils';
 import Loading from '../../components/Loading.vue';
+import Banner from '../../components/Banner.vue';
 
 const STORAGE_KEY = 'imageAnalysisData';
 
 export default {
   name: 'ImageColorSampling',
-  components: { Loading },
+  components: { Loading, Banner },
   inject: ['setHeaderActions', 'clearHeaderActions'],
   data() {
     return {

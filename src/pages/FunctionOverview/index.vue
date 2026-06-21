@@ -99,7 +99,7 @@ export default {
 <style lang="scss" scoped>
 .module-overview {
   width: 100%;
-  max-width: 960px;
+  min-width: 0;
 }
 
 .hero-section {
@@ -156,7 +156,7 @@ export default {
 
 .quick-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -242,7 +242,7 @@ export default {
 
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 10px;
 }
 

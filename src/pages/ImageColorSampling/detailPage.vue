@@ -1,5 +1,34 @@
 <template>
   <div class="module-detail">
+    <!-- 色卡弹框 -->
+    <Dialog
+      :visible="paletteDialogVisible"
+      title="色卡预览"
+      max-width="860px"
+      @close="paletteDialogVisible = false"
+    >
+      <div class="palette-dialog-body" ref="paletteCanvasBox">
+        <div v-if="!mainColors.length" class="palette-empty">暂无可用色卡数据</div>
+        <div v-else class="palette-grid" :class="'palette-cols-' + paletteCols">
+          <div
+            v-for="(color, idx) in mainColors"
+            :key="idx"
+            class="palette-card"
+          >
+            <div
+              class="palette-swatch"
+              :style="{ background: color.hex }"
+            ></div>
+            <div class="palette-value">{{ color.hex }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="palette-dialog-footer">
+        <button class="palette-btn secondary" @click="paletteDialogVisible = false">取消</button>
+        <button class="palette-btn" @click="downloadPalette">下载色卡</button>
+      </div>
+    </Dialog>
+
     <!-- 空状态 -->
     <div v-if="!hasData" class="empty-state">
       <div class="empty-icon">⚠️</div>
@@ -17,18 +46,12 @@
             title="图片取色"
             subtitle="点击图片任意位置可获取该点颜色值"
           />
-          <div class="image-container" ref="imageContainer">
-            <canvas
-              ref="canvas"
-              @click="handleCanvasClick"
-              @mousemove="handleCanvasMove"
-            ></canvas>
-            <div
-              v-if="pickerPos"
-              class="picker-indicator"
-              :style="{ left: pickerPos.x + 'px', top: pickerPos.y + 'px' }"
-            ></div>
-          </div>
+          <Straw
+            :image-src="imageSrc"
+            :natural-width="imageNaturalWidth"
+            :natural-height="imageNaturalHeight"
+            @pick="handleStrawPick"
+          />
         </div>
 
         <!-- 吸管取色结果 -->
@@ -162,32 +185,54 @@ import {
   copyToClipboard, showToast
 } from '../../utils/colorUtils';
 import ModuleTitle from '../../components/ModuleTitle.vue';
+import Dialog from '../../components/Dialog.vue';
+import Straw from '../../components/Straw.vue';
 
 const STORAGE_KEY = 'imageAnalysisData';
 
 export default {
   name: 'ImageColorSamplingDetail',
   components: {
-    ModuleTitle
+    ModuleTitle,
+    Dialog,
+    Straw
   },
+  inject: ['setHeaderActions', 'clearHeaderActions'],
   data() {
     return {
       imageSrc: null,
       imageNaturalWidth: 0,
       imageNaturalHeight: 0,
-      imageData: null,
       mainColors: [],
       pickedColor: null,
-      pickerPos: null
+      paletteDialogVisible: false
     };
   },
   computed: {
     hasData() {
       return this.imageSrc && this.mainColors.length > 0;
+    },
+    paletteCols() {
+      const total = this.mainColors.length;
+      if (total <= 4) return 4;
+      if (total <= 6) return 3;
+      return 4;
     }
   },
   mounted() {
     this.loadAnalysisData();
+    this.updateHeaderActions();
+  },
+  unmounted() {
+    this.clearHeaderActions();
+  },
+  watch: {
+    mainColors: {
+      deep: false,
+      handler() {
+        this.updateHeaderActions();
+      }
+    }
   },
   methods: {
     loadAnalysisData() {
@@ -202,81 +247,14 @@ export default {
         this.imageNaturalWidth = data.imageNaturalWidth;
         this.imageNaturalHeight = data.imageNaturalHeight;
         this.mainColors = data.mainColors || [];
-
-        // 渲染 canvas 以支持取色
-        this.$nextTick(() => {
-          this.renderCanvas();
-        });
       } catch (err) {
         console.error('读取分析数据失败', err);
         showToast(this, '数据读取失败', 'error');
       }
     },
 
-    renderCanvas() {
-      if (!this.imageSrc) return;
-      const self = this;
-      const img = new Image();
-      img.onload = function() {
-        const canvas = self.$refs.canvas;
-        if (!canvas) return;
-        const width = self.imageNaturalWidth || img.width;
-        const height = self.imageNaturalHeight || img.height;
-        canvas.width = width;
-        canvas.height = height;
-        self.imageNaturalWidth = width;
-        self.imageNaturalHeight = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        self.imageData = ctx.getImageData(0, 0, width, height);
-      };
-      img.src = this.imageSrc;
-    },
-
-    handleCanvasMove(e) {
-      const canvas = this.$refs.canvas;
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      this.pickerPos = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
-    },
-
-    getPixelAt(x, y) {
-      if (!this.imageData) return null;
-      const data = this.imageData.data;
-      const idx = (y * this.imageNaturalWidth + x) * 4;
-      return {
-        r: data[idx],
-        g: data[idx + 1],
-        b: data[idx + 2],
-        a: data[idx + 3] / 255
-      };
-    },
-
-    handleCanvasClick(e) {
-      const canvas = this.$refs.canvas;
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = this.imageNaturalWidth / rect.width;
-      const scaleY = this.imageNaturalHeight / rect.height;
-      const x = Math.floor((e.clientX - rect.left) * scaleX);
-      const y = Math.floor((e.clientY - rect.top) * scaleY);
-
-      const pixel = this.getPixelAt(x, y);
-      if (pixel) {
-        const rgba = { r: pixel.r, g: pixel.g, b: pixel.b, a: pixel.a };
-        const hex = formatHEX(rgba);
-        this.pickedColor = {
-          hex,
-          rgb: formatRGB(rgba),
-          hsl: formatHSL(rgba),
-          cmyk: formatCMYK(rgba),
-          hsv: formatHSV(rgba)
-        };
-        showToast(this, '已获取颜色: ' + hex, 'success');
-      }
+    handleStrawPick(colorInfo) {
+      this.pickedColor = colorInfo;
     },
 
     copyValue(value, label) {
@@ -309,6 +287,121 @@ export default {
 
     goBack() {
       this.$router.push('/ImageColorSampling');
+    },
+
+    updateHeaderActions() {
+      if (this.mainColors.length === 0) {
+        this.clearHeaderActions();
+        return;
+      }
+      this.setHeaderActions([
+        { label: '生成色卡', onClick: () => this.openPaletteDialog() }
+      ]);
+    },
+
+    openPaletteDialog() {
+      if (!this.mainColors.length) {
+        showToast(this, '没有可用的颜色数据', 'error');
+        return;
+      }
+      this.paletteDialogVisible = true;
+    },
+
+    // 根据颜色计算相对亮度，返回深色文字或浅色文字
+    getContrastTextColor(hex) {
+      const h = (hex || '').replace('#', '');
+      if (h.length !== 6) return '#111111';
+      const r = parseInt(h.substring(0, 2), 16);
+      const g = parseInt(h.substring(2, 4), 16);
+      const b = parseInt(h.substring(4, 6), 16);
+      const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+      return yiq >= 160 ? '#111111' : '#ffffff';
+    },
+
+    downloadPalette() {
+      if (!this.mainColors.length) {
+        showToast(this, '没有可下载的色卡数据', 'error');
+        return;
+      }
+      try {
+        const colors = this.mainColors.map(c => ({
+          hex: c.hex,
+          rgb: c.rgb,
+          text: this.getContrastTextColor(c.hex)
+        }));
+        const cols = this.paletteCols;
+        const cardW = 240;
+        const cardH = 260;
+        const swatchH = 180;
+        const padding = 32;
+        const gap = 20;
+        const titleH = 56;
+
+        const rows = Math.ceil(colors.length / cols);
+        const canvas = document.createElement('canvas');
+        const width = padding * 2 + cardW * cols + gap * (cols - 1);
+        const height = padding * 2 + titleH + cardH * rows + gap * (rows - 1);
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        // 背景
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+
+        // 标题
+        ctx.fillStyle = '#111111';
+        ctx.textBaseline = 'top';
+        ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.fillText('色卡 Palette', padding, padding);
+
+        ctx.fillStyle = '#888888';
+        ctx.font = '14px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
+        ctx.fillText('共 ' + colors.length + ' 种主色调', padding, padding + 34);
+
+        // 绘制色卡
+        colors.forEach((color, idx) => {
+          const col = idx % cols;
+          const row = Math.floor(idx / cols);
+          const x = padding + col * (cardW + gap);
+          const y = padding + titleH + row * (cardH + gap);
+
+          // 卡片背景
+          ctx.fillStyle = '#f5f5f7';
+          ctx.fillRect(x, y, cardW, cardH);
+
+          // 色块
+          ctx.fillStyle = color.hex;
+          ctx.fillRect(x, y, cardW, swatchH);
+
+          // 卡片底边分割线
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(x, y + swatchH, cardW, cardH - swatchH);
+
+          // HEX
+          ctx.fillStyle = '#111111';
+          ctx.font = 'bold 16px "SF Mono", Consolas, Monaco, monospace';
+          ctx.fillText(color.hex, x + 16, y + swatchH + 18);
+
+          // RGB
+          ctx.fillStyle = '#555555';
+          ctx.font = '12px "SF Mono", Consolas, Monaco, monospace';
+          ctx.fillText(color.rgb, x + 16, y + swatchH + 44);
+        });
+
+        // 导出图片
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'palette-' + Date.now() + '.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast(this, '色卡已开始下载', 'success');
+      } catch (err) {
+        console.error('下载色卡失败', err);
+        showToast(this, '下载失败，请重试', 'error');
+      }
     }
   }
 };
@@ -396,46 +489,6 @@ export default {
 /* ============ 图片预览区 ============ */
 .image-preview-section {
   margin-bottom: 24px;
-}
-
-.image-container {
-  position: relative;
-  display: inline-block;
-  max-width: 100%;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--border-primary);
-  background:
-    linear-gradient(45deg, var(--bg-muted) 25%, transparent 25%),
-    linear-gradient(-45deg, var(--bg-muted) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, var(--bg-muted) 75%),
-    linear-gradient(-45deg, transparent 75%, var(--bg-muted) 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, 10px 0;
-  cursor: crosshair;
-
-  canvas {
-    display: block;
-    max-width: 100%;
-    height: auto;
-  }
-}
-
-.image-tip {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-top: 10px;
-}
-
-.picker-indicator {
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
 }
 
 /* ============ 结果通用样式 ============ */
@@ -677,6 +730,119 @@ export default {
     width: 100%;
     height: 80px;
     aspect-ratio: 4 / 1;
+  }
+}
+
+/* ============ 色卡弹框 ============ */
+.palette-dialog-body {
+  display: flex;
+  flex-direction: column;
+  margin: -16px -20px 0;
+  padding: 0;
+}
+
+.palette-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+.palette-grid {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.palette-grid.palette-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.palette-grid.palette-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.palette-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.palette-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.palette-swatch {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  min-height: 80px;
+}
+
+.palette-value {
+  padding: 10px 12px;
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  letter-spacing: 0.5px;
+  background: var(--bg-muted);
+  border-top: 1px solid var(--border-primary);
+}
+
+.palette-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  margin: 0 -20px -24px;
+  border-top: 1px solid var(--border-primary);
+  background: var(--bg-muted);
+}
+
+.palette-btn {
+  min-width: 88px;
+  height: 34px;
+  padding: 0 18px;
+  background: var(--accent);
+  color: var(--text-invert);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+
+  &:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &.secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent);
+
+    &:hover {
+      opacity: 0.88;
+      background: var(--accent-soft);
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .palette-grid.palette-cols-3,
+  .palette-grid.palette-cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .palette-dialog-footer {
+    justify-content: center;
   }
 }
 </style>
