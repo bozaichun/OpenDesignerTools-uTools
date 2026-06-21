@@ -4,12 +4,26 @@
       ref="canvas"
       @click="handleCanvasClick"
       @mousemove="handleCanvasMove"
+      @mouseleave="handleCanvasLeave"
     ></canvas>
     <div
       v-if="pickerPos"
       class="picker-indicator"
       :style="{ left: pickerPos.x + 'px', top: pickerPos.y + 'px' }"
     ></div>
+
+    <!-- 放大镜：右下角悬浮 -->
+    <div v-if="pickerPos && hoverColor" class="magnifier">
+      <div class="magnifier-title">放大镜预览</div>
+      <canvas ref="magnifierCanvas" class="magnifier-canvas"></canvas>
+      <div class="magnifier-color">
+        <div
+          class="magnifier-swatch"
+          :style="{ background: hoverColor.hex }"
+        ></div>
+        <span class="magnifier-hex">{{ hoverColor.hex }}</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -18,6 +32,9 @@ import {
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
   showToast
 } from '../utils/colorUtils';
+
+const MAGNIFIER_SIZE = 140;
+const MAGNIFIER_ZOOM = 8;
 
 export default {
   name: 'Straw',
@@ -38,7 +55,8 @@ export default {
   data() {
     return {
       pickerPos: null,
-      imageData: null
+      imageData: null,
+      hoverColor: null
     };
   },
   mounted() {
@@ -72,14 +90,98 @@ export default {
       img.src = this.imageSrc;
     },
 
+    handleCanvasLeave() {
+      this.pickerPos = null;
+      this.hoverColor = null;
+    },
+
     handleCanvasMove(e) {
       const canvas = this.$refs.canvas;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      this.pickerPos = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
+      const displayX = e.clientX - rect.left;
+      const displayY = e.clientY - rect.top;
+      this.pickerPos = { x: displayX, y: displayY };
+
+      // 计算实际图片中的像素坐标
+      const scaleX = this.imageData ? canvas.width / rect.width : 1;
+      const scaleY = this.imageData ? canvas.height / rect.height : 1;
+      const naturalX = Math.floor(displayX * scaleX);
+      const naturalY = Math.floor(displayY * scaleY);
+
+      // 取色
+      const pixel = this.getPixelAt(naturalX, naturalY);
+      if (pixel) {
+        const rgba = { r: pixel.r, g: pixel.g, b: pixel.b, a: pixel.a };
+        this.hoverColor = { hex: formatHEX(rgba) };
+        this.renderMagnifier(naturalX, naturalY);
+      }
+    },
+
+    renderMagnifier(naturalX, naturalY) {
+      const magCanvas = this.$refs.magnifierCanvas;
+      if (!magCanvas || !this.imageData) return;
+      if (magCanvas.width !== MAGNIFIER_SIZE) {
+        magCanvas.width = MAGNIFIER_SIZE;
+        magCanvas.height = MAGNIFIER_SIZE;
+      }
+      const magCtx = magCanvas.getContext('2d');
+      const halfSrc = Math.floor((MAGNIFIER_SIZE / MAGNIFIER_ZOOM) / 2);
+
+      // 先清空
+      magCtx.clearRect(0, 0, MAGNIFIER_SIZE, MAGNIFIER_SIZE);
+
+      // 从源 canvas 复制一块区域并放大
+      const srcX = Math.max(0, Math.min(this.imageData.width - halfSrc * 2, naturalX - halfSrc));
+      const srcY = Math.max(0, Math.min(this.imageData.height - halfSrc * 2, naturalY - halfSrc));
+      const srcSize = halfSrc * 2;
+
+      // 通过离屏 canvas 缩放绘制像素块
+      const srcCanvas = document.createElement('canvas');
+      srcCanvas.width = srcSize;
+      srcCanvas.height = srcSize;
+      const srcCtx = srcCanvas.getContext('2d');
+      const srcImageData = srcCtx.createImageData(srcSize, srcSize);
+
+      for (let y = 0; y < srcSize; y++) {
+        for (let x = 0; x < srcSize; x++) {
+          const srcIdx = ((srcY + y) * this.imageData.width + (srcX + x)) * 4;
+          const dstIdx = (y * srcSize + x) * 4;
+          srcImageData.data[dstIdx] = this.imageData.data[srcIdx];
+          srcImageData.data[dstIdx + 1] = this.imageData.data[srcIdx + 1];
+          srcImageData.data[dstIdx + 2] = this.imageData.data[srcIdx + 2];
+          srcImageData.data[dstIdx + 3] = this.imageData.data[srcIdx + 3];
+        }
+      }
+      srcCtx.putImageData(srcImageData, 0, 0);
+
+      // 禁用平滑以获得清晰像素感
+      magCtx.imageSmoothingEnabled = false;
+      magCtx.drawImage(srcCanvas, 0, 0, srcSize, srcSize, 0, 0, MAGNIFIER_SIZE, MAGNIFIER_SIZE);
+
+      // 绘制十字准心（中心像素位置）
+      const centerOffsetX = (naturalX - srcX) / srcSize * MAGNIFIER_SIZE;
+      const centerOffsetY = (naturalY - srcY) / srcSize * MAGNIFIER_SIZE;
+      const cx = Math.floor(centerOffsetX) + 0.5;
+      const cy = Math.floor(centerOffsetY) + 0.5;
+
+      magCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+      magCtx.lineWidth = 2;
+      magCtx.beginPath();
+      magCtx.moveTo(cx - 10, cy);
+      magCtx.lineTo(cx + 10, cy);
+      magCtx.moveTo(cx, cy - 10);
+      magCtx.lineTo(cx, cy + 10);
+      magCtx.stroke();
+
+      magCtx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+      magCtx.lineWidth = 1;
+      magCtx.beginPath();
+      magCtx.moveTo(cx - 10, cy);
+      magCtx.lineTo(cx + 10, cy);
+      magCtx.moveTo(cx, cy - 10);
+      magCtx.lineTo(cx, cy + 10);
+      magCtx.stroke();
     },
 
     getPixelAt(x, y) {
@@ -129,7 +231,7 @@ export default {
   display: inline-block;
   max-width: 100%;
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--border-primary);
   background:
     linear-gradient(45deg, var(--bg-muted) 25%, transparent 25%),
@@ -144,6 +246,7 @@ export default {
     display: block;
     max-width: 100%;
     height: auto;
+    border-radius: var(--radius-md);
   }
 }
 
@@ -156,5 +259,74 @@ export default {
   pointer-events: none;
   transform: translate(-50%, -50%);
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
+  z-index: 5;
+}
+
+/* 放大镜 */
+.magnifier {
+  position: absolute;
+  right: -180px;
+  bottom: 0;
+  width: 160px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+}
+
+.magnifier-title {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-align: center;
+  font-weight: 500;
+}
+
+.magnifier-canvas {
+  width: 140px;
+  height: 140px;
+  display: block;
+  margin: 0 auto;
+  background: #111;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  image-rendering: pixelated;
+}
+
+.magnifier-color {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--bg-muted);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+}
+
+.magnifier-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid var(--border-primary);
+  flex-shrink: 0;
+}
+
+.magnifier-hex {
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 900px) {
+  .magnifier {
+    right: 10px;
+    bottom: 10px;
+  }
 }
 </style>
