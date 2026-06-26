@@ -68,7 +68,7 @@ watch(() => props.enterAction, (enterAction) => {
   </div>
 </template>
 
-<style>
+<style lang="scss" scoped>
 .read {
   padding: 20px;
   box-sizing: border-box;

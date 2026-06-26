@@ -1,3 +1,51 @@
+<script lang="ts" setup>
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import Selector from '../../components/Selector.vue';
+import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
+import { copyToClipboard, showToast } from '../../utils/colorUtils';
+import { computeHalftoneLevels, readDetailQuery } from './printToolsUtils';
+
+const route = useRoute();
+
+const inputColor = ref('#1677FF');
+const useDPI = ref(false);
+const dpi = ref('175');
+
+const shellQueryExtra = computed(() => {
+  return {
+    useDPI: useDPI.value ? '1' : '0',
+    dpi: dpi.value,
+    profile: 'srgb',
+    paper: 'coated'
+  };
+});
+
+const halftoneLevels = computed(() => {
+  return computeHalftoneLevels(inputColor.value);
+});
+
+function applyRouteQuery() {
+  const q = readDetailQuery(route);
+  inputColor.value = q.color;
+  useDPI.value = q.useDPI;
+  dpi.value = q.dpi;
+}
+
+function copyValue(value, label) {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + label + ': ' + value, 'success');
+}
+
+watch(() => route.query, () => {
+  applyRouteQuery();
+});
+
+onMounted(() => {
+  applyRouteQuery();
+});
+</script>
+
 <template>
   <div class="print-detail">
     <PrintToolsDetailShell
@@ -50,58 +98,6 @@
     </section>
   </div>
 </template>
-
-<script>
-import Selector from '../../components/Selector.vue';
-import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
-import { copyToClipboard, showToast } from '../../utils/colorUtils';
-import { computeHalftoneLevels, readDetailQuery } from './printToolsUtils';
-
-export default {
-  name: 'ScreenTintConverDetail',
-  components: { Selector, PrintToolsDetailShell },
-  data() {
-    return {
-      inputColor: '#1677FF',
-      useDPI: false,
-      dpi: '175'
-    };
-  },
-  computed: {
-    shellQueryExtra() {
-      return {
-        useDPI: this.useDPI ? '1' : '0',
-        dpi: this.dpi,
-        profile: 'srgb',
-        paper: 'coated'
-      };
-    },
-    halftoneLevels() {
-      return computeHalftoneLevels(this.inputColor);
-    }
-  },
-  mounted() {
-    this.applyRouteQuery();
-  },
-  watch: {
-    '$route.query'() {
-      this.applyRouteQuery();
-    }
-  },
-  methods: {
-    applyRouteQuery() {
-      const q = readDetailQuery(this.$route);
-      this.inputColor = q.color;
-      this.useDPI = q.useDPI;
-      this.dpi = q.dpi;
-    },
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label + ': ' + value, 'success');
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .print-detail { width: 100%; min-width: 0; }

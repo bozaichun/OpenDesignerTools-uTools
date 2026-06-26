@@ -1,3 +1,226 @@
+﻿<script lang="ts" setup>
+import { ref, watch, inject, onMounted, onUnmounted, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
+import {
+  formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
+  showToast
+} from '../../utils/colorUtils';
+import Loading from '../../components/Loading.vue';
+import Banner from '../../components/Banner.vue';
+
+const STORAGE_KEY = 'imageAnalysisData';
+
+const router = useRouter();
+const setHeaderActions = inject('setHeaderActions');
+const clearHeaderActions = inject('clearHeaderActions');
+
+const fileInput = ref(null);
+const imageContainer = ref(null);
+
+const imageLoaded = ref(false);
+const isDragging = ref(false);
+const isAnalyzing = ref(false);
+const imageData = ref(null);
+const imageNaturalWidth = ref(0);
+const imageNaturalHeight = ref(0);
+const imageSrc = ref(null);
+const mainColors = ref([]);
+
+function updateHeaderActions() {
+  if (imageLoaded.value) {
+    setHeaderActions([
+      { label: '重新选择', onClick: () => triggerFileInput(), secondary: true }
+    ]);
+  } else {
+    clearHeaderActions();
+  }
+}
+function triggerFileInput() {
+  fileInput.value.click();
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) loadImage(file);
+}
+function handleDrop(e) {
+  isDragging.value = false;
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    loadImage(file);
+  } else {
+    showToast(null, '请拖入图片文件', 'error');
+  }
+}
+function loadImage(file) {
+  mainColors.value = [];
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      imageSrc.value = e.target.result;
+      imageLoaded.value = true;
+      nextTick(function() {
+        parseImageData(img);
+        analyzeImage();
+      });
+    };
+    img.onerror = function() {
+      showToast(null, '图片加载失败', 'error');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function parseImageData(img) {
+  const maxSize = 600;
+  let width = img.width;
+  let height = img.height;
+
+  if (width > maxSize || height > maxSize) {
+    const ratio = Math.min(maxSize / width, maxSize / height);
+    width = Math.floor(width * ratio);
+    height = Math.floor(height * ratio);
+  }
+
+  imageNaturalWidth.value = width;
+  imageNaturalHeight.value = height;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, width, height);
+  imageData.value = ctx.getImageData(0, 0, width, height);
+}
+function analyzeImage() {
+  if (!imageData.value) {
+    showToast(null, '请先上传图片', 'error');
+    return;
+  }
+  isAnalyzing.value = true;
+  nextTick(function() {
+    setTimeout(function() {
+      extractMainColors();
+    }, 2000);
+  });
+}
+function extractMainColors() {
+  if (!imageData.value) {
+    mainColors.value = [];
+    isAnalyzing.value = false;
+    return;
+  }
+
+  try {
+    const data = imageData.value.data;
+    const step = 4;
+    const buckets = {};
+
+    for (let i = 0; i < data.length; i += 4 * step) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const a = data[i + 3];
+
+      if (a < 50) continue;
+
+      const qr = Math.round(r / 32) * 32;
+      const qg = Math.round(g / 32) * 32;
+      const qb = Math.round(b / 32) * 32;
+      const key = qr + ',' + qg + ',' + qb;
+
+      if (!buckets[key]) {
+        buckets[key] = { sumR: 0, sumG: 0, sumB: 0, count: 0 };
+      }
+      buckets[key].sumR += r;
+      buckets[key].sumG += g;
+      buckets[key].sumB += b;
+      buckets[key].count++;
+    }
+
+    const sorted = Object.entries(buckets)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 12);
+
+    const results = sorted.map(([, d]) => {
+      const avgR = Math.round(d.sumR / d.count);
+      const avgG = Math.round(d.sumG / d.count);
+      const avgB = Math.round(d.sumB / d.count);
+      return { r: avgR, g: avgG, b: avgB };
+    });
+
+    const unique = [];
+    for (let i = 0; i < results.length; i++) {
+      const c = results[i];
+      let isSimilar = false;
+      for (let j = 0; j < unique.length; j++) {
+        const u = unique[j];
+        if (Math.abs(u.r - c.r) < 30 && Math.abs(u.g - c.g) < 30 && Math.abs(u.b - c.b) < 30) {
+          isSimilar = true;
+          break;
+        }
+      }
+      if (!isSimilar) unique.push(c);
+    }
+
+    mainColors.value = unique.slice(0, 8).map(c => {
+      const rgba = { r: c.r, g: c.g, b: c.b, a: 1 };
+      return {
+        hex: formatHEX(rgba),
+        rgb: formatRGB(rgba),
+        hsl: formatHSL(rgba),
+        cmyk: formatCMYK(rgba),
+        hsv: formatHSV(rgba)
+      };
+    });
+
+    saveAnalysisData();
+
+    isAnalyzing.value = false;
+    router.push('/ImageColorSampling/detailPage');
+  } catch (err) {
+    console.error('主色调提取失败', err);
+    mainColors.value = [];
+    isAnalyzing.value = false;
+    showToast(null, '颜色提取失败', 'error');
+  }
+}
+function saveAnalysisData() {
+  try {
+    const data = {
+      imageSrc: imageSrc.value,
+      imageNaturalWidth: imageNaturalWidth.value,
+      imageNaturalHeight: imageNaturalHeight.value,
+      mainColors: mainColors.value,
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (err) {
+    console.error('数据存储失败', err);
+    showToast(null, '数据存储失败，请重试', 'error');
+  }
+}
+function clearImage() {
+  imageLoaded.value = false;
+  mainColors.value = [];
+  imageData.value = null;
+  imageSrc.value = null;
+  if (fileInput.value) fileInput.value.value = '';
+}
+
+watch(imageLoaded, () => {
+  updateHeaderActions();
+});
+
+onMounted(() => {
+  updateHeaderActions();
+});
+onUnmounted(() => {
+  clearHeaderActions();
+});
+</script>
+
 <template>
   <div class="module-image">
     <Banner
@@ -44,247 +267,6 @@
     <Loading :visible="isAnalyzing" text="正在分析图片中的颜色..." />
   </div>
 </template>
-
-<script>
-import {
-  formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
-  showToast
-} from '../../utils/colorUtils';
-import Loading from '../../components/Loading.vue';
-import Banner from '../../components/Banner.vue';
-
-const STORAGE_KEY = 'imageAnalysisData';
-
-export default {
-  name: 'ImageColorSampling',
-  components: { Loading, Banner },
-  inject: ['setHeaderActions', 'clearHeaderActions'],
-  data() {
-    return {
-      imageLoaded: false,
-      isDragging: false,
-      isAnalyzing: false,
-      imageData: null,
-      imageNaturalWidth: 0,
-      imageNaturalHeight: 0,
-      imageSrc: null,
-      mainColors: []
-    };
-  },
-  mounted() {
-    this.updateHeaderActions();
-  },
-  unmounted() {
-    this.clearHeaderActions();
-  },
-  watch: {
-    imageLoaded() {
-      this.updateHeaderActions();
-    }
-  },
-  methods: {
-    updateHeaderActions() {
-      if (this.imageLoaded) {
-        this.setHeaderActions([
-          { label: '重新选择', onClick: () => this.triggerFileInput(), secondary: true }
-        ]);
-      } else {
-        this.clearHeaderActions();
-      }
-    },
-    triggerFileInput() {
-      this.$refs.fileInput.click();
-    },
-    handleFileSelect(e) {
-      const file = e.target.files[0];
-      if (file) this.loadImage(file);
-    },
-
-    handleDrop(e) {
-      this.isDragging = false;
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('image/')) {
-        this.loadImage(file);
-      } else {
-        showToast(this, '请拖入图片文件', 'error');
-      }
-    },
-
-    loadImage(file) {
-      const self = this;
-      this.mainColors = [];
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-          self.imageSrc = e.target.result;
-          self.imageLoaded = true;
-          self.$nextTick(function() {
-            self.parseImageData(img);
-            // 图片解析完成后自动开始分析
-            self.analyzeImage();
-          });
-        };
-        img.onerror = function() {
-          showToast(self, '图片加载失败', 'error');
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    },
-
-    parseImageData(img) {
-      const maxSize = 600;
-      let width = img.width;
-      let height = img.height;
-
-      if (width > maxSize || height > maxSize) {
-        const ratio = Math.min(maxSize / width, maxSize / height);
-        width = Math.floor(width * ratio);
-        height = Math.floor(height * ratio);
-      }
-
-      this.imageNaturalWidth = width;
-      this.imageNaturalHeight = height;
-
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-      this.imageData = ctx.getImageData(0, 0, width, height);
-    },
-
-    analyzeImage() {
-      if (!this.imageData) {
-        showToast(this, '请先上传图片', 'error');
-        return;
-      }
-      this.isAnalyzing = true;
-      const self = this;
-      this.$nextTick(function() {
-        setTimeout(function() {
-          self.extractMainColors();
-        }, 2000);
-      });
-    },
-
-    extractMainColors() {
-      if (!this.imageData) {
-        this.mainColors = [];
-        this.isAnalyzing = false;
-        return;
-      }
-
-      try {
-        const data = this.imageData.data;
-        const step = 4;
-        const buckets = {};
-
-        for (let i = 0; i < data.length; i += 4 * step) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          const a = data[i + 3];
-
-          if (a < 50) continue;
-
-          const qr = Math.round(r / 32) * 32;
-          const qg = Math.round(g / 32) * 32;
-          const qb = Math.round(b / 32) * 32;
-          const key = qr + ',' + qg + ',' + qb;
-
-          if (!buckets[key]) {
-            buckets[key] = { sumR: 0, sumG: 0, sumB: 0, count: 0 };
-          }
-          buckets[key].sumR += r;
-          buckets[key].sumG += g;
-          buckets[key].sumB += b;
-          buckets[key].count++;
-        }
-
-        const sorted = Object.entries(buckets)
-          .sort((a, b) => b[1].count - a[1].count)
-          .slice(0, 12);
-
-        const results = sorted.map(([, d]) => {
-          const avgR = Math.round(d.sumR / d.count);
-          const avgG = Math.round(d.sumG / d.count);
-          const avgB = Math.round(d.sumB / d.count);
-          return { r: avgR, g: avgG, b: avgB };
-        });
-
-        const unique = [];
-        for (let i = 0; i < results.length; i++) {
-          const c = results[i];
-          let isSimilar = false;
-          for (let j = 0; j < unique.length; j++) {
-            const u = unique[j];
-            if (Math.abs(u.r - c.r) < 30 && Math.abs(u.g - c.g) < 30 && Math.abs(u.b - c.b) < 30) {
-              isSimilar = true;
-              break;
-            }
-          }
-          if (!isSimilar) unique.push(c);
-        }
-
-        this.mainColors = unique.slice(0, 8).map(c => {
-          const rgba = { r: c.r, g: c.g, b: c.b, a: 1 };
-          return {
-            hex: formatHEX(rgba),
-            rgb: formatRGB(rgba),
-            hsl: formatHSL(rgba),
-            cmyk: formatCMYK(rgba),
-            hsv: formatHSV(rgba)
-          };
-        });
-
-        // 存储数据供详情页使用
-        this.saveAnalysisData();
-
-        // 关闭 loading 并跳转
-        this.isAnalyzing = false;
-        this.$router.push('/ImageColorSampling/detailPage');
-      } catch (err) {
-        console.error('主色调提取失败', err);
-        this.mainColors = [];
-        this.isAnalyzing = false;
-        showToast(this, '颜色提取失败', 'error');
-      }
-    },
-
-    saveAnalysisData() {
-      try {
-        const data = {
-          imageSrc: this.imageSrc,
-          imageNaturalWidth: this.imageNaturalWidth,
-          imageNaturalHeight: this.imageNaturalHeight,
-          mainColors: this.mainColors,
-          timestamp: Date.now()
-        };
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      } catch (err) {
-        console.error('数据存储失败', err);
-        showToast(this, '数据存储失败，请重试', 'error');
-      }
-    },
-
-    clearImage() {
-      this.imageLoaded = false;
-      this.mainColors = [];
-      this.imageData = null;
-      this.imageSrc = null;
-      if (this.$refs.fileInput) this.$refs.fileInput.value = '';
-    },
-
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label + ': ' + value, 'success');
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .module-image {

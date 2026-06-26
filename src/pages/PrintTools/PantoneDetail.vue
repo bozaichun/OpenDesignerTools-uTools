@@ -1,3 +1,44 @@
+<script lang="ts" setup>
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import Selector from '../../components/Selector.vue';
+import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
+import { copyToClipboard, showToast } from '../../utils/colorUtils';
+import { computePantoneResults, readDetailQuery } from './printToolsUtils';
+
+const route = useRoute();
+
+const inputColor = ref('#1677FF');
+const paperType = ref('coated');
+
+const shellQueryExtra = computed(() => {
+  return { paper: paperType.value, profile: 'srgb' };
+});
+
+const pantoneResults = computed(() => {
+  return computePantoneResults(inputColor.value, paperType.value);
+});
+
+function applyRouteQuery() {
+  const q = readDetailQuery(route);
+  inputColor.value = q.color;
+  paperType.value = q.paper;
+}
+
+function copyValue(value, label) {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + label + ': ' + value, 'success');
+}
+
+watch(() => route.query, () => {
+  applyRouteQuery();
+});
+
+onMounted(() => {
+  applyRouteQuery();
+});
+</script>
+
 <template>
   <div class="print-detail">
     <PrintToolsDetailShell
@@ -47,51 +88,6 @@
     </section>
   </div>
 </template>
-
-<script>
-import Selector from '../../components/Selector.vue';
-import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
-import { copyToClipboard, showToast } from '../../utils/colorUtils';
-import { computePantoneResults, readDetailQuery } from './printToolsUtils';
-
-export default {
-  name: 'PantoneDetail',
-  components: { Selector, PrintToolsDetailShell },
-  data() {
-    return {
-      inputColor: '#1677FF',
-      paperType: 'coated'
-    };
-  },
-  computed: {
-    shellQueryExtra() {
-      return { paper: this.paperType, profile: 'srgb' };
-    },
-    pantoneResults() {
-      return computePantoneResults(this.inputColor, this.paperType);
-    }
-  },
-  mounted() {
-    this.applyRouteQuery();
-  },
-  watch: {
-    '$route.query'() {
-      this.applyRouteQuery();
-    }
-  },
-  methods: {
-    applyRouteQuery() {
-      const q = readDetailQuery(this.$route);
-      this.inputColor = q.color;
-      this.paperType = q.paper;
-    },
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label + ': ' + value, 'success');
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .print-detail { width: 100%; min-width: 0; }

@@ -1,3 +1,24 @@
+<script lang="ts" setup>
+defineProps({
+  visible: {
+    type: Boolean,
+    default: false
+  },
+  text: {
+    type: String,
+    default: '加载中...'
+  },
+  inline: {
+    type: Boolean,
+    default: false
+  },
+  local: {
+    type: Boolean,
+    default: false
+  }
+});
+</script>
+
 <template>
   <div v-if="visible" class="loading-overlay" :class="{ 'loading-inline': inline, 'loading-local': local }">
     <div class="loading-content">
@@ -6,30 +27,6 @@
     </div>
   </div>
 </template>
-
-<script>
-export default {
-  name: 'Loading',
-  props: {
-    visible: {
-      type: Boolean,
-      default: false
-    },
-    text: {
-      type: String,
-      default: '加载中...'
-    },
-    inline: {
-      type: Boolean,
-      default: false
-    },
-    local: {
-      type: Boolean,
-      default: false
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .loading-overlay {

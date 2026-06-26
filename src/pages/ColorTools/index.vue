@@ -1,3 +1,81 @@
+<script lang="ts" setup>
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import Banner from '../../components/Banner.vue';
+import ColorPicker from '../../components/ColorPicker.vue';
+import { parseColor, rgbToHsl } from '../../utils/colorUtils';
+import {
+  DETAIL_MODULES,
+  DEFAULT_DIFF_COLOR_B,
+  DEFAULT_GRADIENT_DIRECTION,
+  DEFAULT_GRADIENT_STOPS,
+  buildHomeQuery,
+  computeAdjustedColor,
+  computeDeltaE76,
+  computeGradientStyle,
+  getDeltaEDescription,
+  getDeltaEClass
+} from './colorToolsUtils';
+
+const DIRECTION_LABELS = {
+  'to right': '从左到右',
+  'to bottom': '从上到下',
+  'to bottom right': '对角线',
+  circle: '圆形辐射',
+  '45deg': '45° 斜向',
+  '135deg': '135° 斜向'
+};
+
+const router = useRouter();
+
+const inputColor = ref('#1677FF');
+const diffColorB = ref(DEFAULT_DIFF_COLOR_B);
+
+const summaryHsl = computed(() => {
+  const rgb = parseColor(inputColor.value);
+  return rgb ? rgbToHsl(rgb) : { h: 215, s: 100, l: 54 };
+});
+
+const adjustedColor = computed(() => {
+  return computeAdjustedColor(summaryHsl.value.h, summaryHsl.value.s, summaryHsl.value.l);
+});
+
+const gradientStops = computed(() => {
+  return DEFAULT_GRADIENT_STOPS.map((s, idx) =>
+    idx === 0 ? { ...s, color: inputColor.value } : { ...s }
+  );
+});
+
+const gradientStyle = computed(() => {
+  return computeGradientStyle(gradientStops.value, DEFAULT_GRADIENT_DIRECTION);
+});
+
+const gradientDirectionLabel = computed(() => {
+  return DIRECTION_LABELS[DEFAULT_GRADIENT_DIRECTION] || DEFAULT_GRADIENT_DIRECTION;
+});
+
+const deltaE76 = computed(() => {
+  return computeDeltaE76(inputColor.value, diffColorB.value);
+});
+
+const deltaEDescription = computed(() => {
+  return getDeltaEDescription(deltaE76.value);
+});
+
+const deltaEStatusClass = computed(() => {
+  return getDeltaEClass(deltaE76.value);
+});
+
+function goToDetail(moduleId) {
+  const target = DETAIL_MODULES.find((m) => m.id === moduleId);
+  if (!target) return;
+  router.push({
+    path: target.route,
+    query: buildHomeQuery(inputColor.value)
+  });
+}
+</script>
+
 <template>
   <div class="module-colortools">
     <Banner
@@ -51,83 +129,6 @@
     </section>
   </div>
 </template>
-
-<script>
-import Banner from '../../components/Banner.vue';
-import ColorPicker from '../../components/ColorPicker.vue';
-import { parseColor, rgbToHsl } from '../../utils/colorUtils';
-import {
-  DETAIL_MODULES,
-  DEFAULT_DIFF_COLOR_B,
-  DEFAULT_GRADIENT_DIRECTION,
-  DEFAULT_GRADIENT_STOPS,
-  buildHomeQuery,
-  computeAdjustedColor,
-  computeDeltaE76,
-  computeGradientStyle,
-  getDeltaEDescription,
-  getDeltaEClass
-} from './colorToolsUtils';
-
-const DIRECTION_LABELS = {
-  'to right': '从左到右',
-  'to bottom': '从上到下',
-  'to bottom right': '对角线',
-  circle: '圆形辐射',
-  '45deg': '45° 斜向',
-  '135deg': '135° 斜向'
-};
-
-export default {
-  name: 'ColorTools',
-  components: { Banner, ColorPicker },
-  data() {
-    return {
-      inputColor: '#1677FF',
-      diffColorB: DEFAULT_DIFF_COLOR_B
-    };
-  },
-  computed: {
-    summaryHsl() {
-      const rgb = parseColor(this.inputColor);
-      return rgb ? rgbToHsl(rgb) : { h: 215, s: 100, l: 54 };
-    },
-    adjustedColor() {
-      return computeAdjustedColor(this.summaryHsl.h, this.summaryHsl.s, this.summaryHsl.l);
-    },
-    gradientStops() {
-      return DEFAULT_GRADIENT_STOPS.map((s, idx) =>
-        idx === 0 ? { ...s, color: this.inputColor } : { ...s }
-      );
-    },
-    gradientStyle() {
-      return computeGradientStyle(this.gradientStops, DEFAULT_GRADIENT_DIRECTION);
-    },
-    gradientDirectionLabel() {
-      return DIRECTION_LABELS[DEFAULT_GRADIENT_DIRECTION] || DEFAULT_GRADIENT_DIRECTION;
-    },
-    deltaE76() {
-      return computeDeltaE76(this.inputColor, this.diffColorB);
-    },
-    deltaEDescription() {
-      return getDeltaEDescription(this.deltaE76);
-    },
-    deltaEStatusClass() {
-      return getDeltaEClass(this.deltaE76);
-    }
-  },
-  methods: {
-    goToDetail(moduleId) {
-      const target = DETAIL_MODULES.find((m) => m.id === moduleId);
-      if (!target) return;
-      this.$router.push({
-        path: target.route,
-        query: buildHomeQuery(this.inputColor)
-      });
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .module-colortools {

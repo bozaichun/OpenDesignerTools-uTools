@@ -1,3 +1,33 @@
+<script lang="ts" setup>
+import { computed, useSlots } from 'vue';
+
+defineOptions({
+  inheritAttrs: false
+});
+
+const props = defineProps({
+  title: {
+    type: String,
+    default: ''
+  },
+  subtitle: {
+    type: String,
+    default: ''
+  },
+  mode: {
+    type: String,
+    default: 'center',
+    validator: (v) => ['center', 'section'].indexOf(v) !== -1
+  }
+});
+
+const slots = useSlots();
+
+const hasSubtitle = computed(() => {
+  return Boolean(props.subtitle) || Boolean(slots.subtitle);
+});
+</script>
+
 <template>
   <div :class="['module-title', `mode-${mode}`]">
     <div v-if="mode === 'section'" class="module-title-inner">
@@ -21,33 +51,6 @@
     </template>
   </div>
 </template>
-
-<script>
-export default {
-  name: 'ModuleTitle',
-  inheritAttrs: false,
-  props: {
-    title: {
-      type: String,
-      default: ''
-    },
-    subtitle: {
-      type: String,
-      default: ''
-    },
-    mode: {
-      type: String,
-      default: 'center',
-      validator: (v) => ['center', 'section'].indexOf(v) !== -1
-    }
-  },
-  computed: {
-    hasSubtitle() {
-      return Boolean(this.subtitle) || Boolean(this.$slots.subtitle);
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .module-title {

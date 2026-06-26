@@ -1,3 +1,258 @@
+<script lang="ts" setup>
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import * as echarts from 'echarts';
+import { KNOWLEDGE_DATA } from '../../data/knowledge';
+import Dialog from '../../components/Dialog.vue';
+import Banner from '../../components/Banner.vue';
+
+const chartInstances = {};
+const chartRefs = {};
+let resizeHandler = null;
+let docClickHandler = null;
+let hoverTimeout = null;
+
+const tooltipVisible = ref(false);
+const tooltipText = ref('');
+const tooltipStyle = ref({ top: '0px', left: '0px' });
+const activeTooltipId = ref(null);
+const isHoverTooltip = ref(false);
+const detailVisible = ref(false);
+const currentDetailItem = ref(null);
+
+function setChartRef(el, id) {
+  if (el) {
+    chartRefs[id] = el;
+  }
+}
+
+function initAllCharts() {
+  KNOWLEDGE_DATA.forEach((item) => {
+    const el = chartRefs[item.id];
+    if (el && item.chart) {
+      initOneChart(item.id, el, item.chart);
+    }
+  });
+}
+
+function initOneChart(id, el, chartCfg) {
+  if (!el || !chartCfg) return;
+  if (chartInstances[id]) {
+    chartInstances[id].dispose();
+  }
+  const chart = echarts.init(el);
+  chartInstances[id] = chart;
+  const option = buildChartOption(chartCfg);
+  chart.setOption(option);
+  setTimeout(() => { if (chartInstances[id]) chartInstances[id].resize(); }, 50);
+  setTimeout(() => { if (chartInstances[id]) chartInstances[id].resize(); }, 300);
+}
+
+function buildChartOption(chartConfig) {
+  if (chartConfig.type === 'rgb-bar') return rgbBarOption(chartConfig);
+  if (chartConfig.type === 'color-wheel') return colorWheelOption(chartConfig);
+  if (chartConfig.type === 'format-radar') return radarOption(chartConfig);
+  if (chartConfig.type === 'design-standard') return designBarOption(chartConfig);
+  return {};
+}
+
+function rgbBarOption(cfg) {
+  const names = cfg.data.map((d) => d.name);
+  const rVals = cfg.data.map((d) => d.r);
+  const gVals = cfg.data.map((d) => d.g);
+  const bVals = cfg.data.map((d) => d.b);
+  const rSeriesData = rVals.map((v) => ({ value: v, itemStyle: { color: '#EF4444' } }));
+  const gSeriesData = gVals.map((v) => ({ value: v, itemStyle: { color: '#10B981' } }));
+  const bSeriesData = bVals.map((v) => ({ value: v, itemStyle: { color: '#2563EB' } }));
+  return {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { data: ['R 通道', 'G 通道', 'B 通道'], top: 5 },
+    grid: { left: 40, right: 20, top: 45, bottom: 30, containLabel: true },
+    xAxis: { type: 'category', data: names },
+    yAxis: { type: 'value', max: 255, splitLine: { lineStyle: { type: 'dashed' } } },
+    series: [
+      { name: 'R 通道', type: 'bar', data: rSeriesData, barWidth: 10 },
+      { name: 'G 通道', type: 'bar', data: gSeriesData, barWidth: 10 },
+      { name: 'B 通道', type: 'bar', data: bSeriesData, barWidth: 10 }
+    ]
+  };
+}
+
+function colorWheelOption(cfg) {
+  const axisData = cfg.data.map((d) => d.label);
+  const values = cfg.data.map((d) => ({ value: d.value, itemStyle: { color: 'hsl(' + d.h + ', 75%, 55%)' } }));
+  return {
+    tooltip: {
+      trigger: 'item',
+      formatter: (params) => {
+        const d = cfg.data[params.dataIndex];
+        return d.label + ' ' + d.h + '°';
+      }
+    },
+    polar: { radius: ['18%', '82%'] },
+    angleAxis: { type: 'category', data: axisData, axisLine: { show: false }, splitLine: { show: false } },
+    radiusAxis: { type: 'value', max: 100, axisLabel: { show: false }, axisLine: { show: false } },
+    series: [{ type: 'bar', data: values, coordinateSystem: 'polar', barWidth: 16 }]
+  };
+}
+
+function radarOption(cfg) {
+  return {
+    tooltip: {},
+    legend: { data: cfg.data.map((d) => d.name), bottom: 0, textStyle: { fontSize: 11 }, itemWidth: 10, itemHeight: 10 },
+    radar: {
+      indicator: cfg.indicator,
+      shape: 'polygon',
+      splitNumber: 4,
+      center: ['50%', '48%'],
+      radius: '60%',
+      splitLine: { lineStyle: { type: 'dashed' } },
+      splitArea: { areaStyle: { color: ['transparent'] } }
+    },
+    series: [{
+      type: 'radar',
+      data: cfg.data.map((d) => ({
+        value: d.value,
+        name: d.name,
+        areaStyle: { color: d.color, opacity: 0.15 },
+        lineStyle: { color: d.color, width: 2 },
+        itemStyle: { color: d.color }
+      }))
+    }]
+  };
+}
+
+function designBarOption(cfg) {
+  const sorted = cfg.data.slice().sort((a, b) => a.value - b.value);
+  const names = sorted.map((d) => d.name);
+  const maxVal = Math.max.apply(null, cfg.data.map((d) => d.value)) * 1.1;
+  const barData = sorted.map((d) => ({ value: d.value, itemStyle: { color: d.color } }));
+  const markLines = cfg.thresholds.map((t) => ({
+    yAxis: t.value,
+    lineStyle: { color: t.color, type: 'dashed', width: 2 },
+    label: { formatter: t.name, color: t.color, fontSize: 10, position: 'insideEndTop' }
+  }));
+  return {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        const p = params[0];
+        return p.name + '<br/>对比度: ' + p.value + ':1';
+      }
+    },
+    grid: { left: 10, right: 90, top: 20, bottom: 30, containLabel: true },
+    xAxis: { type: 'value', max: maxVal, splitLine: { lineStyle: { type: 'dashed' } } },
+    yAxis: { type: 'category', data: names, axisLabel: { fontSize: 11 } },
+    series: [{
+      type: 'bar',
+      data: barData,
+      barWidth: 16,
+      label: { show: true, position: 'right', formatter: '{c}:1', fontSize: 11 },
+      markLine: { silent: true, symbol: 'none', data: markLines }
+    }]
+  };
+}
+
+function disposeAllCharts() {
+  Object.keys(chartInstances).forEach((k) => {
+    if (chartInstances[k]) {
+      chartInstances[k].dispose();
+      delete chartInstances[k];
+    }
+  });
+}
+
+function toggleTooltip(event, id, text) {
+  if (activeTooltipId.value === id) {
+    activeTooltipId.value = null;
+    tooltipVisible.value = false;
+    isHoverTooltip.value = false;
+    return;
+  }
+  activeTooltipId.value = id;
+  tooltipText.value = text;
+  isHoverTooltip.value = false;
+  const pos = calcTooltipPos(event.currentTarget);
+  tooltipStyle.value = { top: pos.top + 'px', left: pos.left + 'px' };
+  tooltipVisible.value = true;
+}
+
+function showTooltipOnHover(event, id, text) {
+  if (hoverTimeout) {
+    clearTimeout(hoverTimeout);
+    hoverTimeout = null;
+  }
+  if (activeTooltipId.value === id) return;
+  activeTooltipId.value = id;
+  tooltipText.value = text;
+  isHoverTooltip.value = true;
+  const pos = calcTooltipPos(event.currentTarget);
+  tooltipStyle.value = { top: pos.top + 'px', left: pos.left + 'px' };
+  tooltipVisible.value = true;
+}
+
+function hideTooltipOnHover(event, id) {
+  if (!isHoverTooltip.value) return;
+  if (activeTooltipId.value !== id) return;
+  hoverTimeout = setTimeout(() => {
+    activeTooltipId.value = null;
+    tooltipVisible.value = false;
+    isHoverTooltip.value = false;
+    hoverTimeout = null;
+  }, 120);
+}
+
+function calcTooltipPos(targetEl) {
+  const rect = targetEl.getBoundingClientRect();
+  const left = rect.left + Math.floor(rect.width / 2) - 16;
+  const top = rect.bottom + 8;
+  return { top, left };
+}
+
+function openDetail(item) {
+  currentDetailItem.value = item;
+  detailVisible.value = true;
+}
+
+function closeDetail() {
+  detailVisible.value = false;
+}
+
+onMounted(() => {
+  nextTick(() => {
+    initAllCharts();
+  });
+  resizeHandler = () => {
+    Object.keys(chartInstances).forEach((k) => {
+      if (chartInstances[k]) {
+        chartInstances[k].resize();
+      }
+    });
+  };
+  docClickHandler = () => {
+    if (isHoverTooltip.value) return;
+    activeTooltipId.value = null;
+    tooltipVisible.value = false;
+  };
+  window.addEventListener('resize', resizeHandler);
+  document.addEventListener('click', docClickHandler);
+});
+
+onBeforeUnmount(() => {
+  disposeAllCharts();
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler);
+  }
+  if (docClickHandler) {
+    document.removeEventListener('click', docClickHandler);
+  }
+  if (hoverTimeout) {
+    clearTimeout(hoverTimeout);
+    hoverTimeout = null;
+  }
+});
+</script>
+
 <template>
   <div class="module-knowledge">
     <Banner
@@ -53,269 +308,6 @@
     </Dialog>
   </div>
 </template>
-
-<script>
-import * as echarts from 'echarts';
-import { KNOWLEDGE_DATA } from '../../data/knowledge';
-import Dialog from '../../components/Dialog.vue';
-import Banner from '../../components/Banner.vue';
-
-export default {
-  name: 'BasicKnowledge',
-  components: { Dialog, Banner },
-  data() {
-    return {
-      KNOWLEDGE_DATA,
-      chartInstances: {},
-      chartRefs: {},
-      _resizeHandler: null,
-      tooltipVisible: false,
-      tooltipText: '',
-      tooltipStyle: { top: '0px', left: '0px' },
-      activeTooltipId: null,
-      isHoverTooltip: false,
-      _hoverTimeout: null,
-      detailVisible: false,
-      currentDetailItem: null
-    };
-  },
-  mounted() {
-    const self = this;
-    this.$nextTick(() => {
-      self.initAllCharts();
-    });
-    this._resizeHandler = () => {
-      Object.keys(self.chartInstances).forEach((k) => {
-        if (self.chartInstances[k]) {
-          self.chartInstances[k].resize();
-        }
-      });
-    };
-    this._docClickHandler = () => {
-      if (self.isHoverTooltip) return;
-      self.activeTooltipId = null;
-      self.tooltipVisible = false;
-    };
-    window.addEventListener('resize', this._resizeHandler);
-    document.addEventListener('click', this._docClickHandler);
-  },
-  beforeUnmount() {
-    this.disposeAllCharts();
-    if (this._resizeHandler) {
-      window.removeEventListener('resize', this._resizeHandler);
-    }
-    if (this._docClickHandler) {
-      document.removeEventListener('click', this._docClickHandler);
-    }
-    if (this._hoverTimeout) {
-      clearTimeout(this._hoverTimeout);
-      this._hoverTimeout = null;
-    }
-  },
-  beforeDestroy() {
-    this.disposeAllCharts();
-    if (this._resizeHandler) {
-      window.removeEventListener('resize', this._resizeHandler);
-    }
-    if (this._docClickHandler) {
-      document.removeEventListener('click', this._docClickHandler);
-    }
-    if (this._hoverTimeout) {
-      clearTimeout(this._hoverTimeout);
-      this._hoverTimeout = null;
-    }
-  },
-  methods: {
-    setChartRef(el, id) {
-      if (el) {
-        this.chartRefs[id] = el;
-      }
-    },
-    initAllCharts() {
-      const self = this;
-      KNOWLEDGE_DATA.forEach((item) => {
-        const el = self.chartRefs[item.id];
-        if (el && item.chart) {
-          self.initOneChart(item.id, el, item.chart);
-        }
-      });
-    },
-    initOneChart(id, el, chartCfg) {
-      if (!el || !chartCfg) return;
-      if (this.chartInstances[id]) {
-        this.chartInstances[id].dispose();
-      }
-      const chart = echarts.init(el);
-      this.chartInstances[id] = chart;
-      const option = this.buildChartOption(chartCfg);
-      chart.setOption(option);
-      setTimeout(() => { if (this.chartInstances[id]) this.chartInstances[id].resize(); }, 50);
-      setTimeout(() => { if (this.chartInstances[id]) this.chartInstances[id].resize(); }, 300);
-    },
-    buildChartOption(chartConfig) {
-      if (chartConfig.type === 'rgb-bar') return this.rgbBarOption(chartConfig);
-      if (chartConfig.type === 'color-wheel') return this.colorWheelOption(chartConfig);
-      if (chartConfig.type === 'format-radar') return this.radarOption(chartConfig);
-      if (chartConfig.type === 'design-standard') return this.designBarOption(chartConfig);
-      return {};
-    },
-    rgbBarOption(cfg) {
-      const names = cfg.data.map((d) => d.name);
-      const rVals = cfg.data.map((d) => d.r);
-      const gVals = cfg.data.map((d) => d.g);
-      const bVals = cfg.data.map((d) => d.b);
-      const rSeriesData = rVals.map((v) => ({ value: v, itemStyle: { color: '#EF4444' } }));
-      const gSeriesData = gVals.map((v) => ({ value: v, itemStyle: { color: '#10B981' } }));
-      const bSeriesData = bVals.map((v) => ({ value: v, itemStyle: { color: '#2563EB' } }));
-      return {
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        legend: { data: ['R 通道', 'G 通道', 'B 通道'], top: 5 },
-        grid: { left: 40, right: 20, top: 45, bottom: 30, containLabel: true },
-        xAxis: { type: 'category', data: names },
-        yAxis: { type: 'value', max: 255, splitLine: { lineStyle: { type: 'dashed' } } },
-        series: [
-          { name: 'R 通道', type: 'bar', data: rSeriesData, barWidth: 10 },
-          { name: 'G 通道', type: 'bar', data: gSeriesData, barWidth: 10 },
-          { name: 'B 通道', type: 'bar', data: bSeriesData, barWidth: 10 }
-        ]
-      };
-    },
-    colorWheelOption(cfg) {
-      const axisData = cfg.data.map((d) => d.label);
-      const values = cfg.data.map((d) => ({ value: d.value, itemStyle: { color: 'hsl(' + d.h + ', 75%, 55%)' } }));
-      return {
-        tooltip: {
-          trigger: 'item',
-          formatter: (params) => {
-            const d = cfg.data[params.dataIndex];
-            return d.label + ' ' + d.h + '°';
-          }
-        },
-        polar: { radius: ['18%', '82%'] },
-        angleAxis: { type: 'category', data: axisData, axisLine: { show: false }, splitLine: { show: false } },
-        radiusAxis: { type: 'value', max: 100, axisLabel: { show: false }, axisLine: { show: false } },
-        series: [{ type: 'bar', data: values, coordinateSystem: 'polar', barWidth: 16 }]
-      };
-    },
-    radarOption(cfg) {
-      return {
-        tooltip: {},
-        legend: { data: cfg.data.map((d) => d.name), bottom: 0, textStyle: { fontSize: 11 }, itemWidth: 10, itemHeight: 10 },
-        radar: {
-          indicator: cfg.indicator,
-          shape: 'polygon',
-          splitNumber: 4,
-          center: ['50%', '48%'],
-          radius: '60%',
-          splitLine: { lineStyle: { type: 'dashed' } },
-          splitArea: { areaStyle: { color: ['transparent'] } }
-        },
-        series: [{
-          type: 'radar',
-          data: cfg.data.map((d) => ({
-            value: d.value,
-            name: d.name,
-            areaStyle: { color: d.color, opacity: 0.15 },
-            lineStyle: { color: d.color, width: 2 },
-            itemStyle: { color: d.color }
-          }))
-        }]
-      };
-    },
-    designBarOption(cfg) {
-      const sorted = cfg.data.slice().sort((a, b) => a.value - b.value);
-      const names = sorted.map((d) => d.name);
-      const maxVal = Math.max.apply(null, cfg.data.map((d) => d.value)) * 1.1;
-      const barData = sorted.map((d) => ({ value: d.value, itemStyle: { color: d.color } }));
-      const markLines = cfg.thresholds.map((t) => ({
-        yAxis: t.value,
-        lineStyle: { color: t.color, type: 'dashed', width: 2 },
-        label: { formatter: t.name, color: t.color, fontSize: 10, position: 'insideEndTop' }
-      }));
-      return {
-        tooltip: {
-          trigger: 'axis',
-          axisPointer: { type: 'shadow' },
-          formatter: (params) => {
-            const p = params[0];
-            return p.name + '<br/>对比度: ' + p.value + ':1';
-          }
-        },
-        grid: { left: 10, right: 90, top: 20, bottom: 30, containLabel: true },
-        xAxis: { type: 'value', max: maxVal, splitLine: { lineStyle: { type: 'dashed' } } },
-        yAxis: { type: 'category', data: names, axisLabel: { fontSize: 11 } },
-        series: [{
-          type: 'bar',
-          data: barData,
-          barWidth: 16,
-          label: { show: true, position: 'right', formatter: '{c}:1', fontSize: 11 },
-          markLine: { silent: true, symbol: 'none', data: markLines }
-        }]
-      };
-    },
-    disposeAllCharts() {
-      const self = this;
-      Object.keys(this.chartInstances).forEach((k) => {
-        if (self.chartInstances[k]) {
-          self.chartInstances[k].dispose();
-          delete self.chartInstances[k];
-        }
-      });
-    },
-    toggleTooltip(event, id, text) {
-      if (this.activeTooltipId === id) {
-        this.activeTooltipId = null;
-        this.tooltipVisible = false;
-        this.isHoverTooltip = false;
-        return;
-      }
-      this.activeTooltipId = id;
-      this.tooltipText = text;
-      this.isHoverTooltip = false;
-      const pos = this.calcTooltipPos(event.currentTarget);
-      this.tooltipStyle = { top: pos.top + 'px', left: pos.left + 'px' };
-      this.tooltipVisible = true;
-    },
-    showTooltipOnHover(event, id, text) {
-      if (this._hoverTimeout) {
-        clearTimeout(this._hoverTimeout);
-        this._hoverTimeout = null;
-      }
-      if (this.activeTooltipId === id) return;
-      this.activeTooltipId = id;
-      this.tooltipText = text;
-      this.isHoverTooltip = true;
-      const pos = this.calcTooltipPos(event.currentTarget);
-      this.tooltipStyle = { top: pos.top + 'px', left: pos.left + 'px' };
-      this.tooltipVisible = true;
-    },
-    hideTooltipOnHover(event, id) {
-      if (!this.isHoverTooltip) return;
-      if (this.activeTooltipId !== id) return;
-      const self = this;
-      this._hoverTimeout = setTimeout(() => {
-        self.activeTooltipId = null;
-        self.tooltipVisible = false;
-        self.isHoverTooltip = false;
-        self._hoverTimeout = null;
-      }, 120);
-    },
-    calcTooltipPos(targetEl) {
-      const rect = targetEl.getBoundingClientRect();
-      const left = rect.left + Math.floor(rect.width / 2) - 16;
-      const top = rect.bottom + 8;
-      return { top, left };
-    },
-    openDetail(item) {
-      this.currentDetailItem = item;
-      this.detailVisible = true;
-    },
-    closeDetail() {
-      this.detailVisible = false;
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .module-knowledge {

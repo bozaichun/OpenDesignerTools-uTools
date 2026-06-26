@@ -1,3 +1,314 @@
+﻿<script lang="ts" setup>
+import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import DataTable from '../../components/Table.vue';
+import Dialog from '../../components/Dialog.vue';
+import Input from '../../components/Input.vue';
+import Selector from '../../components/Selector.vue';
+import Pagination from '../../components/Pagination.vue';
+import CodeExportPanel from '../../components/CodeExportPanel.vue';
+import Banner from '../../components/Banner.vue';
+import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
+import { loadPalettes, savePalettes as persistPalettes } from './paletteStorage.js';
+
+const router = useRouter();
+const setHeaderActions = inject('setHeaderActions');
+const clearHeaderActions = inject('clearHeaderActions');
+
+const groups = ref([]);
+const activeGroup = ref(null);
+const currentPage = ref(1);
+const pageSize = ref(10);
+const tableColumns = [
+  { prop: 'name', label: '分组名称', slot: 'name', width: '180px' },
+  { prop: 'type', label: '分组类型', slot: 'type', width: '100px' },
+  { prop: 'swatches', label: '色值预览', slot: 'swatches' },
+  { prop: 'count', label: '色值数量', slot: 'count', width: '90px', align: 'center' }
+];
+const dialogNewGroup = ref(false);
+const editingGroupId = ref(null);
+const dialogShare = ref(false);
+const shareGroupId = ref(null);
+const dialogDedup = ref(false);
+const dialogDeleteConfirm = ref(false);
+const dialogCodeExport = ref(false);
+const codeExportGroupId = ref(null);
+const newGroupName = ref('');
+const newGroupType = ref('personal');
+const deleteTargetId = ref(null);
+const deleteTargetName = ref('');
+const similarityThreshold = ref(5);
+const dedupResults = ref([]);
+const hasRunDedup = ref(false);
+const importJson = ref('');
+
+const currentGroup = computed(() => groups.value.find(g => g.id === activeGroup.value));
+const shareTargetGroup = computed(() => {
+  if (!shareGroupId.value) return null;
+  return groups.value.find((group) => group.id === shareGroupId.value) || null;
+});
+const codeExportGroup = computed(() => {
+  if (!codeExportGroupId.value) return null;
+  return groups.value.find((group) => group.id === codeExportGroupId.value) || null;
+});
+const codeExportColors = computed(() => {
+  if (!codeExportGroup.value) return [];
+  return codeExportGroup.value.colors.map((color) => ({
+    name: color.name,
+    color: color.color
+  }));
+});
+const codeExportTitle = computed(() => {
+  if (!codeExportGroup.value) return '生成代码';
+  return `生成代码 - ${codeExportGroup.value.name}`;
+});
+const shareLink = computed(() => 'https://color.tools/share/' + (shareTargetGroup.value ? shareTargetGroup.value.id : ''));
+const shareJson = computed(() => {
+  if (!shareTargetGroup.value) return '';
+  return JSON.stringify({
+    name: shareTargetGroup.value.name,
+    type: shareTargetGroup.value.type,
+    colors: shareTargetGroup.value.colors,
+    exportedAt: new Date().toISOString()
+  }, null, 2);
+});
+const paginatedGroups = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  return groups.value.slice(start, start + pageSize.value);
+});
+const maxPage = computed(() => Math.max(1, Math.ceil(groups.value.length / pageSize.value)));
+
+watch(groups, () => {
+  if (currentPage.value > maxPage.value) {
+    currentPage.value = maxPage.value;
+  }
+});
+watch(pageSize, () => {
+  if (currentPage.value > maxPage.value) {
+    currentPage.value = maxPage.value;
+  }
+});
+
+function updateHeaderActions() {
+  setHeaderActions([
+    { label: '新增分组', onClick: () => openNewGroupDialog() }
+  ]);
+}
+function reloadGroups() {
+  groups.value = loadPalettes();
+  if (groups.value.length > 0 && !groups.value.find((group) => group.id === activeGroup.value)) {
+    activeGroup.value = groups.value[0].id;
+  }
+  if (groups.value.length === 0) {
+    activeGroup.value = null;
+  }
+}
+function getContrastColor(hex) {
+  const rgb = parseColor(hex);
+  if (!rgb) return '#000000';
+  return gcc(rgb);
+}
+function getGroupIcon(type) {
+  const icons = { personal: '👤', project: '📁', brand: '🏢' };
+  return icons[type] || '📋';
+}
+function getGroupTypeLabel(type) {
+  const labels = { personal: '个人', project: '项目', brand: '品牌' };
+  return labels[type] || type;
+}
+function openNewGroupDialog() {
+  editingGroupId.value = null;
+  newGroupName.value = '';
+  newGroupType.value = 'personal';
+  dialogNewGroup.value = true;
+}
+function openEditGroupDialog(row) {
+  editingGroupId.value = row.id;
+  newGroupName.value = row.name;
+  newGroupType.value = row.type;
+  dialogNewGroup.value = true;
+}
+function closeGroupDialog() {
+  dialogNewGroup.value = false;
+  editingGroupId.value = null;
+  newGroupName.value = '';
+}
+function openShareDialog(row) {
+  shareGroupId.value = row.id;
+  activeGroup.value = row.id;
+  importJson.value = '';
+  dialogShare.value = true;
+}
+function openDedupDialog(row) {
+  activeGroup.value = row.id;
+  dedupResults.value = [];
+  hasRunDedup.value = false;
+  dialogDedup.value = true;
+}
+function openCodeExportDialog(row) {
+  codeExportGroupId.value = row.id;
+  activeGroup.value = row.id;
+  dialogCodeExport.value = true;
+}
+function viewGroup(row) {
+  router.push({
+    path: '/PaletteManager/viewGroupingDetail',
+    query: {
+      groupId: row.id,
+      name: row.name
+    }
+  });
+}
+function openDeleteConfirm(row) {
+  deleteTargetId.value = row.id;
+  deleteTargetName.value = row.name;
+  dialogDeleteConfirm.value = true;
+}
+function saveGroup() {
+  if (!newGroupName.value.trim()) {
+    showToast(null, '请输入分组名称', 'error');
+    return;
+  }
+  if (editingGroupId.value) {
+    const group = groups.value.find(g => g.id === editingGroupId.value);
+    if (!group) return;
+    group.name = newGroupName.value.trim();
+    group.type = newGroupType.value;
+    closeGroupDialog();
+    savePalettes();
+    showToast(null, '分组修改成功', 'success');
+    return;
+  }
+  const newGroup = {
+    id: 'g-' + Date.now(),
+    name: newGroupName.value.trim(),
+    type: newGroupType.value,
+    colors: []
+  };
+  groups.value.push(newGroup);
+  activeGroup.value = newGroup.id;
+  closeGroupDialog();
+  savePalettes();
+  showToast(null, '分组创建成功', 'success');
+}
+function confirmDeleteGroup() {
+  if (!deleteTargetId.value) return;
+  const id = deleteTargetId.value;
+  groups.value = groups.value.filter(g => g.id !== id);
+  if (activeGroup.value === id) {
+    activeGroup.value = groups.value.length > 0 ? groups.value[0].id : null;
+  }
+  deleteTargetId.value = null;
+  deleteTargetName.value = '';
+  dialogDeleteConfirm.value = false;
+  savePalettes();
+  showToast(null, '分组已删除', 'success');
+}
+function savePalettes() {
+  persistPalettes(groups.value);
+}
+function hexToRgbObj(hex) {
+  const rgb = parseColor(hex);
+  return rgb ? { r: rgb.r, g: rgb.g, b: rgb.b } : { r: 0, g: 0, b: 0 };
+}
+function colorDistance(c1, c2) {
+  const r1 = hexToRgbObj(c1);
+  const r2 = hexToRgbObj(c2);
+  return Math.sqrt(
+    Math.pow(r1.r - r2.r, 2) + Math.pow(r1.g - r2.g, 2) + Math.pow(r1.b - r2.b, 2)
+  );
+}
+function runDedup() {
+  hasRunDedup.value = true;
+  dedupResults.value = [];
+
+  const allColors = [];
+  groups.value.forEach(group => {
+    group.colors.forEach((color, idx) => {
+      allColors.push({ ...color, groupId: group.id, colorIdx: idx });
+    });
+  });
+
+  if (allColors.length < 2) return;
+
+  const threshold = (similarityThreshold.value / 100) * 441;
+  const visited = new Set();
+
+  for (let i = 0; i < allColors.length; i++) {
+    if (visited.has(i)) continue;
+    const group = [allColors[i]];
+    for (let j = i + 1; j < allColors.length; j++) {
+      if (visited.has(j)) continue;
+      const dist = colorDistance(allColors[i].color, allColors[j].color);
+      if (dist <= threshold) {
+        group.push(allColors[j]);
+        visited.add(j);
+      }
+    }
+    if (group.length > 1) {
+      const maxDist = Math.max(
+        ...group.slice(1).map(c => colorDistance(group[0].color, c.color))
+      );
+      const similarity = Math.round((1 - maxDist / 441) * 100);
+      dedupResults.value.push({
+        colors: group,
+        similarity,
+        primaryColor: group[0]
+      });
+    }
+  }
+}
+function mergeGroup(group) {
+  group.colors.slice(1).forEach(c => {
+    const targetGroup = groups.value.find(g => g.id === c.groupId);
+    if (targetGroup) {
+      targetGroup.colors.splice(c.colorIdx, 1);
+    }
+  });
+
+  savePalettes();
+  showToast(null, '已合并相似色值', 'success');
+  dedupResults.value = [];
+}
+function importPalette() {
+  try {
+    const data = JSON.parse(importJson.value);
+    if (!data.name || !Array.isArray(data.colors)) {
+      throw new Error('格式错误');
+    }
+    const newGroup = {
+      id: 'g-' + Date.now(),
+      name: data.name + ' (导入)',
+      type: data.type || 'project',
+      colors: data.colors.map(c => ({
+        name: c.name || '未命名',
+        color: c.color || '#000000',
+        note: c.note || ''
+      }))
+    };
+    groups.value.push(newGroup);
+    activeGroup.value = newGroup.id;
+    importJson.value = '';
+    savePalettes();
+    showToast(null, '色板导入成功！', 'success');
+  } catch (e) {
+    showToast(null, 'JSON 格式错误，请检查', 'error');
+  }
+}
+function copyValue(value, label) {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + label, 'success');
+}
+
+onMounted(() => {
+  reloadGroups();
+  updateHeaderActions();
+});
+onUnmounted(() => {
+  clearHeaderActions();
+});
+</script>
+
 <template>
   <div class="module-palette">
     <Banner
@@ -249,337 +560,6 @@
     </Dialog>
   </div>
 </template>
-
-<script>
-import DataTable from '../../components/Table.vue';
-import Dialog from '../../components/Dialog.vue';
-import Input from '../../components/Input.vue';
-import Selector from '../../components/Selector.vue';
-import Pagination from '../../components/Pagination.vue';
-import CodeExportPanel from '../../components/CodeExportPanel.vue';
-import Banner from '../../components/Banner.vue';
-import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
-import { loadPalettes, savePalettes } from './paletteStorage.js';
-
-export default {
-  name: 'PaletteManager',
-  components: {
-    DataTable,
-    Dialog,
-    Input,
-    Selector,
-    Pagination,
-    CodeExportPanel,
-    Banner
-  },
-  inject: ['setHeaderActions', 'clearHeaderActions'],
-  data() {
-    return {
-      groups: [],
-      activeGroup: null,
-      currentPage: 1,
-      pageSize: 10,
-      tableColumns: [
-        { prop: 'name', label: '分组名称', slot: 'name', width: '180px' },
-        { prop: 'type', label: '分组类型', slot: 'type', width: '100px' },
-        { prop: 'swatches', label: '色值预览', slot: 'swatches' },
-        { prop: 'count', label: '色值数量', slot: 'count', width: '90px', align: 'center' }
-      ],
-      dialogNewGroup: false,
-      editingGroupId: null,
-      dialogShare: false,
-      shareGroupId: null,
-      dialogDedup: false,
-      dialogDeleteConfirm: false,
-      dialogCodeExport: false,
-      codeExportGroupId: null,
-      newGroupName: '',
-      newGroupType: 'personal',
-      deleteTargetId: null,
-      deleteTargetName: '',
-      similarityThreshold: 5,
-      dedupResults: [],
-      hasRunDedup: false,
-      importJson: ''
-    };
-  },
-  computed: {
-    currentGroup() {
-      return this.groups.find(g => g.id === this.activeGroup);
-    },
-    shareTargetGroup() {
-      if (!this.shareGroupId) return null;
-      return this.groups.find((group) => group.id === this.shareGroupId) || null;
-    },
-    codeExportGroup() {
-      if (!this.codeExportGroupId) return null;
-      return this.groups.find((group) => group.id === this.codeExportGroupId) || null;
-    },
-    codeExportColors() {
-      if (!this.codeExportGroup) return [];
-      return this.codeExportGroup.colors.map((color) => ({
-        name: color.name,
-        color: color.color
-      }));
-    },
-    codeExportTitle() {
-      if (!this.codeExportGroup) return '生成代码';
-      return `生成代码 - ${this.codeExportGroup.name}`;
-    },
-    shareLink() {
-      return 'https://color.tools/share/' + (this.shareTargetGroup ? this.shareTargetGroup.id : '');
-    },
-    shareJson() {
-      if (!this.shareTargetGroup) return '';
-      return JSON.stringify({
-        name: this.shareTargetGroup.name,
-        type: this.shareTargetGroup.type,
-        colors: this.shareTargetGroup.colors,
-        exportedAt: new Date().toISOString()
-      }, null, 2);
-    },
-    paginatedGroups() {
-      const start = (this.currentPage - 1) * this.pageSize;
-      return this.groups.slice(start, start + this.pageSize);
-    },
-    maxPage() {
-      return Math.max(1, Math.ceil(this.groups.length / this.pageSize));
-    }
-  },
-  watch: {
-    groups() {
-      if (this.currentPage > this.maxPage) {
-        this.currentPage = this.maxPage;
-      }
-    },
-    pageSize() {
-      if (this.currentPage > this.maxPage) {
-        this.currentPage = this.maxPage;
-      }
-    }
-  },
-  mounted() {
-    this.reloadGroups();
-    this.updateHeaderActions();
-  },
-  unmounted() {
-    this.clearHeaderActions();
-  },
-  methods: {
-    updateHeaderActions() {
-      this.setHeaderActions([
-        { label: '新增分组', onClick: () => this.openNewGroupDialog() }
-      ]);
-    },
-    reloadGroups() {
-      this.groups = loadPalettes();
-      if (this.groups.length > 0 && !this.groups.find((group) => group.id === this.activeGroup)) {
-        this.activeGroup = this.groups[0].id;
-      }
-      if (this.groups.length === 0) {
-        this.activeGroup = null;
-      }
-    },
-    getContrastColor(hex) {
-      const rgb = parseColor(hex);
-      if (!rgb) return '#000000';
-      return gcc(rgb);
-    },
-    getGroupIcon(type) {
-      const icons = { personal: '👤', project: '📁', brand: '🏢' };
-      return icons[type] || '📋';
-    },
-    getGroupTypeLabel(type) {
-      const labels = { personal: '个人', project: '项目', brand: '品牌' };
-      return labels[type] || type;
-    },
-    openNewGroupDialog() {
-      this.editingGroupId = null;
-      this.newGroupName = '';
-      this.newGroupType = 'personal';
-      this.dialogNewGroup = true;
-    },
-    openEditGroupDialog(row) {
-      this.editingGroupId = row.id;
-      this.newGroupName = row.name;
-      this.newGroupType = row.type;
-      this.dialogNewGroup = true;
-    },
-    closeGroupDialog() {
-      this.dialogNewGroup = false;
-      this.editingGroupId = null;
-      this.newGroupName = '';
-    },
-    openShareDialog(row) {
-      this.shareGroupId = row.id;
-      this.activeGroup = row.id;
-      this.importJson = '';
-      this.dialogShare = true;
-    },
-    openDedupDialog(row) {
-      this.activeGroup = row.id;
-      this.dedupResults = [];
-      this.hasRunDedup = false;
-      this.dialogDedup = true;
-    },
-    openCodeExportDialog(row) {
-      this.codeExportGroupId = row.id;
-      this.activeGroup = row.id;
-      this.dialogCodeExport = true;
-    },
-    viewGroup(row) {
-      this.$router.push({
-        path: '/PaletteManager/viewGroupingDetail',
-        query: {
-          groupId: row.id,
-          name: row.name
-        }
-      });
-    },
-    openDeleteConfirm(row) {
-      this.deleteTargetId = row.id;
-      this.deleteTargetName = row.name;
-      this.dialogDeleteConfirm = true;
-    },
-    saveGroup() {
-      if (!this.newGroupName.trim()) {
-        showToast(this, '请输入分组名称', 'error');
-        return;
-      }
-      if (this.editingGroupId) {
-        const group = this.groups.find(g => g.id === this.editingGroupId);
-        if (!group) return;
-        group.name = this.newGroupName.trim();
-        group.type = this.newGroupType;
-        this.closeGroupDialog();
-        this.savePalettes();
-        showToast(this, '分组修改成功', 'success');
-        return;
-      }
-      const newGroup = {
-        id: 'g-' + Date.now(),
-        name: this.newGroupName.trim(),
-        type: this.newGroupType,
-        colors: []
-      };
-      this.groups.push(newGroup);
-      this.activeGroup = newGroup.id;
-      this.closeGroupDialog();
-      this.savePalettes();
-      showToast(this, '分组创建成功', 'success');
-    },
-    confirmDeleteGroup() {
-      if (!this.deleteTargetId) return;
-      const id = this.deleteTargetId;
-      this.groups = this.groups.filter(g => g.id !== id);
-      if (this.activeGroup === id) {
-        this.activeGroup = this.groups.length > 0 ? this.groups[0].id : null;
-      }
-      this.deleteTargetId = null;
-      this.deleteTargetName = '';
-      this.dialogDeleteConfirm = false;
-      this.savePalettes();
-      showToast(this, '分组已删除', 'success');
-    },
-    savePalettes() {
-      savePalettes(this.groups);
-    },
-    hexToRgbObj(hex) {
-      const rgb = parseColor(hex);
-      return rgb ? { r: rgb.r, g: rgb.g, b: rgb.b } : { r: 0, g: 0, b: 0 };
-    },
-    colorDistance(c1, c2) {
-      const r1 = this.hexToRgbObj(c1);
-      const r2 = this.hexToRgbObj(c2);
-      return Math.sqrt(
-        Math.pow(r1.r - r2.r, 2) + Math.pow(r1.g - r2.g, 2) + Math.pow(r1.b - r2.b, 2)
-      );
-    },
-    runDedup() {
-      this.hasRunDedup = true;
-      this.dedupResults = [];
-
-      const allColors = [];
-      this.groups.forEach(group => {
-        group.colors.forEach((color, idx) => {
-          allColors.push({ ...color, groupId: group.id, colorIdx: idx });
-        });
-      });
-
-      if (allColors.length < 2) return;
-
-      const threshold = (this.similarityThreshold / 100) * 441;
-      const visited = new Set();
-
-      for (let i = 0; i < allColors.length; i++) {
-        if (visited.has(i)) continue;
-        const group = [allColors[i]];
-        for (let j = i + 1; j < allColors.length; j++) {
-          if (visited.has(j)) continue;
-          const dist = this.colorDistance(allColors[i].color, allColors[j].color);
-          if (dist <= threshold) {
-            group.push(allColors[j]);
-            visited.add(j);
-          }
-        }
-        if (group.length > 1) {
-          const maxDist = Math.max(
-            ...group.slice(1).map(c => this.colorDistance(group[0].color, c.color))
-          );
-          const similarity = Math.round((1 - maxDist / 441) * 100);
-          this.dedupResults.push({
-            colors: group,
-            similarity,
-            primaryColor: group[0]
-          });
-        }
-      }
-    },
-    mergeGroup(group) {
-      const primary = group.colors[0];
-      group.colors.slice(1).forEach(c => {
-        const targetGroup = this.groups.find(g => g.id === c.groupId);
-        if (targetGroup) {
-          targetGroup.colors.splice(c.colorIdx, 1);
-        }
-      });
-
-      this.savePalettes();
-      showToast(this, '已合并相似色值', 'success');
-      this.dedupResults = [];
-    },
-    importPalette() {
-      try {
-        const data = JSON.parse(this.importJson);
-        if (!data.name || !Array.isArray(data.colors)) {
-          throw new Error('格式错误');
-        }
-        const newGroup = {
-          id: 'g-' + Date.now(),
-          name: data.name + ' (导入)',
-          type: data.type || 'project',
-          colors: data.colors.map(c => ({
-            name: c.name || '未命名',
-            color: c.color || '#000000',
-            note: c.note || ''
-          }))
-        };
-        this.groups.push(newGroup);
-        this.activeGroup = newGroup.id;
-        this.importJson = '';
-        this.savePalettes();
-        showToast(this, '色板导入成功！', 'success');
-      } catch (e) {
-        showToast(this, 'JSON 格式错误，请检查', 'error');
-      }
-    },
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label, 'success');
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .module-palette { width: 100%; min-width: 0; }

@@ -1,3 +1,72 @@
+<script lang="ts" setup>
+import { ref, computed } from 'vue';
+import { CODE_EXPORT_TABS, generateExportCode, getTabByKey, sanitizeFileName } from '../utils/codeGenerator';
+import { copyToClipboard, showToast } from '../utils/colorUtils';
+
+const props = defineProps({
+  colors: {
+    type: Array,
+    default: () => []
+  },
+  exportName: {
+    type: String,
+    default: 'colors'
+  }
+});
+
+const activeTab = ref('css');
+const tabs = CODE_EXPORT_TABS;
+const includeDarkMode = ref(true);
+const includeOpacity = ref(false);
+const useKebabCase = ref(true);
+
+const currentTab = computed(() => getTabByKey(activeTab.value));
+
+const generatedCode = computed(() => generateExportCode(props.colors, {
+  includeDarkMode: includeDarkMode.value,
+  useKebabCase: useKebabCase.value
+}));
+
+const currentCode = computed(() => generatedCode.value[activeTab.value] || '');
+
+const handleCopy = () => {
+  if (!currentCode.value) {
+    showToast(null, '当前分组暂无色值，无法生成代码', 'error');
+    return;
+  }
+  copyToClipboard(currentCode.value);
+  showToast(null, '已复制 ' + currentTab.value.title, 'success');
+};
+
+const downloadByBrowser = (fileName) => {
+  const blob = new Blob([currentCode.value], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
+const handleExport = () => {
+  if (!currentCode.value) {
+    showToast(null, '当前分组暂无色值，无法导出代码', 'error');
+    return;
+  }
+  const fileName = sanitizeFileName(props.exportName) + '.' + currentTab.value.ext;
+  if (window.services?.writeCodeFile) {
+    const filePath = window.services.writeCodeFile(currentCode.value, fileName);
+    if (filePath && window.utools?.shellShowItemInFolder) {
+      window.utools.shellShowItemInFolder(filePath);
+    }
+    showToast(null, '代码已导出到下载目录', 'success');
+    return;
+  }
+  downloadByBrowser(fileName);
+  showToast(null, '代码已导出', 'success');
+};
+</script>
+
 <template>
   <div class="code-export-panel">
     <div class="tab-row">
@@ -42,85 +111,7 @@
   </div>
 </template>
 
-<script>
-import { CODE_EXPORT_TABS, generateExportCode, getTabByKey, sanitizeFileName } from '../utils/codeGenerator';
-import { copyToClipboard, showToast } from '../utils/colorUtils';
-
-export default {
-  name: 'CodeExportPanel',
-  props: {
-    colors: {
-      type: Array,
-      default: () => []
-    },
-    exportName: {
-      type: String,
-      default: 'colors'
-    }
-  },
-  data() {
-    return {
-      activeTab: 'css',
-      tabs: CODE_EXPORT_TABS,
-      includeDarkMode: true,
-      includeOpacity: false,
-      useKebabCase: true
-    };
-  },
-  computed: {
-    currentTab() {
-      return getTabByKey(this.activeTab);
-    },
-    generatedCode() {
-      return generateExportCode(this.colors, {
-        includeDarkMode: this.includeDarkMode,
-        useKebabCase: this.useKebabCase
-      });
-    },
-    currentCode() {
-      return this.generatedCode[this.activeTab] || '';
-    }
-  },
-  methods: {
-    handleCopy() {
-      if (!this.currentCode) {
-        showToast(this, '当前分组暂无色值，无法生成代码', 'error');
-        return;
-      }
-      copyToClipboard(this.currentCode);
-      showToast(this, '已复制 ' + this.currentTab.title, 'success');
-    },
-    handleExport() {
-      if (!this.currentCode) {
-        showToast(this, '当前分组暂无色值，无法导出代码', 'error');
-        return;
-      }
-      const fileName = sanitizeFileName(this.exportName) + '.' + this.currentTab.ext;
-      if (window.services?.writeCodeFile) {
-        const filePath = window.services.writeCodeFile(this.currentCode, fileName);
-        if (filePath && window.utools?.shellShowItemInFolder) {
-          window.utools.shellShowItemInFolder(filePath);
-        }
-        showToast(this, '代码已导出到下载目录', 'success');
-        return;
-      }
-      this.downloadByBrowser(fileName);
-      showToast(this, '代码已导出', 'success');
-    },
-    downloadByBrowser(fileName) {
-      const blob = new Blob([this.currentCode], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      link.click();
-      URL.revokeObjectURL(url);
-    }
-  }
-};
-</script>
-
-<style scoped>
+<style lang="scss" scoped>
 .code-export-panel {
   width: 100%;
   min-width: 0;

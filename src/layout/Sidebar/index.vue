@@ -1,7 +1,37 @@
+<script lang="ts" setup>
+import { NAV_MENU_ITEMS } from '../../data/navMenu.js';
+
+const props = defineProps({
+  currentTab: {
+    type: String,
+    default: 'BasicKnowledge'
+  },
+  collapsed: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const emit = defineEmits(['update:currentTab', 'toggle-collapse']);
+
+const menuItems = NAV_MENU_ITEMS.map((item) => ({
+  ...item,
+  icon: `<span class="iconfont ${item.icon}"></span>`
+}));
+
+const handleItemClick = (item) => {
+  emit('update:currentTab', item.id);
+};
+
+const toggleCollapse = () => {
+  emit('toggle-collapse');
+};
+</script>
+
 <template>
-  <aside class="sidebar" :class="{ collapsed: collapsed }">
+  <aside class="sidebar" :class="{ collapsed: props.collapsed }">
     <nav class="sidebar-menu">
-      <div v-for="item in menuItems" :key="item.id" class="menu-item" :class="{ active: currentTab === item.id }"
+      <div v-for="item in menuItems" :key="item.id" class="menu-item" :class="{ active: props.currentTab === item.id }"
         @click="handleItemClick(item)" :title="item.label">
         <span class="menu-icon" v-html="item.icon"></span>
         <span class="menu-label">{{ item.label }}</span>
@@ -9,48 +39,13 @@
     </nav>
 
     <div class="sidebar-footer">
-      <button class="collapse-toggle" @click="toggleCollapse" :title="collapsed ? '展开导航' : '收起导航'">
-        <span class="iconfont collapse-icon" :class="collapsed ? 'icon-Expand' : 'icon-Fold'"></span>
-        <span class="collapse-label">{{ collapsed ? '展开' : '收起' }}</span>
+      <button class="collapse-toggle" @click="toggleCollapse" :title="props.collapsed ? '展开导航' : '收起导航'">
+        <span class="iconfont collapse-icon" :class="props.collapsed ? 'icon-Expand' : 'icon-Fold'"></span>
+        <span class="collapse-label">{{ props.collapsed ? '展开' : '收起' }}</span>
       </button>
     </div>
   </aside>
 </template>
-
-<script>
-import { NAV_MENU_ITEMS } from '../../data/navMenu.js';
-
-export default {
-  name: 'Sidebar',
-  props: {
-    currentTab: {
-      type: String,
-      default: 'BasicKnowledge'
-    },
-    collapsed: {
-      type: Boolean,
-      default: false
-    }
-  },
-  emits: ['update:currentTab', 'toggle-collapse'],
-  data() {
-    return {
-      menuItems: NAV_MENU_ITEMS.map((item) => ({
-        ...item,
-        icon: `<span class="iconfont ${item.icon}"></span>`
-      }))
-    };
-  },
-  methods: {
-    handleItemClick(item) {
-      this.$emit('update:currentTab', item.id);
-    },
-    toggleCollapse() {
-      this.$emit('toggle-collapse');
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .sidebar {
@@ -65,7 +60,6 @@ export default {
   background: var(--bg-card);
   transition: flex-basis 0.25s ease, width 0.25s ease;
   overflow: hidden;
-  // box-shadow: 4px 0 14px -6px rgba(0, 0, 0, 0.12);
   position: relative;
   z-index: 1;
 }
@@ -209,7 +203,6 @@ export default {
   }
 }
 
-/* 响应式：移动端隐藏侧栏，改由页头抽屉导航 */
 @media (max-width: 640px) {
   .sidebar {
     display: none;

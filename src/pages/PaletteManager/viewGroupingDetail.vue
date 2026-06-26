@@ -1,3 +1,184 @@
+﻿<script lang="ts" setup>
+import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Dialog from '../../components/Dialog.vue';
+import Input from '../../components/Input.vue';
+import Textarea from '../../components/Textarea.vue';
+import Selector from '../../components/Selector.vue';
+import ColorPicker from '../../components/ColorPicker.vue';
+import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
+import { loadPalettes, savePalettes } from './paletteStorage.js';
+import {
+  COLOR_VALUE_TYPES,
+  DEFAULT_COLOR_VALUE_TYPE,
+  getColorValueTypeLabel,
+  getColorValueTypeTagClass,
+  getColorValueTypeOption,
+  normalizeColorValueType
+} from '../../data/colorValueTypes.js';
+
+const UNCATEGORIZED_FILTER = '__uncategorized__';
+
+const route = useRoute();
+const router = useRouter();
+const setHeaderActions = inject('setHeaderActions');
+const clearHeaderActions = inject('clearHeaderActions');
+
+const groups = ref([]);
+const group = ref(null);
+const colorValueTypes = COLOR_VALUE_TYPES;
+const activeTypeFilter = ref(null);
+const dialogAddColor = ref(false);
+const dialogDeleteConfirm = ref(false);
+const editingColorIndex = ref(null);
+const deleteTargetIndex = ref(null);
+const deleteTargetName = ref('');
+const newColorName = ref('');
+const newColorType = ref(DEFAULT_COLOR_VALUE_TYPE);
+const newColorValue = ref('#1677FF');
+const newColorNote = ref('');
+
+const filteredColorEntries = computed(() => {
+  if (!group.value) return [];
+  return group.value.colors
+    .map((color, idx) => ({ color, idx }))
+    .filter(({ color }) => matchColorTypeFilter(color.colorType));
+});
+
+function loadGroup() {
+  groups.value = loadPalettes();
+  const groupId = route.query.groupId;
+  group.value = groups.value.find((item) => item.id === groupId) || null;
+  activeTypeFilter.value = null;
+}
+function updateHeaderActions() {
+  if (!group.value) {
+    clearHeaderActions();
+    return;
+  }
+  setHeaderActions([
+    { label: '添加色值', onClick: () => openAddColorDialog() }
+  ]);
+}
+function goBack() {
+  router.push('/PaletteManager');
+}
+function getContrastColor(hex) {
+  const rgb = parseColor(hex);
+  if (!rgb) return '#000000';
+  return gcc(rgb);
+}
+function hasColorNote(note) {
+  return Boolean(String(note ?? '').trim());
+}
+function formatColorNote(note) {
+  const value = String(note ?? '').trim();
+  return value || '--';
+}
+function getColorTypeLabel(type) {
+  if (!getColorValueTypeOption(type)) return '未分类';
+  return getColorValueTypeLabel(type);
+}
+function getColorTypeTagClass(type) {
+  if (!getColorValueTypeOption(type)) return 'type-default';
+  return getColorValueTypeTagClass(type);
+}
+function matchColorTypeFilter(type) {
+  if (!activeTypeFilter.value) return true;
+  if (activeTypeFilter.value === UNCATEGORIZED_FILTER) {
+    return !getColorValueTypeOption(type);
+  }
+  return normalizeColorValueType(type) === activeTypeFilter.value;
+}
+function openAddColorDialog() {
+  editingColorIndex.value = null;
+  newColorName.value = '';
+  newColorType.value = DEFAULT_COLOR_VALUE_TYPE;
+  newColorValue.value = '#1677FF';
+  newColorNote.value = '';
+  dialogAddColor.value = true;
+}
+function openEditColorDialog(idx, color) {
+  editingColorIndex.value = idx;
+  newColorName.value = color.name;
+  newColorType.value = normalizeColorValueType(color.colorType);
+  newColorValue.value = color.color;
+  newColorNote.value = color.note || '';
+  dialogAddColor.value = true;
+}
+function closeColorDialog() {
+  dialogAddColor.value = false;
+  editingColorIndex.value = null;
+  newColorName.value = '';
+  newColorType.value = DEFAULT_COLOR_VALUE_TYPE;
+  newColorValue.value = '#1677FF';
+  newColorNote.value = '';
+}
+function saveColor() {
+  if (!group.value) return;
+  if (!newColorName.value.trim() || !newColorValue.value) {
+    showToast(null, '请填写色值名称和色值', 'error');
+    return;
+  }
+  const rgb = parseColor(newColorValue.value);
+  if (!rgb) {
+    showToast(null, '色值格式无效', 'error');
+    return;
+  }
+  const normalizedHex = '#' + [rgb.r, rgb.g, rgb.b].map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+  const colorData = {
+    name: newColorName.value.trim(),
+    color: normalizedHex,
+    note: newColorNote.value.trim(),
+    colorType: newColorType.value
+  };
+  if (editingColorIndex.value !== null) {
+    group.value.colors[editingColorIndex.value] = colorData;
+    closeColorDialog();
+    saveAll();
+    showToast(null, '色值修改成功', 'success');
+    return;
+  }
+  group.value.colors.push(colorData);
+  closeColorDialog();
+  saveAll();
+  showToast(null, '色值添加成功', 'success');
+}
+function openDeleteConfirm(idx, color) {
+  deleteTargetIndex.value = idx;
+  deleteTargetName.value = color.name || color.color;
+  dialogDeleteConfirm.value = true;
+}
+function confirmDeleteColor() {
+  if (!group.value || deleteTargetIndex.value === null) return;
+  group.value.colors.splice(deleteTargetIndex.value, 1);
+  deleteTargetIndex.value = null;
+  deleteTargetName.value = '';
+  dialogDeleteConfirm.value = false;
+  saveAll();
+  showToast(null, '色值已删除', 'success');
+}
+function saveAll() {
+  savePalettes(groups.value);
+}
+function copyValue(value, label) {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + label, 'success');
+}
+
+watch(() => route.query.groupId, () => {
+  loadGroup();
+});
+
+onMounted(() => {
+  loadGroup();
+  updateHeaderActions();
+});
+onUnmounted(() => {
+  clearHeaderActions();
+});
+</script>
+
 <template>
   <div class="module-palette-detail">
     <div v-if="!group" class="empty-state">
@@ -152,199 +333,7 @@
   </div>
 </template>
 
-<script>
-import Dialog from '../../components/Dialog.vue';
-import Input from '../../components/Input.vue';
-import Textarea from '../../components/Textarea.vue';
-import Selector from '../../components/Selector.vue';
-import ColorPicker from '../../components/ColorPicker.vue';
-import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
-import { loadPalettes, savePalettes } from './paletteStorage.js';
-import {
-  COLOR_VALUE_TYPES,
-  DEFAULT_COLOR_VALUE_TYPE,
-  getColorValueTypeLabel,
-  getColorValueTypeTagClass,
-  getColorValueTypeOption,
-  normalizeColorValueType
-} from '../../data/colorValueTypes.js';
-
-const UNCATEGORIZED_FILTER = '__uncategorized__';
-
-export default {
-  name: 'PaletteManagerDetail',
-  components: {
-    Dialog,
-    Input,
-    Textarea,
-    Selector,
-    ColorPicker
-  },
-  inject: ['setHeaderActions', 'clearHeaderActions'],
-  data() {
-    return {
-      UNCATEGORIZED_FILTER,
-      groups: [],
-      group: null,
-      colorValueTypes: COLOR_VALUE_TYPES,
-      activeTypeFilter: null,
-      dialogAddColor: false,
-      dialogDeleteConfirm: false,
-      editingColorIndex: null,
-      deleteTargetIndex: null,
-      deleteTargetName: '',
-      newColorName: '',
-      newColorType: DEFAULT_COLOR_VALUE_TYPE,
-      newColorValue: '#1677FF',
-      newColorNote: ''
-    };
-  },
-  computed: {
-    filteredColorEntries() {
-      if (!this.group) return [];
-      return this.group.colors
-        .map((color, idx) => ({ color, idx }))
-        .filter(({ color }) => this.matchColorTypeFilter(color.colorType));
-    }
-  },
-  mounted() {
-    this.loadGroup();
-    this.updateHeaderActions();
-  },
-  unmounted() {
-    this.clearHeaderActions();
-  },
-  watch: {
-    '$route.query.groupId'() {
-      this.loadGroup();
-    }
-  },
-  methods: {
-    loadGroup() {
-      this.groups = loadPalettes();
-      const groupId = this.$route.query.groupId;
-      this.group = this.groups.find((item) => item.id === groupId) || null;
-      this.activeTypeFilter = null;
-    },
-    updateHeaderActions() {
-      if (!this.group) {
-        this.clearHeaderActions();
-        return;
-      }
-      this.setHeaderActions([
-        { label: '添加色值', onClick: () => this.openAddColorDialog() }
-      ]);
-    },
-    goBack() {
-      this.$router.push('/PaletteManager');
-    },
-    getContrastColor(hex) {
-      const rgb = parseColor(hex);
-      if (!rgb) return '#000000';
-      return gcc(rgb);
-    },
-    hasColorNote(note) {
-      return Boolean(String(note ?? '').trim());
-    },
-    formatColorNote(note) {
-      const value = String(note ?? '').trim();
-      return value || '--';
-    },
-    getColorTypeLabel(type) {
-      if (!getColorValueTypeOption(type)) return '未分类';
-      return getColorValueTypeLabel(type);
-    },
-    getColorTypeTagClass(type) {
-      if (!getColorValueTypeOption(type)) return 'type-default';
-      return getColorValueTypeTagClass(type);
-    },
-    matchColorTypeFilter(type) {
-      if (!this.activeTypeFilter) return true;
-      if (this.activeTypeFilter === UNCATEGORIZED_FILTER) {
-        return !getColorValueTypeOption(type);
-      }
-      return normalizeColorValueType(type) === this.activeTypeFilter;
-    },
-    openAddColorDialog() {
-      this.editingColorIndex = null;
-      this.newColorName = '';
-      this.newColorType = DEFAULT_COLOR_VALUE_TYPE;
-      this.newColorValue = '#1677FF';
-      this.newColorNote = '';
-      this.dialogAddColor = true;
-    },
-    openEditColorDialog(idx, color) {
-      this.editingColorIndex = idx;
-      this.newColorName = color.name;
-      this.newColorType = normalizeColorValueType(color.colorType);
-      this.newColorValue = color.color;
-      this.newColorNote = color.note || '';
-      this.dialogAddColor = true;
-    },
-    closeColorDialog() {
-      this.dialogAddColor = false;
-      this.editingColorIndex = null;
-      this.newColorName = '';
-      this.newColorType = DEFAULT_COLOR_VALUE_TYPE;
-      this.newColorValue = '#1677FF';
-      this.newColorNote = '';
-    },
-    saveColor() {
-      if (!this.group) return;
-      if (!this.newColorName.trim() || !this.newColorValue) {
-        showToast(this, '请填写色值名称和色值', 'error');
-        return;
-      }
-      const rgb = parseColor(this.newColorValue);
-      if (!rgb) {
-        showToast(this, '色值格式无效', 'error');
-        return;
-      }
-      const normalizedHex = '#' + [rgb.r, rgb.g, rgb.b].map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
-      const colorData = {
-        name: this.newColorName.trim(),
-        color: normalizedHex,
-        note: this.newColorNote.trim(),
-        colorType: this.newColorType
-      };
-      if (this.editingColorIndex !== null) {
-        this.group.colors[this.editingColorIndex] = colorData;
-        this.closeColorDialog();
-        this.saveAll();
-        showToast(this, '色值修改成功', 'success');
-        return;
-      }
-      this.group.colors.push(colorData);
-      this.closeColorDialog();
-      this.saveAll();
-      showToast(this, '色值添加成功', 'success');
-    },
-    openDeleteConfirm(idx, color) {
-      this.deleteTargetIndex = idx;
-      this.deleteTargetName = color.name || color.color;
-      this.dialogDeleteConfirm = true;
-    },
-    confirmDeleteColor() {
-      if (!this.group || this.deleteTargetIndex === null) return;
-      this.group.colors.splice(this.deleteTargetIndex, 1);
-      this.deleteTargetIndex = null;
-      this.deleteTargetName = '';
-      this.dialogDeleteConfirm = false;
-      this.saveAll();
-      showToast(this, '色值已删除', 'success');
-    },
-    saveAll() {
-      savePalettes(this.groups);
-    },
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label, 'success');
-    }
-  }
-};
-</script>
-
-<style scoped>
+<style lang="scss" scoped>
 .module-palette-detail {
   width: 100%;
   min-width: 0;

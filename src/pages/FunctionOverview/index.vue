@@ -1,3 +1,21 @@
+<script lang="ts" setup>
+import { useRouter } from 'vue-router';
+import {
+  QUICK_START_STEPS,
+  FEATURE_GROUPS,
+  USAGE_TIPS
+} from '../../data/functionOverview.js';
+
+const router = useRouter();
+const quickStartSteps = QUICK_START_STEPS;
+const featureGroups = FEATURE_GROUPS;
+const usageTips = USAGE_TIPS;
+
+function goToFeature(routeId) {
+  router.push('/' + routeId);
+}
+</script>
+
 <template>
   <div class="module-overview">
     <section class="hero-section">
@@ -71,30 +89,6 @@
     </section>
   </div>
 </template>
-
-<script>
-import {
-  QUICK_START_STEPS,
-  FEATURE_GROUPS,
-  USAGE_TIPS
-} from '../../data/functionOverview.js';
-
-export default {
-  name: 'FunctionOverview',
-  data() {
-    return {
-      quickStartSteps: QUICK_START_STEPS,
-      featureGroups: FEATURE_GROUPS,
-      usageTips: USAGE_TIPS
-    };
-  },
-  methods: {
-    goToFeature(routeId) {
-      this.$router.push('/' + routeId);
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .module-overview {

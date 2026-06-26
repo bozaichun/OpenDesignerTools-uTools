@@ -1,3 +1,171 @@
+<script lang="ts" setup>
+import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { useRoute } from 'vue-router';
+import ColorPicker from '../../components/ColorPicker.vue';
+import Dialog from '../../components/Dialog.vue';
+import FavoriteButton from '../../components/FavoriteButton.vue';
+import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
+import { parseColor, rgbToHsl, copyToClipboard, showToast } from '../../utils/colorUtils';
+import {
+  computeGradientStyle,
+  computeGradientCSS,
+  computeExtractedGradientColors,
+  readDetailQuery,
+  DEFAULT_GRADIENT_STOPS,
+  DEFAULT_GRADIENT_DIRECTION,
+  MAX_GRADIENT_STOPS
+} from './colorToolsUtils';
+
+const route = useRoute();
+
+const setHeaderActions = inject('setHeaderActions', () => {});
+const clearHeaderActions = inject('clearHeaderActions', () => {});
+
+const inputColor = ref('#1677FF');
+const adjustHue = ref(215);
+const adjustSaturation = ref(100);
+const adjustLightness = ref(54);
+const diffColorB = ref('#2563EB');
+const gradientStops = ref(DEFAULT_GRADIENT_STOPS.map((s) => ({ ...s })));
+const gradientDirection = ref(DEFAULT_GRADIENT_DIRECTION);
+const cssDialogVisible = ref(false);
+const propsPanelOpen = ref(false);
+const previewPanelRef = ref(null);
+
+const gradientDirectionOptions = [
+  { value: 'to right', label: '从左到右' },
+  { value: 'to bottom', label: '从上到下' },
+  { value: 'to bottom right', label: '对角线' },
+  { value: 'circle', label: '圆形辐射' },
+  { value: '45deg', label: '45° 斜向' },
+  { value: '135deg', label: '135° 斜向' }
+];
+
+const shellQueryState = computed(() => {
+  return {
+    colorB: diffColorB.value,
+    hue: adjustHue.value,
+    sat: adjustSaturation.value,
+    light: adjustLightness.value,
+    direction: gradientDirection.value,
+    stops: gradientStops.value
+  };
+});
+
+const gradientStyle = computed(() => {
+  return computeGradientStyle(gradientStops.value, gradientDirection.value);
+});
+
+const gradientCSS = computed(() => {
+  return computeGradientCSS(gradientStops.value, gradientDirection.value);
+});
+
+const extractedGradientColors = computed(() => {
+  return computeExtractedGradientColors(gradientStops.value);
+});
+
+const canAddStop = computed(() => {
+  return gradientStops.value.length < MAX_GRADIENT_STOPS;
+});
+
+function applyRouteQuery() {
+  const q = readDetailQuery(route);
+  inputColor.value = q.color;
+  adjustHue.value = q.hue;
+  adjustSaturation.value = q.sat;
+  adjustLightness.value = q.light;
+  diffColorB.value = q.colorB;
+  gradientDirection.value = q.direction;
+  gradientStops.value = q.stops.map((s) => ({ ...s }));
+}
+
+function handleColorChange(val) {
+  inputColor.value = val;
+  if (gradientStops.value.length > 0) {
+    gradientStops.value[0].color = val;
+  }
+  const rgb = parseColor(val);
+  if (rgb) {
+    const hsl = rgbToHsl(rgb);
+    adjustHue.value = hsl.h;
+    adjustSaturation.value = hsl.s;
+    adjustLightness.value = hsl.l;
+  }
+}
+
+function updateHeaderActions() {
+  setHeaderActions([
+    {
+      label: '查看 CSS 代码',
+      onClick: () => { cssDialogVisible.value = true; }
+    }
+  ]);
+}
+
+function addStop() {
+  if (gradientStops.value.length >= MAX_GRADIENT_STOPS) return;
+  const lastPos = gradientStops.value.length > 0
+    ? gradientStops.value[gradientStops.value.length - 1].position
+    : 0;
+  gradientStops.value.push({
+    color: '#FFFFFF',
+    position: Math.min(100, lastPos + 25)
+  });
+}
+
+function removeStop(idx) {
+  gradientStops.value.splice(idx, 1);
+}
+
+function togglePropsPanel() {
+  propsPanelOpen.value = !propsPanelOpen.value;
+}
+
+function handlePropsClickOutside(event) {
+  if (!previewPanelRef.value?.contains(event.target)) {
+    propsPanelOpen.value = false;
+  }
+}
+
+function selectGradientDirection(value) {
+  gradientDirection.value = value;
+  propsPanelOpen.value = false;
+}
+
+function copyHexValue(value) {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + value, 'success');
+}
+
+function copyValue(value, label) {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + label, 'success');
+}
+
+watch(() => route.query, () => {
+  applyRouteQuery();
+});
+
+watch(propsPanelOpen, (open) => {
+  if (open) {
+    document.addEventListener('pointerdown', handlePropsClickOutside);
+  } else {
+    document.removeEventListener('pointerdown', handlePropsClickOutside);
+  }
+});
+
+applyRouteQuery();
+
+onMounted(() => {
+  updateHeaderActions();
+});
+
+onUnmounted(() => {
+  clearHeaderActions();
+  document.removeEventListener('pointerdown', handlePropsClickOutside);
+});
+</script>
+
 <template>
   <div class="color-detail">
     <ColorToolsDetailShell
@@ -92,165 +260,6 @@
     </Dialog>
   </div>
 </template>
-
-<script>
-import ColorPicker from '../../components/ColorPicker.vue';
-import Dialog from '../../components/Dialog.vue';
-import FavoriteButton from '../../components/FavoriteButton.vue';
-import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
-import { parseColor, rgbToHsl, copyToClipboard, showToast } from '../../utils/colorUtils';
-import {
-  computeGradientStyle,
-  computeGradientCSS,
-  computeExtractedGradientColors,
-  readDetailQuery,
-  DEFAULT_GRADIENT_STOPS,
-  DEFAULT_GRADIENT_DIRECTION,
-  MAX_GRADIENT_STOPS
-} from './colorToolsUtils';
-
-export default {
-  name: 'GradientDetail',
-  components: { ColorPicker, Dialog, FavoriteButton, ColorToolsDetailShell },
-  inject: {
-    setHeaderActions: { default: () => {} },
-    clearHeaderActions: { default: () => {} }
-  },
-  data() {
-    return {
-      inputColor: '#1677FF',
-      adjustHue: 215,
-      adjustSaturation: 100,
-      adjustLightness: 54,
-      diffColorB: '#2563EB',
-      gradientStops: DEFAULT_GRADIENT_STOPS.map((s) => ({ ...s })),
-      gradientDirection: DEFAULT_GRADIENT_DIRECTION,
-      cssDialogVisible: false,
-      propsPanelOpen: false,
-      gradientDirectionOptions: [
-        { value: 'to right', label: '从左到右' },
-        { value: 'to bottom', label: '从上到下' },
-        { value: 'to bottom right', label: '对角线' },
-        { value: 'circle', label: '圆形辐射' },
-        { value: '45deg', label: '45° 斜向' },
-        { value: '135deg', label: '135° 斜向' }
-      ]
-    };
-  },
-  computed: {
-    shellQueryState() {
-      return {
-        colorB: this.diffColorB,
-        hue: this.adjustHue,
-        sat: this.adjustSaturation,
-        light: this.adjustLightness,
-        direction: this.gradientDirection,
-        stops: this.gradientStops
-      };
-    },
-    gradientStyle() {
-      return computeGradientStyle(this.gradientStops, this.gradientDirection);
-    },
-    gradientCSS() {
-      return computeGradientCSS(this.gradientStops, this.gradientDirection);
-    },
-    extractedGradientColors() {
-      return computeExtractedGradientColors(this.gradientStops);
-    },
-    canAddStop() {
-      return this.gradientStops.length < MAX_GRADIENT_STOPS;
-    }
-  },
-  watch: {
-    '$route.query'() {
-      this.applyRouteQuery();
-    },
-    propsPanelOpen(open) {
-      if (open) {
-        document.addEventListener('pointerdown', this.handlePropsClickOutside);
-      } else {
-        document.removeEventListener('pointerdown', this.handlePropsClickOutside);
-      }
-    }
-  },
-  created() {
-    this.applyRouteQuery();
-  },
-  mounted() {
-    this.updateHeaderActions();
-  },
-  unmounted() {
-    this.clearHeaderActions();
-    document.removeEventListener('pointerdown', this.handlePropsClickOutside);
-  },
-  methods: {
-    applyRouteQuery() {
-      const q = readDetailQuery(this.$route);
-      this.inputColor = q.color;
-      this.adjustHue = q.hue;
-      this.adjustSaturation = q.sat;
-      this.adjustLightness = q.light;
-      this.diffColorB = q.colorB;
-      this.gradientDirection = q.direction;
-      this.gradientStops = q.stops.map((s) => ({ ...s }));
-    },
-    handleColorChange(val) {
-      this.inputColor = val;
-      if (this.gradientStops.length > 0) {
-        this.gradientStops[0].color = val;
-      }
-      const rgb = parseColor(val);
-      if (rgb) {
-        const hsl = rgbToHsl(rgb);
-        this.adjustHue = hsl.h;
-        this.adjustSaturation = hsl.s;
-        this.adjustLightness = hsl.l;
-      }
-    },
-    updateHeaderActions() {
-      this.setHeaderActions([
-        {
-          label: '查看 CSS 代码',
-          onClick: () => { this.cssDialogVisible = true; }
-        }
-      ]);
-    },
-    addStop() {
-      if (this.gradientStops.length >= MAX_GRADIENT_STOPS) return;
-      const lastPos = this.gradientStops.length > 0
-        ? this.gradientStops[this.gradientStops.length - 1].position
-        : 0;
-      this.gradientStops.push({
-        color: '#FFFFFF',
-        position: Math.min(100, lastPos + 25)
-      });
-    },
-    removeStop(idx) {
-      this.gradientStops.splice(idx, 1);
-    },
-    togglePropsPanel() {
-      this.propsPanelOpen = !this.propsPanelOpen;
-    },
-    handlePropsClickOutside(event) {
-      if (!this.$refs.previewPanelRef?.contains(event.target)) {
-        this.propsPanelOpen = false;
-      }
-    },
-    selectGradientDirection(value) {
-      this.gradientDirection = value;
-      this.propsPanelOpen = false;
-    },
-    copyHexValue(value) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + value, 'success');
-    },
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label, 'success');
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 @use './colorStripCard.scss' as *;

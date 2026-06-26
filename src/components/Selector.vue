@@ -1,3 +1,212 @@
+<script lang="ts" setup>
+import { ref, computed, watch, useSlots, onBeforeUnmount } from 'vue';
+
+let selectorUid = 0;
+
+function getOptionText(node) {
+  const { children } = node;
+  if (typeof children === 'string') return children;
+  if (typeof children === 'number') return String(children);
+  if (Array.isArray(children)) {
+    return children
+      .map((child) => {
+        if (typeof child === 'string') return child;
+        if (typeof child === 'number') return String(child);
+        if (child && typeof child.children === 'string') return child.children;
+        return '';
+      })
+      .join('');
+  }
+  return '';
+}
+
+function parseOptionsFromSlot(vnodes) {
+  const options = [];
+
+  function walk(nodes) {
+    if (!nodes) return;
+    const list = Array.isArray(nodes) ? nodes : [nodes];
+    for (const node of list) {
+      if (!node || !node.type) continue;
+      if (node.type === 'option') {
+        const nodeProps = node.props || {};
+        const label = getOptionText(node);
+        const value = nodeProps.value !== undefined && nodeProps.value !== null ? nodeProps.value : label;
+        options.push({
+          value,
+          label: label || String(value),
+          disabled: !!nodeProps.disabled
+        });
+      } else if (node.children) {
+        if (Array.isArray(node.children)) {
+          walk(node.children);
+        } else if (typeof node.children === 'object') {
+          Object.values(node.children).forEach((slotFn) => {
+            if (typeof slotFn === 'function') walk(slotFn());
+          });
+        }
+      }
+    }
+  }
+
+  walk(vnodes);
+  return options;
+}
+
+const props = defineProps({
+  modelValue: {
+    type: [String, Number],
+    default: ''
+  },
+  placeholder: {
+    type: String,
+    default: '请选择'
+  },
+  disabled: {
+    type: Boolean,
+    default: false
+  },
+  variant: {
+    type: String,
+    default: 'default',
+    validator: (value) => ['default', 'compact'].includes(value)
+  },
+  block: {
+    type: Boolean,
+    default: true
+  },
+  flex: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const emit = defineEmits(['update:modelValue', 'change']);
+
+const slots = useSlots();
+const rootRef = ref(null);
+const isOpen = ref(false);
+const activeIndex = ref(-1);
+const instanceId = `app-selector-${++selectorUid}`;
+
+const options = computed(() => parseOptionsFromSlot(slots.default?.() ?? []));
+
+const selectorClass = computed(() => [
+  `app-selector--${props.variant}`,
+  {
+    'app-selector--block': props.block,
+    'app-selector--flex': props.flex
+  }
+]);
+
+const selectedOption = computed(() => options.value.find((option) => isOptionSelected(option)));
+
+const displayLabel = computed(() => {
+  if (selectedOption.value) {
+    return selectedOption.value.label;
+  }
+  const emptyOption = options.value.find((option) => option.value === '' || option.value == null);
+  if (emptyOption) return emptyOption.label;
+  return props.placeholder;
+});
+
+const isPlaceholderDisplay = computed(() => {
+  if (!selectedOption.value) return true;
+  return selectedOption.value.value === '' || selectedOption.value.value == null;
+});
+
+const activeOptionId = computed(() => {
+  if (activeIndex.value < 0) return undefined;
+  return `${instanceId}-option-${activeIndex.value}`;
+});
+
+const isOptionSelected = (option) => {
+  return String(option.value) === String(props.modelValue);
+};
+
+const handleToggle = () => {
+  if (props.disabled) return;
+  isOpen.value = !isOpen.value;
+};
+
+const handleSelect = (option) => {
+  if (option.disabled) return;
+  emit('update:modelValue', option.value);
+  emit('change', option.value);
+  isOpen.value = false;
+};
+
+const handleClickOutside = (event) => {
+  if (!rootRef.value?.contains(event.target)) {
+    isOpen.value = false;
+  }
+};
+
+const moveActive = (step) => {
+  const len = options.value.length;
+  if (!len) return;
+  let index = activeIndex.value;
+  for (let i = 0; i < len; i += 1) {
+    index = (index + step + len) % len;
+    if (!options.value[index]?.disabled) {
+      activeIndex.value = index;
+      break;
+    }
+  }
+};
+
+const handleTriggerKeydown = (event) => {
+  if (props.disabled) return;
+  if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    if (!isOpen.value) {
+      isOpen.value = true;
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      const option = options.value[activeIndex.value];
+      if (option) handleSelect(option);
+    }
+  } else if (event.key === 'Escape') {
+    isOpen.value = false;
+  }
+};
+
+const handleDocumentKeydown = (event) => {
+  if (!isOpen.value) return;
+  if (event.key === 'Escape') {
+    isOpen.value = false;
+    return;
+  }
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    moveActive(1);
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    moveActive(-1);
+  } else if (event.key === 'Enter') {
+    event.preventDefault();
+    const option = options.value[activeIndex.value];
+    if (option) handleSelect(option);
+  }
+};
+
+watch(isOpen, (open) => {
+  if (open) {
+    const selectedIndex = options.value.findIndex((option) => isOptionSelected(option));
+    activeIndex.value = selectedIndex >= 0 ? selectedIndex : 0;
+    document.addEventListener('pointerdown', handleClickOutside);
+    document.addEventListener('keydown', handleDocumentKeydown);
+  } else {
+    document.removeEventListener('pointerdown', handleClickOutside);
+    document.removeEventListener('keydown', handleDocumentKeydown);
+  }
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleClickOutside);
+  document.removeEventListener('keydown', handleDocumentKeydown);
+});
+</script>
+
 <template>
   <div
     ref="rootRef"
@@ -60,214 +269,7 @@
   </div>
 </template>
 
-<script>
-let selectorUid = 0;
-
-function getOptionText(node) {
-  const { children } = node;
-  if (typeof children === 'string') return children;
-  if (typeof children === 'number') return String(children);
-  if (Array.isArray(children)) {
-    return children
-      .map((child) => {
-        if (typeof child === 'string') return child;
-        if (typeof child === 'number') return String(child);
-        if (child && typeof child.children === 'string') return child.children;
-        return '';
-      })
-      .join('');
-  }
-  return '';
-}
-
-function parseOptionsFromSlot(vnodes) {
-  const options = [];
-
-  function walk(nodes) {
-    if (!nodes) return;
-    const list = Array.isArray(nodes) ? nodes : [nodes];
-    for (const node of list) {
-      if (!node || !node.type) continue;
-      if (node.type === 'option') {
-        const props = node.props || {};
-        const label = getOptionText(node);
-        const value = props.value !== undefined && props.value !== null ? props.value : label;
-        options.push({
-          value,
-          label: label || String(value),
-          disabled: !!props.disabled
-        });
-      } else if (node.children) {
-        if (Array.isArray(node.children)) {
-          walk(node.children);
-        } else if (typeof node.children === 'object') {
-          Object.values(node.children).forEach((slotFn) => {
-            if (typeof slotFn === 'function') walk(slotFn());
-          });
-        }
-      }
-    }
-  }
-
-  walk(vnodes);
-  return options;
-}
-
-export default {
-  name: 'AppSelector',
-  props: {
-    modelValue: {
-      type: [String, Number],
-      default: ''
-    },
-    placeholder: {
-      type: String,
-      default: '请选择'
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    variant: {
-      type: String,
-      default: 'default',
-      validator: (value) => ['default', 'compact'].includes(value)
-    },
-    block: {
-      type: Boolean,
-      default: true
-    },
-    flex: {
-      type: Boolean,
-      default: false
-    }
-  },
-  emits: ['update:modelValue', 'change'],
-  data() {
-    return {
-      isOpen: false,
-      activeIndex: -1,
-      instanceId: `app-selector-${++selectorUid}`
-    };
-  },
-  computed: {
-    options() {
-      return parseOptionsFromSlot(this.$slots.default?.() ?? []);
-    },
-    selectorClass() {
-      return [
-        `app-selector--${this.variant}`,
-        {
-          'app-selector--block': this.block,
-          'app-selector--flex': this.flex
-        }
-      ];
-    },
-    selectedOption() {
-      return this.options.find((option) => this.isOptionSelected(option));
-    },
-    displayLabel() {
-      if (this.selectedOption) {
-        return this.selectedOption.label;
-      }
-      const emptyOption = this.options.find((option) => option.value === '' || option.value == null);
-      if (emptyOption) return emptyOption.label;
-      return this.placeholder;
-    },
-    isPlaceholderDisplay() {
-      if (!this.selectedOption) return true;
-      return this.selectedOption.value === '' || this.selectedOption.value == null;
-    },
-    activeOptionId() {
-      if (this.activeIndex < 0) return undefined;
-      return `${this.instanceId}-option-${this.activeIndex}`;
-    }
-  },
-  watch: {
-    isOpen(open) {
-      if (open) {
-        const selectedIndex = this.options.findIndex((option) => this.isOptionSelected(option));
-        this.activeIndex = selectedIndex >= 0 ? selectedIndex : 0;
-        document.addEventListener('pointerdown', this.handleClickOutside);
-        document.addEventListener('keydown', this.handleDocumentKeydown);
-      } else {
-        document.removeEventListener('pointerdown', this.handleClickOutside);
-        document.removeEventListener('keydown', this.handleDocumentKeydown);
-      }
-    }
-  },
-  beforeUnmount() {
-    document.removeEventListener('pointerdown', this.handleClickOutside);
-    document.removeEventListener('keydown', this.handleDocumentKeydown);
-  },
-  methods: {
-    isOptionSelected(option) {
-      return String(option.value) === String(this.modelValue);
-    },
-    handleToggle() {
-      if (this.disabled) return;
-      this.isOpen = !this.isOpen;
-    },
-    handleSelect(option) {
-      if (option.disabled) return;
-      this.$emit('update:modelValue', option.value);
-      this.$emit('change', option.value);
-      this.isOpen = false;
-    },
-    handleClickOutside(event) {
-      if (!this.$refs.rootRef?.contains(event.target)) {
-        this.isOpen = false;
-      }
-    },
-    handleTriggerKeydown(event) {
-      if (this.disabled) return;
-      if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        if (!this.isOpen) {
-          this.isOpen = true;
-        } else if (event.key === 'Enter' || event.key === ' ') {
-          const option = this.options[this.activeIndex];
-          if (option) this.handleSelect(option);
-        }
-      } else if (event.key === 'Escape') {
-        this.isOpen = false;
-      }
-    },
-    handleDocumentKeydown(event) {
-      if (!this.isOpen) return;
-      if (event.key === 'Escape') {
-        this.isOpen = false;
-        return;
-      }
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        this.moveActive(1);
-      } else if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        this.moveActive(-1);
-      } else if (event.key === 'Enter') {
-        event.preventDefault();
-        const option = this.options[this.activeIndex];
-        if (option) this.handleSelect(option);
-      }
-    },
-    moveActive(step) {
-      const len = this.options.length;
-      if (!len) return;
-      let index = this.activeIndex;
-      for (let i = 0; i < len; i += 1) {
-        index = (index + step + len) % len;
-        if (!this.options[index]?.disabled) {
-          this.activeIndex = index;
-          break;
-        }
-      }
-    }
-  }
-};
-</script>
-
-<style scoped>
+<style lang="scss" scoped>
 .app-selector {
   position: relative;
   display: inline-flex;

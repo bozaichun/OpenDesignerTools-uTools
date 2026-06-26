@@ -1,22 +1,26 @@
+<script lang="ts" setup>
+import { ref, watch, nextTick } from 'vue';
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
+const bodyRef = ref(null);
+
+watch(
+  () => route.fullPath,
+  () => {
+    nextTick(() => {
+      const el = bodyRef.value;
+      if (el) el.scrollTop = 0;
+    });
+  }
+);
+</script>
+
 <template>
   <section ref="bodyRef" class="content-body">
     <slot></slot>
   </section>
 </template>
-
-<script>
-export default {
-  name: 'ContentBody',
-  watch: {
-    '$route.fullPath'() {
-      this.$nextTick(() => {
-        const el = this.$refs.bodyRef;
-        if (el) el.scrollTop = 0;
-      });
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .content-body {

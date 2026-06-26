@@ -1,3 +1,86 @@
+<script lang="ts" setup>
+import { computed } from 'vue';
+import Selector from './Selector.vue';
+
+const props = defineProps({
+  total: {
+    type: Number,
+    default: 0
+  },
+  currentPage: {
+    type: Number,
+    default: 1
+  },
+  pageSize: {
+    type: Number,
+    default: 10
+  },
+  mode: {
+    type: String,
+    default: 'simple',
+    validator: (value) => ['simple', 'full'].includes(value)
+  },
+  pageSizeOptions: {
+    type: Array,
+    default: () => [10, 20, 50, 100]
+  },
+  minTotal: {
+    type: Number,
+    default: 10
+  }
+});
+
+const emit = defineEmits(['update:currentPage', 'update:pageSize', 'change']);
+
+const shouldShow = computed(() => props.total > props.minTotal);
+
+const totalPages = computed(() => Math.max(1, Math.ceil(props.total / props.pageSize)));
+
+const visiblePages = computed(() => {
+  const total = totalPages.value;
+  const current = props.currentPage;
+  const pages = [];
+  const delta = 2;
+  const range = [];
+  let prev = null;
+
+  for (let i = 1; i <= total; i += 1) {
+    if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+      range.push(i);
+    }
+  }
+
+  range.forEach((page) => {
+    if (prev !== null) {
+      if (page - prev === 2) {
+        pages.push(prev + 1);
+      } else if (page - prev > 2) {
+        pages.push('ellipsis');
+      }
+    }
+    pages.push(page);
+    prev = page;
+  });
+
+  return pages;
+});
+
+const goToPage = (page) => {
+  const nextPage = Math.min(Math.max(1, page), totalPages.value);
+  if (nextPage === props.currentPage) return;
+  emit('update:currentPage', nextPage);
+  emit('change', { currentPage: nextPage, pageSize: props.pageSize });
+};
+
+const handlePageSizeChange = (nextSize) => {
+  const size = Number(nextSize);
+  if (!size || size === props.pageSize) return;
+  emit('update:pageSize', nextSize);
+  emit('update:currentPage', 1);
+  emit('change', { currentPage: 1, pageSize: nextSize });
+};
+</script>
+
 <template>
   <div
     v-if="shouldShow"
@@ -62,95 +145,7 @@
   </div>
 </template>
 
-<script>
-import Selector from './Selector.vue';
-
-export default {
-  name: 'Pagination',
-  components: { Selector },
-  props: {
-    total: {
-      type: Number,
-      default: 0
-    },
-    currentPage: {
-      type: Number,
-      default: 1
-    },
-    pageSize: {
-      type: Number,
-      default: 10
-    },
-    mode: {
-      type: String,
-      default: 'simple',
-      validator: (value) => ['simple', 'full'].includes(value)
-    },
-    pageSizeOptions: {
-      type: Array,
-      default: () => [10, 20, 50, 100]
-    },
-    minTotal: {
-      type: Number,
-      default: 10
-    }
-  },
-  emits: ['update:currentPage', 'update:pageSize', 'change'],
-  computed: {
-    shouldShow() {
-      return this.total > this.minTotal;
-    },
-    totalPages() {
-      return Math.max(1, Math.ceil(this.total / this.pageSize));
-    },
-    visiblePages() {
-      const total = this.totalPages;
-      const current = this.currentPage;
-      const pages = [];
-      const delta = 2;
-      const range = [];
-      let prev = null;
-
-      for (let i = 1; i <= total; i += 1) {
-        if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
-          range.push(i);
-        }
-      }
-
-      range.forEach((page) => {
-        if (prev !== null) {
-          if (page - prev === 2) {
-            pages.push(prev + 1);
-          } else if (page - prev > 2) {
-            pages.push('ellipsis');
-          }
-        }
-        pages.push(page);
-        prev = page;
-      });
-
-      return pages;
-    }
-  },
-  methods: {
-    goToPage(page) {
-      const nextPage = Math.min(Math.max(1, page), this.totalPages);
-      if (nextPage === this.currentPage) return;
-      this.$emit('update:currentPage', nextPage);
-      this.$emit('change', { currentPage: nextPage, pageSize: this.pageSize });
-    },
-    handlePageSizeChange(nextSize) {
-      const size = Number(nextSize);
-      if (!size || size === this.pageSize) return;
-      this.$emit('update:pageSize', nextSize);
-      this.$emit('update:currentPage', 1);
-      this.$emit('change', { currentPage: 1, pageSize: nextSize });
-    }
-  }
-};
-</script>
-
-<style scoped>
+<style lang="scss" scoped>
 .pagination {
   display: flex;
   align-items: center;

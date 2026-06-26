@@ -1,3 +1,117 @@
+<script lang="ts" setup>
+import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { useRoute } from 'vue-router';
+import FavoriteButton from '../../components/FavoriteButton.vue';
+import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
+import { parseColor, rgbToHsl, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
+import {
+  computeAdjustedColor,
+  computeAdjustedShades,
+  readDetailQuery,
+  DEFAULT_GRADIENT_STOPS,
+  DEFAULT_GRADIENT_DIRECTION
+} from './colorToolsUtils';
+
+const route = useRoute();
+
+const setHeaderActions = inject('setHeaderActions', () => {});
+const clearHeaderActions = inject('clearHeaderActions', () => {});
+
+const inputColor = ref('#1677FF');
+const adjustHue = ref(215);
+const adjustSaturation = ref(100);
+const adjustLightness = ref(54);
+const diffColorB = ref('#2563EB');
+const gradientDirection = ref(DEFAULT_GRADIENT_DIRECTION);
+const gradientStops = ref(DEFAULT_GRADIENT_STOPS.map((s) => ({ ...s })));
+
+const shellQueryState = computed(() => {
+  return {
+    colorB: diffColorB.value,
+    hue: adjustHue.value,
+    sat: adjustSaturation.value,
+    light: adjustLightness.value,
+    direction: gradientDirection.value,
+    stops: gradientStops.value
+  };
+});
+
+const adjustedColor = computed(() => {
+  return computeAdjustedColor(adjustHue.value, adjustSaturation.value, adjustLightness.value);
+});
+
+const adjustedShades = computed(() => {
+  return computeAdjustedShades(adjustHue.value, adjustSaturation.value);
+});
+
+function applyRouteQuery() {
+  const q = readDetailQuery(route);
+  inputColor.value = q.color;
+  adjustHue.value = q.hue;
+  adjustSaturation.value = q.sat;
+  adjustLightness.value = q.light;
+  diffColorB.value = q.colorB;
+  gradientDirection.value = q.direction;
+  gradientStops.value = q.stops;
+}
+
+function handleColorChange(val) {
+  inputColor.value = val;
+  const rgb = parseColor(val);
+  if (rgb) {
+    const hsl = rgbToHsl(rgb);
+    adjustHue.value = hsl.h;
+    adjustSaturation.value = hsl.s;
+    adjustLightness.value = hsl.l;
+  }
+}
+
+function resetAdjust() {
+  adjustHue.value = 215;
+  adjustSaturation.value = 100;
+  adjustLightness.value = 54;
+  inputColor.value = '#1677FF';
+}
+
+function updateHeaderActions() {
+  setHeaderActions([
+    {
+      label: '重置',
+      onClick: () => { resetAdjust(); }
+    }
+  ]);
+}
+
+function getContrastColor(hex) {
+  const rgb = parseColor(hex);
+  return rgb ? gcc(rgb) : '#000000';
+}
+
+function copyValue(value, label) {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + label, 'success');
+}
+
+function copyShadeHex(hex) {
+  copyToClipboard(hex);
+  showToast(null, '已复制 ' + hex, 'success');
+}
+
+watch(() => route.query, () => {
+  applyRouteQuery();
+});
+
+applyRouteQuery();
+
+onMounted(() => {
+  updateHeaderActions();
+});
+
+onUnmounted(() => {
+  clearHeaderActions();
+});
+</script>
+
 <template>
   <div class="color-detail">
     <ColorToolsDetailShell
@@ -72,119 +186,6 @@
     </section>
   </div>
 </template>
-
-<script>
-import FavoriteButton from '../../components/FavoriteButton.vue';
-import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
-import { parseColor, rgbToHsl, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
-import {
-  computeAdjustedColor,
-  computeAdjustedShades,
-  readDetailQuery,
-  DEFAULT_GRADIENT_STOPS,
-  DEFAULT_GRADIENT_DIRECTION
-} from './colorToolsUtils';
-
-export default {
-  name: 'AdjustDetail',
-  components: { FavoriteButton, ColorToolsDetailShell },
-  inject: {
-    setHeaderActions: { default: () => {} },
-    clearHeaderActions: { default: () => {} }
-  },
-  data() {
-    return {
-      inputColor: '#1677FF',
-      adjustHue: 215,
-      adjustSaturation: 100,
-      adjustLightness: 54,
-      diffColorB: '#2563EB',
-      gradientDirection: DEFAULT_GRADIENT_DIRECTION,
-      gradientStops: DEFAULT_GRADIENT_STOPS.map((s) => ({ ...s }))
-    };
-  },
-  computed: {
-    shellQueryState() {
-      return {
-        colorB: this.diffColorB,
-        hue: this.adjustHue,
-        sat: this.adjustSaturation,
-        light: this.adjustLightness,
-        direction: this.gradientDirection,
-        stops: this.gradientStops
-      };
-    },
-    adjustedColor() {
-      return computeAdjustedColor(this.adjustHue, this.adjustSaturation, this.adjustLightness);
-    },
-    adjustedShades() {
-      return computeAdjustedShades(this.adjustHue, this.adjustSaturation);
-    }
-  },
-  watch: {
-    '$route.query'() {
-      this.applyRouteQuery();
-    }
-  },
-  created() {
-    this.applyRouteQuery();
-  },
-  mounted() {
-    this.updateHeaderActions();
-  },
-  unmounted() {
-    this.clearHeaderActions();
-  },
-  methods: {
-    applyRouteQuery() {
-      const q = readDetailQuery(this.$route);
-      this.inputColor = q.color;
-      this.adjustHue = q.hue;
-      this.adjustSaturation = q.sat;
-      this.adjustLightness = q.light;
-      this.diffColorB = q.colorB;
-      this.gradientDirection = q.direction;
-      this.gradientStops = q.stops;
-    },
-    handleColorChange(val) {
-      this.inputColor = val;
-      const rgb = parseColor(val);
-      if (rgb) {
-        const hsl = rgbToHsl(rgb);
-        this.adjustHue = hsl.h;
-        this.adjustSaturation = hsl.s;
-        this.adjustLightness = hsl.l;
-      }
-    },
-    resetAdjust() {
-      this.adjustHue = 215;
-      this.adjustSaturation = 100;
-      this.adjustLightness = 54;
-      this.inputColor = '#1677FF';
-    },
-    updateHeaderActions() {
-      this.setHeaderActions([
-        {
-          label: '重置',
-          onClick: () => { this.resetAdjust(); }
-        }
-      ]);
-    },
-    getContrastColor(hex) {
-      const rgb = parseColor(hex);
-      return rgb ? gcc(rgb) : '#000000';
-    },
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label, 'success');
-    },
-    copyShadeHex(hex) {
-      copyToClipboard(hex);
-      showToast(this, '已复制 ' + hex, 'success');
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 @use './colorStripCard.scss' as *;

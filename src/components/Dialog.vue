@@ -1,3 +1,69 @@
+<script lang="ts" setup>
+import { computed, watch, onMounted, onBeforeUnmount } from 'vue';
+
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false
+  },
+  title: {
+    type: String,
+    default: ''
+  },
+  maxWidth: {
+    type: String,
+    default: '680px'
+  },
+  confirmOnEnter: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const emit = defineEmits(['close', 'update:visible', 'confirm']);
+
+const cardStyle = computed(() => ({
+  maxWidth: props.maxWidth
+}));
+
+let keyHandler = null;
+
+const handleClose = () => {
+  emit('close');
+  emit('update:visible', false);
+};
+
+watch(() => props.visible, (val) => {
+  if (val) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+});
+
+onMounted(() => {
+  keyHandler = (e) => {
+    if (!props.visible) return;
+    if (e.key === 'Escape') {
+      handleClose();
+      return;
+    }
+    if (e.key === 'Enter' && props.confirmOnEnter) {
+      const tag = e.target?.tagName;
+      if (tag === 'TEXTAREA' || tag === 'SELECT') return;
+      e.preventDefault();
+      emit('confirm');
+    }
+  };
+  document.addEventListener('keydown', keyHandler);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', keyHandler);
+  document.body.style.overflow = '';
+});
+</script>
+
 <template>
   <div
     v-if="visible"
@@ -24,77 +90,6 @@
     </div>
   </div>
 </template>
-
-<script>
-export default {
-  name: 'Dialog',
-  props: {
-    visible: {
-      type: Boolean,
-      default: false
-    },
-    title: {
-      type: String,
-      default: ''
-    },
-    maxWidth: {
-      type: String,
-      default: '680px'
-    },
-    confirmOnEnter: {
-      type: Boolean,
-      default: false
-    }
-  },
-  emits: ['close', 'update:visible', 'confirm'],
-  computed: {
-    cardStyle() {
-      return {
-        maxWidth: this.maxWidth
-      };
-    }
-  },
-  watch: {
-    visible(val) {
-      if (val) {
-        document.body.style.overflow = 'hidden';
-      } else {
-        document.body.style.overflow = '';
-      }
-    }
-  },
-  mounted() {
-    this._keyHandler = (e) => {
-      if (!this.visible) return;
-      if (e.key === 'Escape') {
-        this.handleClose();
-        return;
-      }
-      if (e.key === 'Enter' && this.confirmOnEnter) {
-        const tag = e.target?.tagName;
-        if (tag === 'TEXTAREA' || tag === 'SELECT') return;
-        e.preventDefault();
-        this.$emit('confirm');
-      }
-    };
-    document.addEventListener('keydown', this._keyHandler);
-  },
-  beforeUnmount() {
-    document.removeEventListener('keydown', this._keyHandler);
-    document.body.style.overflow = '';
-  },
-  beforeDestroy() {
-    document.removeEventListener('keydown', this._keyHandler);
-    document.body.style.overflow = '';
-  },
-  methods: {
-    handleClose() {
-      this.$emit('close');
-      this.$emit('update:visible', false);
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .dialog-overlay {

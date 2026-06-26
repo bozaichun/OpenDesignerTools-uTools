@@ -1,3 +1,37 @@
+<script lang="ts" setup>
+import { useRoute, useRouter } from 'vue-router';
+import ColorPicker from '../../components/ColorPicker.vue';
+import Selector from '../../components/Selector.vue';
+import { DETAIL_MODULES } from './printToolsUtils';
+
+const props = defineProps({
+  currentModule: { type: String, required: true },
+  color: { type: String, required: true },
+  queryExtra: { type: Object, default: () => ({}) }
+});
+
+defineEmits(['update:color']);
+
+const route = useRoute();
+const router = useRouter();
+
+const modules = DETAIL_MODULES;
+
+function handleModuleChange(moduleId) {
+  if (moduleId === props.currentModule) return;
+  const target = DETAIL_MODULES.find(m => m.id === moduleId);
+  if (!target) return;
+  router.push({
+    path: target.route,
+    query: {
+      ...route.query,
+      color: props.color,
+      ...props.queryExtra
+    }
+  });
+}
+</script>
+
 <template>
   <Teleport to="#print-tools-header-slot">
     <Selector
@@ -18,41 +52,6 @@
     </div>
   </section>
 </template>
-
-<script>
-import ColorPicker from '../../components/ColorPicker.vue';
-import Selector from '../../components/Selector.vue';
-import { DETAIL_MODULES } from './printToolsUtils';
-
-export default {
-  name: 'PrintToolsDetailShell',
-  components: { ColorPicker, Selector },
-  props: {
-    currentModule: { type: String, required: true },
-    color: { type: String, required: true },
-    queryExtra: { type: Object, default: () => ({}) }
-  },
-  emits: ['update:color'],
-  data() {
-    return { modules: DETAIL_MODULES };
-  },
-  methods: {
-    handleModuleChange(moduleId) {
-      if (moduleId === this.currentModule) return;
-      const target = DETAIL_MODULES.find(m => m.id === moduleId);
-      if (!target) return;
-      this.$router.push({
-        path: target.route,
-        query: {
-          ...this.$route.query,
-          color: this.color,
-          ...this.queryExtra
-        }
-      });
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .detail-control-panel { margin-bottom: 20px; }

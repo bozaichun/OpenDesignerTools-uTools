@@ -1,3 +1,142 @@
+<script lang="ts" setup>
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import ColorPicker from '../../components/ColorPicker.vue';
+import FavoriteButton from '../../components/FavoriteButton.vue';
+import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
+import {
+  parseColor,
+  rgbToHex,
+  rgbToHsl,
+  copyToClipboard,
+  showToast,
+  getContrastColor as gcc
+} from '../../utils/colorUtils';
+import {
+  computeDeltaE76,
+  getDeltaEDescription,
+  getDeltaEClass,
+  readDetailQuery
+} from './colorToolsUtils';
+
+const route = useRoute();
+
+const diffColorA = ref('#1677FF');
+const diffColorB = ref('#2563EB');
+const adjustHue = ref(215);
+const adjustSaturation = ref(100);
+const adjustLightness = ref(54);
+const gradientDirection = ref('to right');
+const gradientStops = ref([]);
+
+const shellQueryState = computed(() => {
+  return {
+    colorB: diffColorB.value,
+    hue: adjustHue.value,
+    sat: adjustSaturation.value,
+    light: adjustLightness.value,
+    direction: gradientDirection.value,
+    stops: gradientStops.value
+  };
+});
+
+const colorA = computed(() => {
+  const rgb = parseColor(diffColorA.value) || { r: 0, g: 0, b: 0 };
+  return { rgb, hsl: rgbToHsl(rgb) };
+});
+
+const colorB = computed(() => {
+  const rgb = parseColor(diffColorB.value) || { r: 0, g: 0, b: 0 };
+  return { rgb, hsl: rgbToHsl(rgb) };
+});
+
+const deltaE76 = computed(() => {
+  return computeDeltaE76(diffColorA.value, diffColorB.value);
+});
+
+const rgbDiff = computed(() => {
+  return {
+    r: colorA.value.rgb.r - colorB.value.rgb.r,
+    g: colorA.value.rgb.g - colorB.value.rgb.g,
+    b: colorA.value.rgb.b - colorB.value.rgb.b
+  };
+});
+
+const hslDiff = computed(() => {
+  return {
+    h: Math.abs(colorA.value.hsl.h - colorB.value.hsl.h),
+    s: Math.abs(colorA.value.hsl.s - colorB.value.hsl.s),
+    l: Math.abs(colorA.value.hsl.l - colorB.value.hsl.l)
+  };
+});
+
+const brightnessDiff = computed(() => {
+  const brightnessA = (colorA.value.rgb.r * 299 + colorA.value.rgb.g * 587 + colorA.value.rgb.b * 114) / 1000;
+  const brightnessB = (colorB.value.rgb.r * 299 + colorB.value.rgb.g * 587 + colorB.value.rgb.b * 114) / 1000;
+  return Math.abs(brightnessA - brightnessB);
+});
+
+const diffMixedStyle = computed(() => {
+  const r = Math.round((colorA.value.rgb.r + colorB.value.rgb.r) / 2);
+  const g = Math.round((colorA.value.rgb.g + colorB.value.rgb.g) / 2);
+  const b = Math.round((colorA.value.rgb.b + colorB.value.rgb.b) / 2);
+  return { background: rgbToHex({ r, g, b }).toUpperCase() };
+});
+
+const diffMixedHex = computed(() => {
+  const r = Math.round((colorA.value.rgb.r + colorB.value.rgb.r) / 2);
+  const g = Math.round((colorA.value.rgb.g + colorB.value.rgb.g) / 2);
+  const b = Math.round((colorA.value.rgb.b + colorB.value.rgb.b) / 2);
+  return rgbToHex({ r, g, b }).toUpperCase();
+});
+
+const transitionColors = computed(() => {
+  const colors = [];
+  for (let i = 0; i < 10; i++) {
+    const t = i / 9;
+    const r = Math.round(colorA.value.rgb.r + (colorB.value.rgb.r - colorA.value.rgb.r) * t);
+    const g = Math.round(colorA.value.rgb.g + (colorB.value.rgb.g - colorA.value.rgb.g) * t);
+    const b = Math.round(colorA.value.rgb.b + (colorB.value.rgb.b - colorA.value.rgb.b) * t);
+    colors.push(rgbToHex({ r, g, b }).toUpperCase());
+  }
+  return colors;
+});
+
+function applyRouteQuery() {
+  const q = readDetailQuery(route);
+  diffColorA.value = q.color;
+  diffColorB.value = q.colorB;
+  adjustHue.value = q.hue;
+  adjustSaturation.value = q.sat;
+  adjustLightness.value = q.light;
+  gradientDirection.value = q.direction;
+  gradientStops.value = q.stops;
+}
+
+function getContrastColor(hex) {
+  const rgb = parseColor(hex);
+  return rgb ? gcc(rgb) : '#000000';
+}
+
+function copyValue(value, label) {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + label, 'success');
+}
+
+function copyHexValue(value) {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + value, 'success');
+}
+
+watch(() => route.query, () => {
+  applyRouteQuery();
+});
+
+onMounted(() => {
+  applyRouteQuery();
+});
+</script>
+
 <template>
   <div class="color-detail">
     <ColorToolsDetailShell
@@ -104,141 +243,6 @@
     </section>
   </div>
 </template>
-
-<script>
-import ColorPicker from '../../components/ColorPicker.vue';
-import FavoriteButton from '../../components/FavoriteButton.vue';
-import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
-import {
-  parseColor,
-  rgbToHex,
-  rgbToHsl,
-  copyToClipboard,
-  showToast,
-  getContrastColor as gcc
-} from '../../utils/colorUtils';
-import {
-  computeDeltaE76,
-  getDeltaEDescription,
-  getDeltaEClass,
-  readDetailQuery
-} from './colorToolsUtils';
-
-export default {
-  name: 'DifferenceDetail',
-  components: { ColorPicker, FavoriteButton, ColorToolsDetailShell },
-  data() {
-    return {
-      diffColorA: '#1677FF',
-      diffColorB: '#2563EB',
-      adjustHue: 215,
-      adjustSaturation: 100,
-      adjustLightness: 54,
-      gradientDirection: 'to right',
-      gradientStops: []
-    };
-  },
-  computed: {
-    shellQueryState() {
-      return {
-        colorB: this.diffColorB,
-        hue: this.adjustHue,
-        sat: this.adjustSaturation,
-        light: this.adjustLightness,
-        direction: this.gradientDirection,
-        stops: this.gradientStops
-      };
-    },
-    colorA() {
-      const rgb = parseColor(this.diffColorA) || { r: 0, g: 0, b: 0 };
-      return { rgb, hsl: rgbToHsl(rgb) };
-    },
-    colorB() {
-      const rgb = parseColor(this.diffColorB) || { r: 0, g: 0, b: 0 };
-      return { rgb, hsl: rgbToHsl(rgb) };
-    },
-    deltaE76() {
-      return computeDeltaE76(this.diffColorA, this.diffColorB);
-    },
-    rgbDiff() {
-      return {
-        r: this.colorA.rgb.r - this.colorB.rgb.r,
-        g: this.colorA.rgb.g - this.colorB.rgb.g,
-        b: this.colorA.rgb.b - this.colorB.rgb.b
-      };
-    },
-    hslDiff() {
-      return {
-        h: Math.abs(this.colorA.hsl.h - this.colorB.hsl.h),
-        s: Math.abs(this.colorA.hsl.s - this.colorB.hsl.s),
-        l: Math.abs(this.colorA.hsl.l - this.colorB.hsl.l)
-      };
-    },
-    brightnessDiff() {
-      const brightnessA = (this.colorA.rgb.r * 299 + this.colorA.rgb.g * 587 + this.colorA.rgb.b * 114) / 1000;
-      const brightnessB = (this.colorB.rgb.r * 299 + this.colorB.rgb.g * 587 + this.colorB.rgb.b * 114) / 1000;
-      return Math.abs(brightnessA - brightnessB);
-    },
-    diffMixedStyle() {
-      const r = Math.round((this.colorA.rgb.r + this.colorB.rgb.r) / 2);
-      const g = Math.round((this.colorA.rgb.g + this.colorB.rgb.g) / 2);
-      const b = Math.round((this.colorA.rgb.b + this.colorB.rgb.b) / 2);
-      return { background: rgbToHex({ r, g, b }).toUpperCase() };
-    },
-    diffMixedHex() {
-      const r = Math.round((this.colorA.rgb.r + this.colorB.rgb.r) / 2);
-      const g = Math.round((this.colorA.rgb.g + this.colorB.rgb.g) / 2);
-      const b = Math.round((this.colorA.rgb.b + this.colorB.rgb.b) / 2);
-      return rgbToHex({ r, g, b }).toUpperCase();
-    },
-    transitionColors() {
-      const colors = [];
-      for (let i = 0; i < 10; i++) {
-        const t = i / 9;
-        const r = Math.round(this.colorA.rgb.r + (this.colorB.rgb.r - this.colorA.rgb.r) * t);
-        const g = Math.round(this.colorA.rgb.g + (this.colorB.rgb.g - this.colorA.rgb.g) * t);
-        const b = Math.round(this.colorA.rgb.b + (this.colorB.rgb.b - this.colorA.rgb.b) * t);
-        colors.push(rgbToHex({ r, g, b }).toUpperCase());
-      }
-      return colors;
-    }
-  },
-  watch: {
-    '$route.query'() {
-      this.applyRouteQuery();
-    }
-  },
-  mounted() {
-    this.applyRouteQuery();
-  },
-  methods: {
-    applyRouteQuery() {
-      const q = readDetailQuery(this.$route);
-      this.diffColorA = q.color;
-      this.diffColorB = q.colorB;
-      this.adjustHue = q.hue;
-      this.adjustSaturation = q.sat;
-      this.adjustLightness = q.light;
-      this.gradientDirection = q.direction;
-      this.gradientStops = q.stops;
-    },
-    getDeltaEClass,
-    getDeltaEDescription,
-    getContrastColor(hex) {
-      const rgb = parseColor(hex);
-      return rgb ? gcc(rgb) : '#000000';
-    },
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label, 'success');
-    },
-    copyHexValue(value) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + value, 'success');
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 @use './colorStripCard.scss' as *;

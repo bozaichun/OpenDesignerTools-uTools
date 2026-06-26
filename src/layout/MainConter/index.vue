@@ -1,18 +1,13 @@
+<script lang="ts" setup>
+import BackToTop from '../../components/BackToTop.vue';
+</script>
+
 <template>
   <main class="main-content">
     <slot></slot>
     <BackToTop />
   </main>
 </template>
-
-<script>
-import BackToTop from '../../components/BackToTop.vue';
-
-export default {
-  name: 'MainContent',
-  components: { BackToTop }
-};
-</script>
 
 <style lang="scss" scoped>
 .main-content {

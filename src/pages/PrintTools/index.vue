@@ -1,3 +1,76 @@
+<script lang="ts" setup>
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import Banner from '../../components/Banner.vue';
+import ColorPicker from '../../components/ColorPicker.vue';
+import Selector from '../../components/Selector.vue';
+import HalftoneChartDialog from './HalftoneChartDialog.vue';
+import {
+  DETAIL_MODULES,
+  computeCmykResult,
+  computePantoneResults,
+  computeOverprintMixed,
+  computeHalftoneLevels,
+} from './printToolsUtils';
+
+const router = useRouter();
+
+const inputColor = ref('#1677FF');
+const cmykProfile = ref('srgb');
+const pantonePaperType = ref('coated');
+const overprintColorB = ref('#FFFFFF');
+const overprintOpacity = ref(70);
+const halftoneChartVisible = ref(false);
+
+const cmykResult = computed(() => {
+  return computeCmykResult(inputColor.value);
+});
+
+const pantoneResults = computed(() => {
+  return computePantoneResults(inputColor.value, pantonePaperType.value);
+});
+
+const topPantone = computed(() => {
+  return pantoneResults.value.length > 0 ? pantoneResults.value[0] : null;
+});
+
+const overprintMixedHex = computed(() => {
+  return computeOverprintMixed(
+    inputColor.value,
+    overprintColorB.value,
+    overprintOpacity.value,
+  ).hex;
+});
+
+const halftoneLevels = computed(() => {
+  return computeHalftoneLevels(inputColor.value);
+});
+
+const halftoneMidLevel = computed(() => {
+  return halftoneLevels.value.find((l) => l.percent === 50) || null;
+});
+
+function buildQuery(extra = {}) {
+  return {
+    color: inputColor.value,
+    profile: cmykProfile.value,
+    paper: pantonePaperType.value,
+    colorB: overprintColorB.value,
+    opacity: String(overprintOpacity.value),
+    ...extra,
+  };
+}
+
+function goToDetail(moduleId, extra = {}) {
+  const target = DETAIL_MODULES.find((m) => m.id === moduleId);
+  if (!target) return;
+  router.push({
+    path: target.route,
+    query: buildQuery(extra),
+  });
+}
+</script>
+
 <template>
   <div class="module-printtools">
     <Banner
@@ -97,79 +170,6 @@
     />
   </div>
 </template>
-
-<script>
-import Banner from "../../components/Banner.vue";
-import ColorPicker from "../../components/ColorPicker.vue";
-import Selector from "../../components/Selector.vue";
-import HalftoneChartDialog from "./HalftoneChartDialog.vue";
-import {
-  DETAIL_MODULES,
-  computeCmykResult,
-  computePantoneResults,
-  computeOverprintMixed,
-  computeHalftoneLevels,
-} from "./printToolsUtils";
-
-export default {
-  name: "PrintTools",
-  components: { Banner, ColorPicker, Selector, HalftoneChartDialog },
-  data() {
-    return {
-      inputColor: "#1677FF",
-      cmykProfile: "srgb",
-      pantonePaperType: "coated",
-      overprintColorB: "#FFFFFF",
-      overprintOpacity: 70,
-      halftoneChartVisible: false,
-    };
-  },
-  computed: {
-    cmykResult() {
-      return computeCmykResult(this.inputColor);
-    },
-    pantoneResults() {
-      return computePantoneResults(this.inputColor, this.pantonePaperType);
-    },
-    topPantone() {
-      return this.pantoneResults.length > 0 ? this.pantoneResults[0] : null;
-    },
-    overprintMixedHex() {
-      return computeOverprintMixed(
-        this.inputColor,
-        this.overprintColorB,
-        this.overprintOpacity,
-      ).hex;
-    },
-    halftoneLevels() {
-      return computeHalftoneLevels(this.inputColor);
-    },
-    halftoneMidLevel() {
-      return this.halftoneLevels.find((l) => l.percent === 50) || null;
-    },
-  },
-  methods: {
-    buildQuery(extra = {}) {
-      return {
-        color: this.inputColor,
-        profile: this.cmykProfile,
-        paper: this.pantonePaperType,
-        colorB: this.overprintColorB,
-        opacity: String(this.overprintOpacity),
-        ...extra,
-      };
-    },
-    goToDetail(moduleId, extra = {}) {
-      const target = DETAIL_MODULES.find((m) => m.id === moduleId);
-      if (!target) return;
-      this.$router.push({
-        path: target.route,
-        query: this.buildQuery(extra),
-      });
-    },
-  },
-};
-</script>
 
 <style lang="scss" scoped>
 .module-printtools {

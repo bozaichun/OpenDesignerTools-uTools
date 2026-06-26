@@ -1,51 +1,50 @@
+<script lang="ts" setup>
+import { computed, watch } from 'vue';
+
+const props = defineProps({
+  message: {
+    type: String,
+    default: ''
+  },
+  type: {
+    type: String,
+    default: 'success',
+    validator: (v) => ['success', 'error', 'info'].includes(v)
+  },
+  duration: {
+    type: Number,
+    default: 2000
+  },
+  visible: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const emit = defineEmits(['update:visible', 'close']);
+
+const iconClass = computed(() => {
+  if (props.type === 'success') return 'icon-Success';
+  if (props.type === 'error') return 'icon-Failure';
+  return 'icon-Query';
+});
+
+watch(() => props.visible, (val) => {
+  if (val && props.duration > 0) {
+    setTimeout(() => {
+      emit('update:visible', false);
+      emit('close');
+    }, props.duration);
+  }
+});
+</script>
+
 <template>
   <div v-if="visible" class="toast" :class="type">
     <span class="toast-icon iconfont" :class="iconClass"></span>
     <span class="toast-text">{{ message }}</span>
   </div>
 </template>
-
-<script>
-export default {
-  name: 'Toast',
-  props: {
-    message: {
-      type: String,
-      default: ''
-    },
-    type: {
-      type: String,
-      default: 'success',
-      validator: (v) => ['success', 'error', 'info'].includes(v)
-    },
-    duration: {
-      type: Number,
-      default: 2000
-    },
-    visible: {
-      type: Boolean,
-      default: false
-    }
-  },
-  computed: {
-    iconClass() {
-      if (this.type === 'success') return 'icon-Success';
-      if (this.type === 'error') return 'icon-Failure';
-      return 'icon-Query';
-    }
-  },
-  watch: {
-    visible(val) {
-      if (val && this.duration > 0) {
-        setTimeout(() => {
-          this.$emit('update:visible', false);
-          this.$emit('close');
-        }, this.duration);
-      }
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .toast-container {

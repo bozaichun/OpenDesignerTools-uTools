@@ -1,3 +1,110 @@
+<script lang="ts" setup>
+import { ref, watch, onMounted, nextTick } from 'vue';
+
+const MAGNIFIER_SIZE = 140;
+const MAGNIFIER_ZOOM = 8;
+
+const props = defineProps({
+  imageData: {
+    type: Object,
+    required: true
+  },
+  naturalX: {
+    type: Number,
+    default: 0
+  },
+  naturalY: {
+    type: Number,
+    default: 0
+  },
+  hexColor: {
+    type: String,
+    default: '#000000'
+  }
+});
+
+const magnifierCanvas = ref(null);
+
+const render = () => {
+  const magCanvas = magnifierCanvas.value;
+  if (!magCanvas || !props.imageData) return;
+  if (magCanvas.width !== MAGNIFIER_SIZE) {
+    magCanvas.width = MAGNIFIER_SIZE;
+    magCanvas.height = MAGNIFIER_SIZE;
+  }
+  const magCtx = magCanvas.getContext('2d');
+  const halfSrc = Math.floor((MAGNIFIER_SIZE / MAGNIFIER_ZOOM) / 2);
+
+  magCtx.clearRect(0, 0, MAGNIFIER_SIZE, MAGNIFIER_SIZE);
+
+  const srcX = Math.max(0, Math.min(props.imageData.width - halfSrc * 2, props.naturalX - halfSrc));
+  const srcY = Math.max(0, Math.min(props.imageData.height - halfSrc * 2, props.naturalY - halfSrc));
+  const srcSize = halfSrc * 2;
+
+  const srcCanvas = document.createElement('canvas');
+  srcCanvas.width = srcSize;
+  srcCanvas.height = srcSize;
+  const srcCtx = srcCanvas.getContext('2d');
+  const srcImageData = srcCtx.createImageData(srcSize, srcSize);
+
+  for (let y = 0; y < srcSize; y++) {
+    for (let x = 0; x < srcSize; x++) {
+      const srcIdx = ((srcY + y) * props.imageData.width + (srcX + x)) * 4;
+      const dstIdx = (y * srcSize + x) * 4;
+      srcImageData.data[dstIdx] = props.imageData.data[srcIdx];
+      srcImageData.data[dstIdx + 1] = props.imageData.data[srcIdx + 1];
+      srcImageData.data[dstIdx + 2] = props.imageData.data[srcIdx + 2];
+      srcImageData.data[dstIdx + 3] = props.imageData.data[srcIdx + 3];
+    }
+  }
+  srcCtx.putImageData(srcImageData, 0, 0);
+
+  magCtx.imageSmoothingEnabled = false;
+  magCtx.drawImage(srcCanvas, 0, 0, srcSize, srcSize, 0, 0, MAGNIFIER_SIZE, MAGNIFIER_SIZE);
+
+  const centerOffsetX = (props.naturalX - srcX) / srcSize * MAGNIFIER_SIZE;
+  const centerOffsetY = (props.naturalY - srcY) / srcSize * MAGNIFIER_SIZE;
+  const cx = Math.floor(centerOffsetX) + 0.5;
+  const cy = Math.floor(centerOffsetY) + 0.5;
+
+  magCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+  magCtx.lineWidth = 2;
+  magCtx.beginPath();
+  magCtx.moveTo(cx - 10, cy);
+  magCtx.lineTo(cx + 10, cy);
+  magCtx.moveTo(cx, cy - 10);
+  magCtx.lineTo(cx, cy + 10);
+  magCtx.stroke();
+
+  magCtx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+  magCtx.lineWidth = 1;
+  magCtx.beginPath();
+  magCtx.moveTo(cx - 10, cy);
+  magCtx.lineTo(cx + 10, cy);
+  magCtx.moveTo(cx, cy - 10);
+  magCtx.lineTo(cx, cy + 10);
+  magCtx.stroke();
+};
+
+watch(() => props.naturalX, () => {
+  render();
+});
+
+watch(() => props.naturalY, () => {
+  render();
+});
+
+watch(() => props.imageData, () => {
+  render();
+}, { deep: true });
+
+onMounted(() => {
+  nextTick(() => {
+    render();
+  });
+});
+</script>
+
 <template>
   <div class="magnifier">
     <div class="magnifier-title">放大镜预览</div>
@@ -11,114 +118,6 @@
     </div>
   </div>
 </template>
-
-<script>
-const MAGNIFIER_SIZE = 140;
-const MAGNIFIER_ZOOM = 8;
-
-export default {
-  name: 'Magnifier',
-  props: {
-    imageData: {
-      type: Object,
-      required: true
-    },
-    naturalX: {
-      type: Number,
-      default: 0
-    },
-    naturalY: {
-      type: Number,
-      default: 0
-    },
-    hexColor: {
-      type: String,
-      default: '#000000'
-    }
-  },
-  watch: {
-    naturalX() {
-      this.render();
-    },
-    naturalY() {
-      this.render();
-    },
-    imageData: {
-      deep: true,
-      handler() {
-        this.render();
-      }
-    }
-  },
-  mounted() {
-    this.$nextTick(() => {
-      this.render();
-    });
-  },
-  methods: {
-    render() {
-      const magCanvas = this.$refs.magnifierCanvas;
-      if (!magCanvas || !this.imageData) return;
-      if (magCanvas.width !== MAGNIFIER_SIZE) {
-        magCanvas.width = MAGNIFIER_SIZE;
-        magCanvas.height = MAGNIFIER_SIZE;
-      }
-      const magCtx = magCanvas.getContext('2d');
-      const halfSrc = Math.floor((MAGNIFIER_SIZE / MAGNIFIER_ZOOM) / 2);
-
-      magCtx.clearRect(0, 0, MAGNIFIER_SIZE, MAGNIFIER_SIZE);
-
-      const srcX = Math.max(0, Math.min(this.imageData.width - halfSrc * 2, this.naturalX - halfSrc));
-      const srcY = Math.max(0, Math.min(this.imageData.height - halfSrc * 2, this.naturalY - halfSrc));
-      const srcSize = halfSrc * 2;
-
-      const srcCanvas = document.createElement('canvas');
-      srcCanvas.width = srcSize;
-      srcCanvas.height = srcSize;
-      const srcCtx = srcCanvas.getContext('2d');
-      const srcImageData = srcCtx.createImageData(srcSize, srcSize);
-
-      for (let y = 0; y < srcSize; y++) {
-        for (let x = 0; x < srcSize; x++) {
-          const srcIdx = ((srcY + y) * this.imageData.width + (srcX + x)) * 4;
-          const dstIdx = (y * srcSize + x) * 4;
-          srcImageData.data[dstIdx] = this.imageData.data[srcIdx];
-          srcImageData.data[dstIdx + 1] = this.imageData.data[srcIdx + 1];
-          srcImageData.data[dstIdx + 2] = this.imageData.data[srcIdx + 2];
-          srcImageData.data[dstIdx + 3] = this.imageData.data[srcIdx + 3];
-        }
-      }
-      srcCtx.putImageData(srcImageData, 0, 0);
-
-      magCtx.imageSmoothingEnabled = false;
-      magCtx.drawImage(srcCanvas, 0, 0, srcSize, srcSize, 0, 0, MAGNIFIER_SIZE, MAGNIFIER_SIZE);
-
-      const centerOffsetX = (this.naturalX - srcX) / srcSize * MAGNIFIER_SIZE;
-      const centerOffsetY = (this.naturalY - srcY) / srcSize * MAGNIFIER_SIZE;
-      const cx = Math.floor(centerOffsetX) + 0.5;
-      const cy = Math.floor(centerOffsetY) + 0.5;
-
-      magCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-      magCtx.lineWidth = 2;
-      magCtx.beginPath();
-      magCtx.moveTo(cx - 10, cy);
-      magCtx.lineTo(cx + 10, cy);
-      magCtx.moveTo(cx, cy - 10);
-      magCtx.lineTo(cx, cy + 10);
-      magCtx.stroke();
-
-      magCtx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
-      magCtx.lineWidth = 1;
-      magCtx.beginPath();
-      magCtx.moveTo(cx - 10, cy);
-      magCtx.lineTo(cx + 10, cy);
-      magCtx.moveTo(cx, cy - 10);
-      magCtx.lineTo(cx, cy + 10);
-      magCtx.stroke();
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .magnifier {

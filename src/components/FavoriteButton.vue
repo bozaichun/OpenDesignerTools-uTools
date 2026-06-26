@@ -1,3 +1,73 @@
+<script lang="ts" setup>
+import { ref, watch, onMounted, onUnmounted, getCurrentInstance } from 'vue';
+import {
+  isFavorite,
+  toggleFavorite,
+  normalizeFavoriteHex
+} from '../utils/favoriteStorage';
+import { showToast } from '../utils/colorUtils';
+
+const props = defineProps({
+  hex: {
+    type: String,
+    required: true
+  },
+  name: {
+    type: String,
+    default: ''
+  }
+});
+
+const emit = defineEmits(['favorited', 'unfavorited']);
+
+const instance = getCurrentInstance();
+const favorited = ref(false);
+
+const syncState = () => {
+  favorited.value = isFavorite(props.hex);
+};
+
+watch(() => props.hex, () => {
+  syncState();
+}, {
+  immediate: true
+});
+
+let handleFavoritesChanged;
+
+onMounted(() => {
+  handleFavoritesChanged = () => syncState();
+  window.addEventListener('color-favorites-changed', handleFavoritesChanged);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('color-favorites-changed', handleFavoritesChanged);
+});
+
+const handleToggle = () => {
+  const wasFavorited = favorited.value;
+  const result = toggleFavorite({
+    hex: props.hex,
+    name: props.name || props.hex
+  });
+  if (!result.ok) {
+    showToast(instance?.proxy, result.message || '操作失败', 'error');
+    return;
+  }
+  favorited.value = !wasFavorited;
+  const displayHex = normalizeFavoriteHex(props.hex) || props.hex;
+  showToast(
+    instance?.proxy,
+    wasFavorited ? '已取消收藏' : `已将 “${displayHex}” 加入我的收藏`,
+    'success'
+  );
+  emit(wasFavorited ? 'unfavorited' : 'favorited', {
+    hex: props.hex,
+    name: props.name || props.hex
+  });
+};
+</script>
+
 <template>
   <button
     class="favorite-btn"
@@ -9,77 +79,7 @@
   </button>
 </template>
 
-<script>
-import {
-  isFavorite,
-  toggleFavorite,
-  normalizeFavoriteHex
-} from '../utils/favoriteStorage';
-import { showToast } from '../utils/colorUtils';
-
-export default {
-  name: 'FavoriteButton',
-  props: {
-    hex: {
-      type: String,
-      required: true
-    },
-    name: {
-      type: String,
-      default: ''
-    }
-  },
-  data() {
-    return {
-      favorited: false
-    };
-  },
-  watch: {
-    hex: {
-      immediate: true,
-      handler() {
-        this.syncState();
-      }
-    }
-  },
-  mounted() {
-    this.handleFavoritesChanged = () => this.syncState();
-    window.addEventListener('color-favorites-changed', this.handleFavoritesChanged);
-  },
-  unmounted() {
-    window.removeEventListener('color-favorites-changed', this.handleFavoritesChanged);
-  },
-  methods: {
-    syncState() {
-      this.favorited = isFavorite(this.hex);
-    },
-    handleToggle() {
-      const wasFavorited = this.favorited;
-      const result = toggleFavorite({
-        hex: this.hex,
-        name: this.name || this.hex
-      });
-      if (!result.ok) {
-        showToast(this, result.message || '操作失败', 'error');
-        return;
-      }
-      this.favorited = !wasFavorited;
-      const displayHex = normalizeFavoriteHex(this.hex) || this.hex;
-      showToast(
-        this,
-        wasFavorited ? '已取消收藏' : `已将 “${displayHex}” 加入我的收藏`,
-        'success'
-      );
-      this.$emit(wasFavorited ? 'unfavorited' : 'favorited', {
-        hex: this.hex,
-        name: this.name || this.hex
-      });
-    }
-  }
-};
-</script>
-
-<style scoped>
+<style lang="scss" scoped>
 .favorite-btn {
   width: 22px;
   height: 22px;

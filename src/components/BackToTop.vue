@@ -1,3 +1,110 @@
+<script lang="ts" setup>
+import { ref, watch, onMounted, onBeforeUnmount, nextTick, getCurrentInstance } from 'vue';
+import { useRoute } from 'vue-router';
+
+const SCROLL_SELECTOR = '.content-body';
+
+const props = defineProps({
+  threshold: {
+    type: Number,
+    default: 200
+  }
+});
+
+const instance = getCurrentInstance();
+const route = useRoute();
+const visible = ref(false);
+const scrollTarget = ref(null);
+
+const isScrollable = (el) => {
+  if (!el || el.nodeType !== 1) return false;
+  const style = window.getComputedStyle(el);
+  const overflowY = (style.overflowY || style.overflow || '').toLowerCase();
+  return overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay';
+};
+
+const getScrollTarget = () => {
+  const contentBody = document.querySelector(SCROLL_SELECTOR);
+  if (contentBody && isScrollable(contentBody)) {
+    return contentBody;
+  }
+
+  let el = instance?.proxy?.$el && instance.proxy.$el.parentElement;
+  while (el && el.nodeType === 1) {
+    if (isScrollable(el)) return el;
+    el = el.parentElement;
+  }
+
+  return window;
+};
+
+const getScrollTop = () => {
+  const target = scrollTarget.value || getScrollTarget();
+  if (target === window) {
+    return window.pageYOffset || document.documentElement.scrollTop || 0;
+  }
+  return target ? target.scrollTop : 0;
+};
+
+const handleScroll = () => {
+  visible.value = getScrollTop() > props.threshold;
+};
+
+const unbindScrollTarget = () => {
+  const target = scrollTarget.value;
+  if (!target) return;
+  if (target === window) {
+    window.removeEventListener('scroll', handleScroll);
+  } else {
+    target.removeEventListener('scroll', handleScroll);
+  }
+};
+
+const bindScrollTarget = () => {
+  unbindScrollTarget();
+  scrollTarget.value = getScrollTarget();
+  const target = scrollTarget.value;
+  if (target === window) {
+    window.addEventListener('scroll', handleScroll, { passive: true });
+  } else if (target) {
+    target.addEventListener('scroll', handleScroll, { passive: true });
+  }
+  handleScroll();
+};
+
+const scrollToTop = () => {
+  const target = getScrollTarget();
+  if (!target) return;
+
+  if (target === window) {
+    window.scrollTo(0, 0);
+  } else {
+    target.scrollTop = 0;
+  }
+
+  scrollTarget.value = target;
+  nextTick(() => {
+    handleScroll();
+  });
+};
+
+watch(() => route.fullPath, () => {
+  nextTick(() => {
+    bindScrollTarget();
+  });
+});
+
+onMounted(() => {
+  nextTick(() => {
+    bindScrollTarget();
+  });
+});
+
+onBeforeUnmount(() => {
+  unbindScrollTarget();
+});
+</script>
+
 <template>
   <transition name="back-to-top-fade">
     <button
@@ -11,111 +118,6 @@
     </button>
   </transition>
 </template>
-
-<script>
-const SCROLL_SELECTOR = '.content-body';
-
-export default {
-  name: 'BackToTop',
-  props: {
-    threshold: {
-      type: Number,
-      default: 200
-    }
-  },
-  data() {
-    return {
-      visible: false,
-      scrollTarget: null
-    };
-  },
-  watch: {
-    '$route.fullPath'() {
-      this.$nextTick(() => {
-        this.bindScrollTarget();
-      });
-    }
-  },
-  mounted() {
-    this.$nextTick(() => {
-      this.bindScrollTarget();
-    });
-  },
-  beforeUnmount() {
-    this.unbindScrollTarget();
-  },
-  beforeDestroy() {
-    this.unbindScrollTarget();
-  },
-  methods: {
-    isScrollable(el) {
-      if (!el || el.nodeType !== 1) return false;
-      const style = window.getComputedStyle(el);
-      const overflowY = (style.overflowY || style.overflow || '').toLowerCase();
-      return overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay';
-    },
-    getScrollTarget() {
-      const contentBody = document.querySelector(SCROLL_SELECTOR);
-      if (contentBody && this.isScrollable(contentBody)) {
-        return contentBody;
-      }
-
-      let el = this.$el && this.$el.parentElement;
-      while (el && el.nodeType === 1) {
-        if (this.isScrollable(el)) return el;
-        el = el.parentElement;
-      }
-
-      return window;
-    },
-    unbindScrollTarget() {
-      const target = this.scrollTarget;
-      if (!target) return;
-      if (target === window) {
-        window.removeEventListener('scroll', this.handleScroll);
-      } else {
-        target.removeEventListener('scroll', this.handleScroll);
-      }
-    },
-    bindScrollTarget() {
-      this.unbindScrollTarget();
-      this.scrollTarget = this.getScrollTarget();
-      const target = this.scrollTarget;
-      if (target === window) {
-        window.addEventListener('scroll', this.handleScroll, { passive: true });
-      } else if (target) {
-        target.addEventListener('scroll', this.handleScroll, { passive: true });
-      }
-      this.handleScroll();
-    },
-    getScrollTop() {
-      const target = this.scrollTarget || this.getScrollTarget();
-      if (target === window) {
-        return window.pageYOffset || document.documentElement.scrollTop || 0;
-      }
-      return target ? target.scrollTop : 0;
-    },
-    handleScroll() {
-      this.visible = this.getScrollTop() > this.threshold;
-    },
-    scrollToTop() {
-      const target = this.getScrollTarget();
-      if (!target) return;
-
-      if (target === window) {
-        window.scrollTo(0, 0);
-      } else {
-        target.scrollTop = 0;
-      }
-
-      this.scrollTarget = target;
-      this.$nextTick(() => {
-        this.handleScroll();
-      });
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .back-to-top-btn {

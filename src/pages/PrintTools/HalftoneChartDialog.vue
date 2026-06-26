@@ -1,3 +1,30 @@
+<script lang="ts" setup>
+import { computed } from 'vue';
+import Dialog from '../../components/Dialog.vue';
+import { copyToClipboard, showToast } from '../../utils/colorUtils';
+
+const props = defineProps({
+  visible: { type: Boolean, default: false },
+  levels: { type: Array, default: () => [] }
+});
+
+const emit = defineEmits(['update:visible']);
+
+const dialogVisible = computed({
+  get() {
+    return props.visible;
+  },
+  set(val) {
+    emit('update:visible', val);
+  }
+});
+
+function handleCopy(value, percent) {
+  copyToClipboard(value);
+  showToast(null, `已复制 ${percent}% 网点色: ${value}`, 'success');
+}
+</script>
+
 <template>
   <Dialog v-model:visible="dialogVisible" title="网点分布图" max-width="560px">
     <div class="halftone-chart">
@@ -24,37 +51,6 @@
     </div>
   </Dialog>
 </template>
-
-<script>
-import Dialog from '../../components/Dialog.vue';
-import { copyToClipboard, showToast } from '../../utils/colorUtils';
-
-export default {
-  name: 'HalftoneChartDialog',
-  components: { Dialog },
-  props: {
-    visible: { type: Boolean, default: false },
-    levels: { type: Array, default: () => [] }
-  },
-  emits: ['update:visible'],
-  computed: {
-    dialogVisible: {
-      get() {
-        return this.visible;
-      },
-      set(val) {
-        this.$emit('update:visible', val);
-      }
-    }
-  },
-  methods: {
-    handleCopy(value, percent) {
-      copyToClipboard(value);
-      showToast(this, `已复制 ${percent}% 网点色: ${value}`, 'success');
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .halftone-chart { display: flex; flex-direction: column; gap: 10px; }

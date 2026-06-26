@@ -1,3 +1,108 @@
+<script lang="ts" setup>
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import Dialog from '../../components/Dialog.vue';
+import Input from '../../components/Input.vue';
+import Selector from '../../components/Selector.vue';
+import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
+import Banner from '../../components/Banner.vue';
+import {
+  getAllFavorites,
+  removeFavorite
+} from '../../utils/favoriteStorage';
+import { loadPalettes, savePalettes } from '../PaletteManager/paletteStorage.js';
+import { copyToClipboard, showToast, parseColor, getContrastColor as gcc } from '../../utils/colorUtils';
+
+const router = useRouter();
+
+const favorites = ref([]);
+const modalVisible = ref(false);
+const modalColor = ref({ name: '', hex: '' });
+const paletteDialogVisible = ref(false);
+const paletteGroups = ref([]);
+const selectedGroupId = ref('');
+const paletteColorName = ref('');
+const paletteTargetColor = ref(null);
+
+function loadFavorites() {
+  favorites.value = getAllFavorites();
+}
+
+function openColorModal(item) {
+  modalColor.value = { name: item.name, hex: item.hex };
+  modalVisible.value = true;
+}
+
+function copyHex(hex) {
+  copyToClipboard(hex);
+  showToast(null, '已复制 ' + hex, 'success');
+}
+
+function getContrastColor(hex) {
+  const rgb = parseColor(hex);
+  if (!rgb) return '#000000';
+  return gcc(rgb);
+}
+
+function handleUnfavorite(item) {
+  const result = removeFavorite(item.hex);
+  if (!result.ok) {
+    showToast(null, result.message || '取消收藏失败', 'error');
+    return;
+  }
+  showToast(null, '已取消收藏', 'success');
+  loadFavorites();
+}
+
+function openAddToPaletteDialog(item) {
+  paletteGroups.value = loadPalettes();
+  paletteTargetColor.value = item;
+  paletteColorName.value = item.hex;
+  selectedGroupId.value = paletteGroups.value[0]?.id || '';
+  paletteDialogVisible.value = true;
+}
+
+function confirmAddToPalette() {
+  if (!paletteTargetColor.value || !selectedGroupId.value) {
+    showToast(null, '请选择色板分组', 'error');
+    return;
+  }
+  const groups = loadPalettes();
+  const group = groups.find((g) => g.id === selectedGroupId.value);
+  if (!group) {
+    showToast(null, '分组不存在', 'error');
+    return;
+  }
+  const name = paletteColorName.value.trim() || paletteTargetColor.value.hex;
+  group.colors.push({
+    name,
+    color: paletteTargetColor.value.hex,
+    note: '来自我的收藏',
+    colorType: 'auxiliary'
+  });
+  savePalettes(groups);
+  paletteDialogVisible.value = false;
+  showToast(null, '已添加到「' + group.name + '」', 'success');
+}
+
+function goToPaletteManager() {
+  paletteDialogVisible.value = false;
+  router.push('/PaletteManager');
+}
+
+let handleFavoritesChanged = null;
+
+onMounted(() => {
+  loadFavorites();
+  handleFavoritesChanged = () => loadFavorites();
+  window.addEventListener('color-favorites-changed', handleFavoritesChanged);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('color-favorites-changed', handleFavoritesChanged);
+});
+</script>
+
 <template>
   <div class="module-favorites">
     <Banner
@@ -93,111 +198,6 @@
     </Dialog>
   </div>
 </template>
-
-<script>
-import Dialog from '../../components/Dialog.vue';
-import Input from '../../components/Input.vue';
-import Selector from '../../components/Selector.vue';
-import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
-import Banner from '../../components/Banner.vue';
-import {
-  getAllFavorites,
-  removeFavorite
-} from '../../utils/favoriteStorage';
-import { loadPalettes, savePalettes } from '../PaletteManager/paletteStorage.js';
-import { copyToClipboard, showToast, parseColor, getContrastColor as gcc } from '../../utils/colorUtils';
-
-export default {
-  name: 'MyCollection',
-  components: {
-    Dialog,
-    Input,
-    Selector,
-    ColorFormatDialog,
-    Banner
-  },
-  data() {
-    return {
-      favorites: [],
-      modalVisible: false,
-      modalColor: { name: '', hex: '' },
-      paletteDialogVisible: false,
-      paletteGroups: [],
-      selectedGroupId: '',
-      paletteColorName: '',
-      paletteTargetColor: null
-    };
-  },
-  mounted() {
-    this.loadFavorites();
-    this.handleFavoritesChanged = () => this.loadFavorites();
-    window.addEventListener('color-favorites-changed', this.handleFavoritesChanged);
-  },
-  unmounted() {
-    window.removeEventListener('color-favorites-changed', this.handleFavoritesChanged);
-  },
-  methods: {
-    loadFavorites() {
-      this.favorites = getAllFavorites();
-    },
-    openColorModal(item) {
-      this.modalColor = { name: item.name, hex: item.hex };
-      this.modalVisible = true;
-    },
-    copyHex(hex) {
-      copyToClipboard(hex);
-      showToast(this, '已复制 ' + hex, 'success');
-    },
-    getContrastColor(hex) {
-      const rgb = parseColor(hex);
-      if (!rgb) return '#000000';
-      return gcc(rgb);
-    },
-    handleUnfavorite(item) {
-      const result = removeFavorite(item.hex);
-      if (!result.ok) {
-        showToast(this, result.message || '取消收藏失败', 'error');
-        return;
-      }
-      showToast(this, '已取消收藏', 'success');
-      this.loadFavorites();
-    },
-    openAddToPaletteDialog(item) {
-      this.paletteGroups = loadPalettes();
-      this.paletteTargetColor = item;
-      this.paletteColorName = item.hex;
-      this.selectedGroupId = this.paletteGroups[0]?.id || '';
-      this.paletteDialogVisible = true;
-    },
-    confirmAddToPalette() {
-      if (!this.paletteTargetColor || !this.selectedGroupId) {
-        showToast(this, '请选择色板分组', 'error');
-        return;
-      }
-      const groups = loadPalettes();
-      const group = groups.find((g) => g.id === this.selectedGroupId);
-      if (!group) {
-        showToast(this, '分组不存在', 'error');
-        return;
-      }
-      const name = this.paletteColorName.trim() || this.paletteTargetColor.hex;
-      group.colors.push({
-        name,
-        color: this.paletteTargetColor.hex,
-        note: '来自我的收藏',
-        colorType: 'auxiliary'
-      });
-      savePalettes(groups);
-      this.paletteDialogVisible = false;
-      showToast(this, '已添加到「' + group.name + '」', 'success');
-    },
-    goToPaletteManager() {
-      this.paletteDialogVisible = false;
-      this.$router.push('/PaletteManager');
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .module-favorites {

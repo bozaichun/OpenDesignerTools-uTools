@@ -1,3 +1,186 @@
+<script lang="ts" setup>
+import { ref, reactive, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import ColorPicker from '../../components/ColorPicker.vue';
+import Input from '../../components/Input.vue';
+import Banner from '../../components/Banner.vue';
+import {
+  detectColorFormat, parseColor, formatRGBA, formatHSLA,
+  formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
+  copyToClipboard, showToast
+} from '../../utils/colorUtils';
+import {
+  isFavorite,
+  toggleFavorite,
+  normalizeFavoriteHex
+} from '../../utils/favoriteStorage';
+
+const setHeaderActions = inject('setHeaderActions');
+const clearHeaderActions = inject('clearHeaderActions');
+
+const currentRGB = ref({ r: 255, g: 255, b: 255, a: 1 });
+const inputs = reactive({
+  hex: '#FFFFFF',
+  rgb: 'rgb(255, 255, 255)',
+  hsl: 'hsl(0, 0%, 100%)',
+  cmyk: 'cmyk(0%, 0%, 0%, 0%)',
+  hsv: 'hsv(0, 0%, 100%)'
+});
+const alphaPercent = ref(100);
+const invalidFormat = ref(null);
+const errorMsg = ref('');
+const isUpdating = ref(false);
+
+const previewColor = computed(() => {
+  const { r, g, b, a } = currentRGB.value;
+  if (a < 1) {
+    return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`;
+  }
+  return formatHEX({ r, g, b });
+});
+
+const textContrast = computed(() => {
+  const { r, g, b } = currentRGB.value;
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? '#000000' : '#ffffff';
+});
+
+function updateHeaderActions() {
+  const hex = normalizeFavoriteHex(inputs.hex);
+  const favorited = hex ? isFavorite(hex) : false;
+  setHeaderActions([
+    {
+      label: favorited ? '已收藏' : '收藏',
+      onClick: () => handleToggleFavorite(),
+      secondary: favorited
+    }
+  ]);
+}
+
+function handleToggleFavorite() {
+  const hex = normalizeFavoriteHex(inputs.hex);
+  if (!hex) {
+    showToast(null, '颜色格式无效，无法收藏', 'error');
+    return;
+  }
+  const wasFavorited = isFavorite(hex);
+  const result = toggleFavorite({ hex, name: hex });
+  if (!result.ok) {
+    showToast(null, result.message || '操作失败', 'error');
+    return;
+  }
+  showToast(
+    null,
+    wasFavorited ? '已取消收藏' : `已将 “${hex}” 加入我的收藏`,
+    'success'
+  );
+  updateHeaderActions();
+}
+
+function onInputChange(format) {
+  if (isUpdating.value) return;
+  isUpdating.value = true;
+
+  const value = inputs[format].trim();
+  if (!value) {
+    invalidFormat.value = null;
+    errorMsg.value = '';
+    isUpdating.value = false;
+    return;
+  }
+
+  const detected = detectColorFormat(value);
+  const detectedFmt = detected ? detected.toLowerCase() : null;
+  const normalizedFmt = (format === 'rgb' && detectedFmt === 'rgba') || (format === 'rgba' && detectedFmt === 'rgb')
+    ? format
+    : detectedFmt;
+  if (!detected || normalizedFmt !== format) {
+    invalidFormat.value = format;
+    errorMsg.value = `无效的 ${format.toUpperCase()} 格式`;
+    isUpdating.value = false;
+    return;
+  }
+
+  const rgb = parseColor(value);
+  if (!rgb) {
+    invalidFormat.value = format;
+    errorMsg.value = '无法解析此颜色';
+    isUpdating.value = false;
+    return;
+  }
+
+  invalidFormat.value = null;
+  errorMsg.value = '';
+  currentRGB.value = { r: rgb.r, g: rgb.g, b: rgb.b, a: rgb.a };
+  alphaPercent.value = Math.round(rgb.a * 100);
+
+  syncAllFromRGB(format);
+  isUpdating.value = false;
+}
+
+function onColorPickerChange(hex) {
+  if (isUpdating.value) return;
+  isUpdating.value = true;
+  const rgb = parseColor(hex);
+  if (rgb) {
+    currentRGB.value = { r: rgb.r, g: rgb.g, b: rgb.b, a: currentRGB.value.a };
+    syncAllFromRGB();
+  }
+  isUpdating.value = false;
+}
+
+function onAlphaChange() {
+  if (isUpdating.value) return;
+  isUpdating.value = true;
+  currentRGB.value = {
+    ...currentRGB.value,
+    a: alphaPercent.value / 100
+  };
+  syncAllFromRGB();
+  isUpdating.value = false;
+}
+
+function syncAllFromRGB(skipFormat) {
+  const rgba = currentRGB.value;
+  const { a } = rgba;
+  if (skipFormat !== 'hex') inputs.hex = formatHEX(rgba);
+  if (skipFormat !== 'rgb') inputs.rgb = a < 1 ? formatRGBA(rgba) : formatRGB(rgba);
+  if (skipFormat !== 'hsl') inputs.hsl = a < 1 ? formatHSLA(rgba) : formatHSL(rgba);
+  if (skipFormat !== 'cmyk') inputs.cmyk = formatCMYK(rgba);
+  if (skipFormat !== 'hsv') inputs.hsv = formatHSV(rgba);
+}
+
+function clearInputs() {
+  currentRGB.value = { r: 255, g: 255, b: 255, a: 1 };
+  alphaPercent.value = 100;
+  invalidFormat.value = null;
+  errorMsg.value = '';
+  syncAllFromRGB();
+}
+
+function copyValue(value, label) {
+  copyToClipboard(value);
+  showToast(null, `已复制 ${label}: ${value}`, 'success');
+}
+
+let handleFavoritesChanged = null;
+
+onMounted(() => {
+  syncAllFromRGB();
+  updateHeaderActions();
+  handleFavoritesChanged = () => updateHeaderActions();
+  window.addEventListener('color-favorites-changed', handleFavoritesChanged);
+});
+
+onUnmounted(() => {
+  clearHeaderActions();
+  window.removeEventListener('color-favorites-changed', handleFavoritesChanged);
+});
+
+watch(() => inputs.hex, () => {
+  updateHeaderActions();
+});
+</script>
+
 <template>
   <div class="module-convert">
     <Banner
@@ -137,190 +320,6 @@
     </div>
   </div>
 </template>
-
-<script>
-import ColorPicker from '../../components/ColorPicker.vue';
-import Input from '../../components/Input.vue';
-import Banner from '../../components/Banner.vue';
-import {
-  detectColorFormat, parseColor, formatRGBA, formatHSLA,
-  formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
-  copyToClipboard, showToast
-} from '../../utils/colorUtils';
-import {
-  isFavorite,
-  toggleFavorite,
-  normalizeFavoriteHex
-} from '../../utils/favoriteStorage';
-
-export default {
-  name: 'ColorConversion',
-  components: { ColorPicker, Input, Banner },
-  inject: ['setHeaderActions', 'clearHeaderActions'],
-  data() {
-    return {
-      currentRGB: { r: 255, g: 255, b: 255, a: 1 },
-      inputs: {
-        hex: '#FFFFFF',
-        rgb: 'rgb(255, 255, 255)',
-        hsl: 'hsl(0, 0%, 100%)',
-        cmyk: 'cmyk(0%, 0%, 0%, 0%)',
-        hsv: 'hsv(0, 0%, 100%)'
-      },
-      alphaPercent: 100,
-      invalidFormat: null,
-      errorMsg: '',
-      isUpdating: false
-    };
-  },
-  computed: {
-    previewColor() {
-      const { r, g, b, a } = this.currentRGB;
-      if (a < 1) {
-        return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`;
-      }
-      return formatHEX({ r, g, b });
-    },
-    textContrast() {
-      const { r, g, b } = this.currentRGB;
-      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      return luminance > 0.5 ? '#000000' : '#ffffff';
-    }
-  },
-  mounted() {
-    this.syncAllFromRGB();
-    this.updateHeaderActions();
-    this.handleFavoritesChanged = () => this.updateHeaderActions();
-    window.addEventListener('color-favorites-changed', this.handleFavoritesChanged);
-  },
-  unmounted() {
-    this.clearHeaderActions();
-    window.removeEventListener('color-favorites-changed', this.handleFavoritesChanged);
-  },
-  watch: {
-    'inputs.hex'() {
-      this.updateHeaderActions();
-    }
-  },
-  methods: {
-    updateHeaderActions() {
-      const hex = normalizeFavoriteHex(this.inputs.hex);
-      const favorited = hex ? isFavorite(hex) : false;
-      this.setHeaderActions([
-        {
-          label: favorited ? '已收藏' : '收藏',
-          onClick: () => this.handleToggleFavorite(),
-          secondary: favorited
-        }
-      ]);
-    },
-    handleToggleFavorite() {
-      const hex = normalizeFavoriteHex(this.inputs.hex);
-      if (!hex) {
-        showToast(this, '颜色格式无效，无法收藏', 'error');
-        return;
-      }
-      const wasFavorited = isFavorite(hex);
-      const result = toggleFavorite({ hex, name: hex });
-      if (!result.ok) {
-        showToast(this, result.message || '操作失败', 'error');
-        return;
-      }
-      showToast(
-        this,
-        wasFavorited ? '已取消收藏' : `已将 “${hex}” 加入我的收藏`,
-        'success'
-      );
-      this.updateHeaderActions();
-    },
-    onInputChange(format) {
-      if (this.isUpdating) return;
-      this.isUpdating = true;
-
-      const value = this.inputs[format].trim();
-      if (!value) {
-        this.invalidFormat = null;
-        this.errorMsg = '';
-        this.isUpdating = false;
-        return;
-      }
-
-      const detected = detectColorFormat(value);
-      const detectedFmt = detected ? detected.toLowerCase() : null;
-      const normalizedFmt = (format === 'rgb' && detectedFmt === 'rgba') || (format === 'rgba' && detectedFmt === 'rgb')
-        ? format
-        : detectedFmt;
-      if (!detected || normalizedFmt !== format) {
-        this.invalidFormat = format;
-        this.errorMsg = `无效的 ${format.toUpperCase()} 格式`;
-        this.isUpdating = false;
-        return;
-      }
-
-      const rgb = parseColor(value);
-      if (!rgb) {
-        this.invalidFormat = format;
-        this.errorMsg = '无法解析此颜色';
-        this.isUpdating = false;
-        return;
-      }
-
-      this.invalidFormat = null;
-      this.errorMsg = '';
-      this.currentRGB = { r: rgb.r, g: rgb.g, b: rgb.b, a: rgb.a };
-      this.alphaPercent = Math.round(rgb.a * 100);
-
-      this.syncAllFromRGB(format);
-      this.isUpdating = false;
-    },
-
-    onColorPickerChange(hex) {
-      if (this.isUpdating) return;
-      this.isUpdating = true;
-      const rgb = parseColor(hex);
-      if (rgb) {
-        this.currentRGB = { r: rgb.r, g: rgb.g, b: rgb.b, a: this.currentRGB.a };
-        this.syncAllFromRGB();
-      }
-      this.isUpdating = false;
-    },
-
-    onAlphaChange() {
-      if (this.isUpdating) return;
-      this.isUpdating = true;
-      this.currentRGB = {
-        ...this.currentRGB,
-        a: this.alphaPercent / 100
-      };
-      this.syncAllFromRGB();
-      this.isUpdating = false;
-    },
-
-    syncAllFromRGB(skipFormat) {
-      const rgba = this.currentRGB;
-      const { a } = rgba;
-      if (skipFormat !== 'hex') this.inputs.hex = formatHEX(rgba);
-      if (skipFormat !== 'rgb') this.inputs.rgb = a < 1 ? formatRGBA(rgba) : formatRGB(rgba);
-      if (skipFormat !== 'hsl') this.inputs.hsl = a < 1 ? formatHSLA(rgba) : formatHSL(rgba);
-      if (skipFormat !== 'cmyk') this.inputs.cmyk = formatCMYK(rgba);
-      if (skipFormat !== 'hsv') this.inputs.hsv = formatHSV(rgba);
-    },
-
-    clearInputs() {
-      this.currentRGB = { r: 255, g: 255, b: 255, a: 1 };
-      this.alphaPercent = 100;
-      this.invalidFormat = null;
-      this.errorMsg = '';
-      this.syncAllFromRGB();
-    },
-
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, `已复制 ${label}: ${value}`, 'success');
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .module-convert {

@@ -1,3 +1,102 @@
+<script lang="ts" setup>
+import { computed } from 'vue';
+
+const props = defineProps({
+  modelValue: {
+    type: [String, Number],
+    default: ''
+  },
+  type: {
+    type: String,
+    default: 'text'
+  },
+  placeholder: {
+    type: String,
+    default: ''
+  },
+  disabled: {
+    type: Boolean,
+    default: false
+  },
+  readonly: {
+    type: Boolean,
+    default: false
+  },
+  invalid: {
+    type: Boolean,
+    default: false
+  },
+  clearable: {
+    type: Boolean,
+    default: undefined
+  },
+  variant: {
+    type: String,
+    default: 'default',
+    validator: (value) => ['default', 'ghost', 'mono'].includes(value)
+  },
+  block: {
+    type: Boolean,
+    default: true
+  },
+  flex: {
+    type: Boolean,
+    default: false
+  },
+  bold: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const emit = defineEmits(['update:modelValue', 'input', 'blur', 'keyup-enter', 'clear']);
+
+const isClearableEnabled = computed(() => {
+  if (props.clearable === false) return false;
+  if (props.clearable === true) return true;
+  return props.variant === 'default';
+});
+
+const showClear = computed(() => {
+  if (!isClearableEnabled.value || props.disabled || props.readonly) return false;
+  return String(props.modelValue ?? '').length > 0;
+});
+
+const wrapClass = computed(() => ({
+  'app-input-wrap--block': props.block,
+  'app-input-wrap--flex': props.flex,
+  'app-input-wrap--has-clear': showClear.value
+}));
+
+const inputClass = computed(() => [
+  `app-input--${props.variant}`,
+  {
+    'is-invalid': props.invalid,
+    'app-input--bold': props.bold
+  }
+]);
+
+const handleInput = (event) => {
+  const value = event.target.value;
+  emit('update:modelValue', value);
+  emit('input', value);
+};
+
+const handleBlur = (event) => {
+  emit('blur', event);
+};
+
+const handleEnter = (event) => {
+  emit('keyup-enter', event);
+};
+
+const handleClear = () => {
+  emit('update:modelValue', '');
+  emit('input', '');
+  emit('clear');
+};
+</script>
+
 <template>
   <span class="app-input-wrap" :class="wrapClass">
     <input
@@ -25,106 +124,7 @@
   </span>
 </template>
 
-<script>
-export default {
-  name: 'AppInput',
-  props: {
-    modelValue: {
-      type: [String, Number],
-      default: ''
-    },
-    type: {
-      type: String,
-      default: 'text'
-    },
-    placeholder: {
-      type: String,
-      default: ''
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    readonly: {
-      type: Boolean,
-      default: false
-    },
-    invalid: {
-      type: Boolean,
-      default: false
-    },
-    clearable: {
-      type: Boolean,
-      default: undefined
-    },
-    variant: {
-      type: String,
-      default: 'default',
-      validator: (value) => ['default', 'ghost', 'mono'].includes(value)
-    },
-    block: {
-      type: Boolean,
-      default: true
-    },
-    flex: {
-      type: Boolean,
-      default: false
-    },
-    bold: {
-      type: Boolean,
-      default: false
-    }
-  },
-  emits: ['update:modelValue', 'input', 'blur', 'keyup-enter', 'clear'],
-  computed: {
-    isClearableEnabled() {
-      if (this.clearable === false) return false;
-      if (this.clearable === true) return true;
-      return this.variant === 'default';
-    },
-    showClear() {
-      if (!this.isClearableEnabled || this.disabled || this.readonly) return false;
-      return String(this.modelValue ?? '').length > 0;
-    },
-    wrapClass() {
-      return {
-        'app-input-wrap--block': this.block,
-        'app-input-wrap--flex': this.flex,
-        'app-input-wrap--has-clear': this.showClear
-      };
-    },
-    inputClass() {
-      return [
-        `app-input--${this.variant}`,
-        {
-          'is-invalid': this.invalid,
-          'app-input--bold': this.bold
-        }
-      ];
-    }
-  },
-  methods: {
-    handleInput(event) {
-      const value = event.target.value;
-      this.$emit('update:modelValue', value);
-      this.$emit('input', value);
-    },
-    handleBlur(event) {
-      this.$emit('blur', event);
-    },
-    handleEnter(event) {
-      this.$emit('keyup-enter', event);
-    },
-    handleClear() {
-      this.$emit('update:modelValue', '');
-      this.$emit('input', '');
-      this.$emit('clear');
-    }
-  }
-};
-</script>
-
-<style scoped>
+<style lang="scss" scoped>
 .app-input-wrap {
   position: relative;
   display: inline-flex;

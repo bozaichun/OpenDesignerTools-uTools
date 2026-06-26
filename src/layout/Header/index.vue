@@ -1,3 +1,24 @@
+<script lang="ts" setup>
+import SectionTitle from '../../components/SectionTitle.vue';
+
+defineProps({
+  title: {
+    type: String,
+    default: ''
+  },
+  isDetail: {
+    type: Boolean,
+    default: false
+  },
+  subtitle: {
+    type: String,
+    default: ''
+  }
+});
+
+defineEmits(['toggle-mode', 'show-setting', 'back']);
+</script>
+
 <template>
   <header class="page-header">
     <div class="header-left">
@@ -28,32 +49,6 @@
     </div>
   </header>
 </template>
-
-<script>
-import SectionTitle from '../../components/SectionTitle.vue';
-
-export default {
-  name: 'PageHeader',
-  components: {
-    SectionTitle
-  },
-  props: {
-    title: {
-      type: String,
-      default: ''
-    },
-    isDetail: {
-      type: Boolean,
-      default: false
-    },
-    subtitle: {
-      type: String,
-      default: ''
-    }
-  },
-  emits: ['toggle-mode', 'show-setting', 'back']
-};
-</script>
 
 <style lang="scss" scoped>
 .page-header {

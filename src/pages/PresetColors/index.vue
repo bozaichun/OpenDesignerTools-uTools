@@ -1,3 +1,39 @@
+<script lang="ts" setup>
+import { ref, computed } from 'vue';
+import { PRESET_COLORS, COLOR_GROUPS } from '../../data/presetColors';
+import { copyToClipboard, showToast } from '../../utils/colorUtils';
+import FavoriteButton from '../../components/FavoriteButton.vue';
+import Input from '../../components/Input.vue';
+import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
+import Banner from '../../components/Banner.vue';
+
+const presetColors = PRESET_COLORS;
+const colorGroups = COLOR_GROUPS;
+const searchText = ref('');
+const activeGroup = ref(null);
+const modalVisible = ref(false);
+const modalColor = ref({ name: '', hex: '', group: '' });
+
+const filteredColors = computed(() => {
+  const search = searchText.value.trim().toLowerCase();
+  return presetColors.filter(c => {
+    const matchSearch = !search || c.name.toLowerCase().includes(search) || c.hex.toLowerCase().includes(search);
+    const matchGroup = !activeGroup.value || c.group === activeGroup.value;
+    return matchSearch && matchGroup;
+  });
+});
+
+function openColorModal(color) {
+  modalColor.value = { ...color };
+  modalVisible.value = true;
+}
+
+function copyValue(value, label) {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + label + ': ' + value, 'success');
+}
+</script>
+
 <template>
   <div class="module-preset">
     <Banner
@@ -79,51 +115,6 @@
     />
   </div>
 </template>
-
-<script>
-import { PRESET_COLORS, COLOR_GROUPS } from '../../data/presetColors';
-import { copyToClipboard, showToast } from '../../utils/colorUtils';
-import FavoriteButton from '../../components/FavoriteButton.vue';
-import Input from '../../components/Input.vue';
-import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
-import Banner from '../../components/Banner.vue';
-
-export default {
-  name: 'PresetColors',
-  components: { FavoriteButton, Input, ColorFormatDialog, Banner },
-  data() {
-    return {
-      presetColors: PRESET_COLORS,
-      colorGroups: COLOR_GROUPS,
-      searchText: '',
-      activeGroup: null,
-      modalVisible: false,
-      modalColor: { name: '', hex: '', group: '' }
-    };
-  },
-  computed: {
-    filteredColors() {
-      const search = this.searchText.trim().toLowerCase();
-      return this.presetColors.filter(c => {
-        const matchSearch = !search || c.name.toLowerCase().includes(search) || c.hex.toLowerCase().includes(search);
-        const matchGroup = !this.activeGroup || c.group === this.activeGroup;
-        return matchSearch && matchGroup;
-      });
-    },
-  },
-  methods: {
-    openColorModal(color) {
-      this.modalColor = { ...color };
-      this.modalVisible = true;
-    },
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label + ': ' + value, 'success');
-    }
-  },
-
-};
-</script>
 
 <style lang="scss" scoped>
 .module-preset {

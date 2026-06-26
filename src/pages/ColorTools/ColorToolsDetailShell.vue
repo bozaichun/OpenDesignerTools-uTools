@@ -1,3 +1,40 @@
+<script lang="ts" setup>
+import { useRouter } from 'vue-router';
+import ColorPicker from '../../components/ColorPicker.vue';
+import Selector from '../../components/Selector.vue';
+import { DETAIL_MODULES, buildDetailQuery } from './colorToolsUtils';
+
+const props = defineProps({
+  currentModule: { type: String, required: true },
+  color: { type: String, required: true },
+  queryState: { type: Object, default: () => ({}) }
+});
+
+defineEmits(['update:color']);
+
+const router = useRouter();
+
+const modules = DETAIL_MODULES;
+
+function handleModuleChange(moduleId) {
+  if (moduleId === props.currentModule) return;
+  const target = DETAIL_MODULES.find((m) => m.id === moduleId);
+  if (!target) return;
+  router.push({
+    path: target.route,
+    query: buildDetailQuery({
+      color: props.color,
+      colorB: props.queryState.colorB,
+      hue: props.queryState.hue,
+      sat: props.queryState.sat,
+      light: props.queryState.light,
+      direction: props.queryState.direction,
+      stops: props.queryState.stops
+    })
+  });
+}
+</script>
+
 <template>
   <Teleport to="#color-tools-header-slot">
     <Selector
@@ -18,45 +55,6 @@
     <slot name="extra"></slot>
   </div>
 </template>
-
-<script>
-import ColorPicker from '../../components/ColorPicker.vue';
-import Selector from '../../components/Selector.vue';
-import { DETAIL_MODULES, buildDetailQuery } from './colorToolsUtils';
-
-export default {
-  name: 'ColorToolsDetailShell',
-  components: { ColorPicker, Selector },
-  props: {
-    currentModule: { type: String, required: true },
-    color: { type: String, required: true },
-    queryState: { type: Object, default: () => ({}) }
-  },
-  emits: ['update:color'],
-  data() {
-    return { modules: DETAIL_MODULES };
-  },
-  methods: {
-    handleModuleChange(moduleId) {
-      if (moduleId === this.currentModule) return;
-      const target = DETAIL_MODULES.find((m) => m.id === moduleId);
-      if (!target) return;
-      this.$router.push({
-        path: target.route,
-        query: buildDetailQuery({
-          color: this.color,
-          colorB: this.queryState.colorB,
-          hue: this.queryState.hue,
-          sat: this.queryState.sat,
-          light: this.queryState.light,
-          direction: this.queryState.direction,
-          stops: this.queryState.stops
-        })
-      });
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .detail-control-row {

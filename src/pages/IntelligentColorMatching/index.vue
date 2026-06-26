@@ -1,3 +1,248 @@
+<script lang="ts" setup>
+import { ref, computed, onMounted } from 'vue';
+import ColorPicker from '../../components/ColorPicker.vue';
+import Selector from '../../components/Selector.vue';
+import { parseColor, rgbToHex, rgbToHsl, hslToRgb, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
+
+const activeTab = ref('semantic');
+const tabs = [
+  { key: 'semantic', label: '语义 AI 配色' },
+  { key: 'monochrome', label: '单色延展' },
+  { key: 'scenario', label: '场景定向' },
+  { key: 'unique', label: '去同质化' }
+];
+const moodOptions = [
+  { key: 'warm', label: '温暖亲切' },
+  { key: 'cool', label: '冷静专业' },
+  { key: 'energetic', label: '活力动感' },
+  { key: 'elegant', label: '优雅高贵' },
+  { key: 'fresh', label: '清新自然' },
+  { key: 'tech', label: '科技未来' }
+];
+const industryOptions = [
+  { key: 'tech', label: '科技互联网' },
+  { key: 'finance', label: '金融商务' },
+  { key: 'medical', label: '医疗健康' },
+  { key: 'education', label: '教育培训' },
+  { key: 'retail', label: '零售电商' },
+  { key: 'restaurant', label: '餐饮美食' },
+  { key: 'beauty', label: '美妆时尚' }
+];
+const selectedMood = ref('cool');
+const selectedIndustry = ref('tech');
+const semanticResult = ref(null);
+
+const monoColor = ref('#1677FF');
+const monochromeShades = ref([]);
+const analogousColors = ref([]);
+const complementaryColors = ref([]);
+
+const scenarioOptions = [
+  { key: 'poster', label: '海报设计', emoji: '🎨', desc: '高对比度，视觉冲击' },
+  { key: 'app', label: 'APP 首页', emoji: '📱', desc: '柔和舒适，层级清晰' },
+  { key: 'ppt', label: 'PPT 演示', emoji: '📊', desc: '专业稳重，商务感强' },
+  { key: 'social', label: '社交媒体', emoji: '📸', desc: '年轻活力，品牌突出' },
+  { key: 'package', label: '产品包装', emoji: '📦', desc: '风格独特，记忆深刻' }
+];
+const selectedScenario = ref('');
+const darkMode = ref(false);
+
+const avoidIndustryOptions = [
+  { key: 'tech', label: '科技行业' },
+  { key: 'finance', label: '金融行业' },
+  { key: 'ecommerce', label: '电商行业' },
+  { key: 'food', label: '餐饮行业' }
+];
+const selectedAvoidIndustry = ref('tech');
+const uniqueResult = ref(null);
+
+const currentScenario = computed(() => {
+  const data = {
+    poster: {
+      light: { primary: '#FF3D68', secondary: '#FFD93D', accent: '#6BCB77', text: '#1A1A2E', bg: '#FAFAFA' },
+      dark: { primary: '#FF6B9D', secondary: '#FFE66D', accent: '#4ECDC4', text: '#F8F8F8', bg: '#1A1A2E' }
+    },
+    app: {
+      light: { primary: '#1677FF', secondary: '#69B1FF', accent: '#FF7D00', text: '#1F2937', bg: '#F3F4F6' },
+      dark: { primary: '#4096FF', secondary: '#69B1FF', accent: '#FAAD14', text: '#F3F4F6', bg: '#1F2937' }
+    },
+    ppt: {
+      light: { primary: '#0F4C81', secondary: '#2E8BC0', accent: '#F28C28', text: '#1A1A2E', bg: '#FFFFFF' },
+      dark: { primary: '#2E8BC0', secondary: '#4FC3F7', accent: '#FF9800', text: '#ECEFF1', bg: '#1A1A2E' }
+    },
+    social: {
+      light: { primary: '#E91E63', secondary: '#9C27B0', accent: '#FFD700', text: '#212121', bg: '#FFF8F0' },
+      dark: { primary: '#F48FB1', secondary: '#CE93D8', accent: '#FFEE58', text: '#FAFAFA', bg: '#212121' }
+    },
+    package: {
+      light: { primary: '#2D5A27', secondary: '#8B4513', accent: '#D4AF37', text: '#1A1A1A', bg: '#F5F5DC' },
+      dark: { primary: '#556B2F', secondary: '#8B7355', accent: '#FFD700', text: '#F5F5DC', bg: '#1A1A1A' }
+    }
+  };
+  if (!selectedScenario.value || !data[selectedScenario.value]) return data.app.light;
+  return darkMode.value ? data[selectedScenario.value].dark : data[selectedScenario.value].light;
+});
+const currentScenarioColors = computed(() => {
+  const s = currentScenario.value;
+  return [
+    { name: '主色 Primary', color: s.primary },
+    { name: '辅色 Secondary', color: s.secondary },
+    { name: '点缀 Accent', color: s.accent },
+    { name: '文字 Text', color: s.text },
+    { name: '背景 BG', color: s.bg }
+  ];
+});
+const avoidColors = computed(() => {
+  const data = {
+    tech: [
+      { name: '科技蓝', color: '#1677FF' },
+      { name: '渐变蓝', color: '#2563EB' },
+      { name: '浅蓝', color: '#3B82F6' },
+      { name: '紫蓝', color: '#6366F1' }
+    ],
+    finance: [
+      { name: '金融红', color: '#DC2626' },
+      { name: '金色', color: '#D97706' },
+      { name: '稳重蓝', color: '#1E40AF' },
+      { name: '深灰', color: '#374151' }
+    ],
+    ecommerce: [
+      { name: '电商橙', color: '#F97316' },
+      { name: '促销红', color: '#EF4444' },
+      { name: '活力黄', color: '#FBBF24' },
+      { name: '商城绿', color: '#10B981' }
+    ],
+    food: [
+      { name: '食物红', color: '#E74C3C' },
+      { name: '暖橙', color: '#F39C12' },
+      { name: '嫩绿', color: '#27AE60' },
+      { name: '咖啡棕', color: '#8B4513' }
+    ]
+  };
+  return data[selectedAvoidIndustry.value] || data.tech;
+});
+
+function getContrastColor(hex) {
+  const rgb = parseColor(hex);
+  if (!rgb) return '#000000';
+  return gcc(rgb);
+}
+function generateSemantic() {
+  const presets = {
+    'warm-tech': { name: '温暖科技风', description: '暖色调与科技感结合，打破冷硬印象', colors: [
+      { name: '主色', color: '#FF6B6B' }, { name: '辅色', color: '#FFA07A' }, { name: '点缀', color: '#FFD93D' },
+      { name: '文字', color: '#2C3E50' }, { name: '背景', color: '#FFF8F0' }
+    ]},
+    'cool-tech': { name: '冷静科技风', description: '蓝紫渐变，专业稳重，适合 B 端产品', colors: [
+      { name: '主色', color: '#1677FF' }, { name: '辅色', color: '#6366F1' }, { name: '点缀', color: '#06B6D4' },
+      { name: '文字', color: '#1F2937' }, { name: '背景', color: '#F8FAFC' }
+    ]},
+    'energetic-tech': { name: '活力科技风', description: '高饱和度配色，充满能量与创新感', colors: [
+      { name: '主色', color: '#7C3AED' }, { name: '辅色', color: '#EC4899' }, { name: '点缀', color: '#22D3EE' },
+      { name: '文字', color: '#1F2937' }, { name: '背景', color: '#FAF5FF' }
+    ]},
+    'elegant-tech': { name: '优雅科技风', description: '低饱和度，柔和优雅，高端品牌首选', colors: [
+      { name: '主色', color: '#4A5568' }, { name: '辅色', color: '#718096' }, { name: '点缀', color: '#D69E2E' },
+      { name: '文字', color: '#1A202C' }, { name: '背景', color: '#F7FAFC' }
+    ]},
+    'fresh-tech': { name: '清新科技风', description: '绿青色调，自然清新，环保友好品牌', colors: [
+      { name: '主色', color: '#10B981' }, { name: '辅色', color: '#06B6D4' }, { name: '点缀', color: '#84CC16' },
+      { name: '文字', color: '#1F2937' }, { name: '背景', color: '#F0FDF4' }
+    ]},
+    'tech-tech': { name: '未来科技风', description: '深蓝紫黑，赛博朋克感，游戏/AI产品', colors: [
+      { name: '主色', color: '#6366F1' }, { name: '辅色', color: '#8B5CF6' }, { name: '点缀', color: '#06B6D4' },
+      { name: '文字', color: '#E2E8F0' }, { name: '背景', color: '#0F172A' }
+    ]}
+  };
+  const key = (selectedMood.value || 'warm') + '-' + (selectedIndustry.value || 'tech');
+  semanticResult.value = presets[key] || presets['cool-tech'];
+}
+function generateMonochrome() {
+  const rgb = parseColor(monoColor.value);
+  if (!rgb) return;
+  const hsl = rgbToHsl(rgb);
+
+  const shades = [];
+  for (let i = 0; i < 9; i++) {
+    const l = 10 + i * 10;
+    const newRgb = hslToRgb({ h: hsl.h, s: hsl.s, l, a: 1 });
+    shades.push(rgbToHex(newRgb).toUpperCase());
+  }
+  monochromeShades.value = shades;
+
+  const analogous = [];
+  [-30, 0, 30].forEach((offset, idx) => {
+    const h = (hsl.h + offset + 360) % 360;
+    const newRgb = hslToRgb({ h, s: hsl.s, l: hsl.l, a: 1 });
+    const hex = rgbToHex(newRgb).toUpperCase();
+    const names = ['左侧邻近色', '主色', '右侧邻近色'];
+    analogous.push({ name: names[idx], color: hex });
+  });
+  analogousColors.value = analogous;
+
+  const complementary = [];
+  [0, 180].forEach((offset, idx) => {
+    const h = (hsl.h + offset) % 360;
+    const newRgb = hslToRgb({ h, s: hsl.s, l: hsl.l, a: 1 });
+    const hex = rgbToHex(newRgb).toUpperCase();
+    const names = ['主色', '互补色'];
+    complementary.push({ name: names[idx], color: hex });
+  });
+  [120, 240].forEach((offset, idx) => {
+    const h = (hsl.h + offset) % 360;
+    const newRgb = hslToRgb({ h, s: hsl.s, l: hsl.l, a: 1 });
+    const hex = rgbToHex(newRgb).toUpperCase();
+    const names = ['三等分色 1', '三等分色 2'];
+    complementary.push({ name: names[idx], color: hex });
+  });
+  complementaryColors.value = complementary;
+}
+function selectScenario(key) {
+  selectedScenario.value = key;
+}
+function getScenarioPreviewStyle() {
+  return {
+    background: currentScenario.value.bg,
+    borderColor: currentScenario.value.primary
+  };
+}
+function generateUnique() {
+  const data = {
+    tech: { name: '差异化科技配色', description: '规避常规蓝色，使用暖橙/琥珀/深绿等差异化配色', colors: [
+      { name: '主色', color: '#F59E0B' }, { name: '辅色', color: '#10B981' }, { name: '点缀', color: '#8B5CF6' },
+      { name: '文字', color: '#1F2937' }, { name: '背景', color: '#FFFBEB' }
+    ]},
+    finance: { name: '差异化金融配色', description: '打破红金传统，采用深紫/森林绿/深海蓝', colors: [
+      { name: '主色', color: '#7C3AED' }, { name: '辅色', color: '#047857' }, { name: '点缀', color: '#0891B2' },
+      { name: '文字', color: '#1F2937' }, { name: '背景', color: '#FAF5FF' }
+    ]},
+    ecommerce: { name: '差异化电商配色', description: '远离橙红黄，使用薄荷绿/粉紫/天青蓝', colors: [
+      { name: '主色', color: '#14B8A6' }, { name: '辅色', color: '#A855F7' }, { name: '点缀', color: '#0EA5E9' },
+      { name: '文字', color: '#1F2937' }, { name: '背景', color: '#F0FDFA' }
+    ]},
+    food: { name: '差异化餐饮配色', description: '跳出食物橙红，使用藏红花/橄榄绿/深陶土', colors: [
+      { name: '主色', color: '#B45309' }, { name: '辅色', color: '#4D7C0F' }, { name: '点缀', color: '#BE123C' },
+      { name: '文字', color: '#1C1917' }, { name: '背景', color: '#FEF3C7' }
+    ]}
+  };
+  uniqueResult.value = data[selectedAvoidIndustry.value] || data.tech;
+}
+function getAvoidIndustryLabel() {
+  const opt = avoidIndustryOptions.find(o => o.key === selectedAvoidIndustry.value);
+  return opt ? opt.label : '';
+}
+function copyValue(value, label) {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + label + ': ' + value, 'success');
+}
+
+onMounted(() => {
+  generateSemantic();
+  generateMonochrome();
+  generateUnique();
+});
+</script>
+
 <template>
   <div class="module-intelligent">
     <div class="tab-row">
@@ -235,259 +480,6 @@
     </section>
   </div>
 </template>
-
-<script>
-import ColorPicker from '../../components/ColorPicker.vue';
-import Selector from '../../components/Selector.vue';
-import { parseColor, rgbToHex, rgbToHsl, hslToRgb, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
-
-export default {
-  name: 'IntelligentColorMatching',
-  components: { ColorPicker, Selector },
-  data() {
-    return {
-      activeTab: 'semantic',
-      tabs: [
-        { key: 'semantic', label: '语义 AI 配色' },
-        { key: 'monochrome', label: '单色延展' },
-        { key: 'scenario', label: '场景定向' },
-        { key: 'unique', label: '去同质化' }
-      ],
-      moodOptions: [
-        { key: 'warm', label: '温暖亲切' },
-        { key: 'cool', label: '冷静专业' },
-        { key: 'energetic', label: '活力动感' },
-        { key: 'elegant', label: '优雅高贵' },
-        { key: 'fresh', label: '清新自然' },
-        { key: 'tech', label: '科技未来' }
-      ],
-      industryOptions: [
-        { key: 'tech', label: '科技互联网' },
-        { key: 'finance', label: '金融商务' },
-        { key: 'medical', label: '医疗健康' },
-        { key: 'education', label: '教育培训' },
-        { key: 'retail', label: '零售电商' },
-        { key: 'restaurant', label: '餐饮美食' },
-        { key: 'beauty', label: '美妆时尚' }
-      ],
-      selectedMood: 'cool',
-      selectedIndustry: 'tech',
-      semanticResult: null,
-
-      monoColor: '#1677FF',
-      monochromeShades: [],
-      analogousColors: [],
-      complementaryColors: [],
-
-      scenarioOptions: [
-        { key: 'poster', label: '海报设计', emoji: '🎨', desc: '高对比度，视觉冲击' },
-        { key: 'app', label: 'APP 首页', emoji: '📱', desc: '柔和舒适，层级清晰' },
-        { key: 'ppt', label: 'PPT 演示', emoji: '📊', desc: '专业稳重，商务感强' },
-        { key: 'social', label: '社交媒体', emoji: '📸', desc: '年轻活力，品牌突出' },
-        { key: 'package', label: '产品包装', emoji: '📦', desc: '风格独特，记忆深刻' }
-      ],
-      selectedScenario: '',
-      darkMode: false,
-
-      avoidIndustryOptions: [
-        { key: 'tech', label: '科技行业' },
-        { key: 'finance', label: '金融行业' },
-        { key: 'ecommerce', label: '电商行业' },
-        { key: 'food', label: '餐饮行业' }
-      ],
-      selectedAvoidIndustry: 'tech',
-      uniqueResult: null
-    };
-  },
-  computed: {
-    currentScenario() {
-      const data = {
-        poster: {
-          light: { primary: '#FF3D68', secondary: '#FFD93D', accent: '#6BCB77', text: '#1A1A2E', bg: '#FAFAFA' },
-          dark: { primary: '#FF6B9D', secondary: '#FFE66D', accent: '#4ECDC4', text: '#F8F8F8', bg: '#1A1A2E' }
-        },
-        app: {
-          light: { primary: '#1677FF', secondary: '#69B1FF', accent: '#FF7D00', text: '#1F2937', bg: '#F3F4F6' },
-          dark: { primary: '#4096FF', secondary: '#69B1FF', accent: '#FAAD14', text: '#F3F4F6', bg: '#1F2937' }
-        },
-        ppt: {
-          light: { primary: '#0F4C81', secondary: '#2E8BC0', accent: '#F28C28', text: '#1A1A2E', bg: '#FFFFFF' },
-          dark: { primary: '#2E8BC0', secondary: '#4FC3F7', accent: '#FF9800', text: '#ECEFF1', bg: '#1A1A2E' }
-        },
-        social: {
-          light: { primary: '#E91E63', secondary: '#9C27B0', accent: '#FFD700', text: '#212121', bg: '#FFF8F0' },
-          dark: { primary: '#F48FB1', secondary: '#CE93D8', accent: '#FFEE58', text: '#FAFAFA', bg: '#212121' }
-        },
-        package: {
-          light: { primary: '#2D5A27', secondary: '#8B4513', accent: '#D4AF37', text: '#1A1A1A', bg: '#F5F5DC' },
-          dark: { primary: '#556B2F', secondary: '#8B7355', accent: '#FFD700', text: '#F5F5DC', bg: '#1A1A1A' }
-        }
-      };
-      if (!this.selectedScenario || !data[this.selectedScenario]) return data.app.light;
-      return this.darkMode ? data[this.selectedScenario].dark : data[this.selectedScenario].light;
-    },
-    currentScenarioColors() {
-      const s = this.currentScenario;
-      return [
-        { name: '主色 Primary', color: s.primary },
-        { name: '辅色 Secondary', color: s.secondary },
-        { name: '点缀 Accent', color: s.accent },
-        { name: '文字 Text', color: s.text },
-        { name: '背景 BG', color: s.bg }
-      ];
-    },
-    avoidColors() {
-      const data = {
-        tech: [
-          { name: '科技蓝', color: '#1677FF' },
-          { name: '渐变蓝', color: '#2563EB' },
-          { name: '浅蓝', color: '#3B82F6' },
-          { name: '紫蓝', color: '#6366F1' }
-        ],
-        finance: [
-          { name: '金融红', color: '#DC2626' },
-          { name: '金色', color: '#D97706' },
-          { name: '稳重蓝', color: '#1E40AF' },
-          { name: '深灰', color: '#374151' }
-        ],
-        ecommerce: [
-          { name: '电商橙', color: '#F97316' },
-          { name: '促销红', color: '#EF4444' },
-          { name: '活力黄', color: '#FBBF24' },
-          { name: '商城绿', color: '#10B981' }
-        ],
-        food: [
-          { name: '食物红', color: '#E74C3C' },
-          { name: '暖橙', color: '#F39C12' },
-          { name: '嫩绿', color: '#27AE60' },
-          { name: '咖啡棕', color: '#8B4513' }
-        ]
-      };
-      return data[this.selectedAvoidIndustry] || data.tech;
-    }
-  },
-  mounted() {
-    this.generateSemantic();
-    this.generateMonochrome();
-    this.generateUnique();
-  },
-  methods: {
-    getContrastColor(hex) {
-      const rgb = parseColor(hex);
-      if (!rgb) return '#000000';
-      return gcc(rgb);
-    },
-    generateSemantic() {
-      const presets = {
-        'warm-tech': { name: '温暖科技风', description: '暖色调与科技感结合，打破冷硬印象', colors: [
-          { name: '主色', color: '#FF6B6B' }, { name: '辅色', color: '#FFA07A' }, { name: '点缀', color: '#FFD93D' },
-          { name: '文字', color: '#2C3E50' }, { name: '背景', color: '#FFF8F0' }
-        ]},
-        'cool-tech': { name: '冷静科技风', description: '蓝紫渐变，专业稳重，适合 B 端产品', colors: [
-          { name: '主色', color: '#1677FF' }, { name: '辅色', color: '#6366F1' }, { name: '点缀', color: '#06B6D4' },
-          { name: '文字', color: '#1F2937' }, { name: '背景', color: '#F8FAFC' }
-        ]},
-        'energetic-tech': { name: '活力科技风', description: '高饱和度配色，充满能量与创新感', colors: [
-          { name: '主色', color: '#7C3AED' }, { name: '辅色', color: '#EC4899' }, { name: '点缀', color: '#22D3EE' },
-          { name: '文字', color: '#1F2937' }, { name: '背景', color: '#FAF5FF' }
-        ]},
-        'elegant-tech': { name: '优雅科技风', description: '低饱和度，柔和优雅，高端品牌首选', colors: [
-          { name: '主色', color: '#4A5568' }, { name: '辅色', color: '#718096' }, { name: '点缀', color: '#D69E2E' },
-          { name: '文字', color: '#1A202C' }, { name: '背景', color: '#F7FAFC' }
-        ]},
-        'fresh-tech': { name: '清新科技风', description: '绿青色调，自然清新，环保友好品牌', colors: [
-          { name: '主色', color: '#10B981' }, { name: '辅色', color: '#06B6D4' }, { name: '点缀', color: '#84CC16' },
-          { name: '文字', color: '#1F2937' }, { name: '背景', color: '#F0FDF4' }
-        ]},
-        'tech-tech': { name: '未来科技风', description: '深蓝紫黑，赛博朋克感，游戏/AI产品', colors: [
-          { name: '主色', color: '#6366F1' }, { name: '辅色', color: '#8B5CF6' }, { name: '点缀', color: '#06B6D4' },
-          { name: '文字', color: '#E2E8F0' }, { name: '背景', color: '#0F172A' }
-        ]}
-      };
-      const key = (this.selectedMood || 'warm') + '-' + (this.selectedIndustry || 'tech');
-      this.semanticResult = presets[key] || presets['cool-tech'];
-    },
-    generateMonochrome() {
-      const rgb = parseColor(this.monoColor);
-      if (!rgb) return;
-      const hsl = rgbToHsl(rgb);
-
-      const shades = [];
-      for (let i = 0; i < 9; i++) {
-        const l = 10 + i * 10;
-        const newRgb = hslToRgb({ h: hsl.h, s: hsl.s, l, a: 1 });
-        shades.push(rgbToHex(newRgb).toUpperCase());
-      }
-      this.monochromeShades = shades;
-
-      const analogous = [];
-      [-30, 0, 30].forEach((offset, idx) => {
-        const h = (hsl.h + offset + 360) % 360;
-        const newRgb = hslToRgb({ h, s: hsl.s, l: hsl.l, a: 1 });
-        const hex = rgbToHex(newRgb).toUpperCase();
-        const names = ['左侧邻近色', '主色', '右侧邻近色'];
-        analogous.push({ name: names[idx], color: hex });
-      });
-      this.analogousColors = analogous;
-
-      const complementary = [];
-      [0, 180].forEach((offset, idx) => {
-        const h = (hsl.h + offset) % 360;
-        const newRgb = hslToRgb({ h, s: hsl.s, l: hsl.l, a: 1 });
-        const hex = rgbToHex(newRgb).toUpperCase();
-        const names = ['主色', '互补色'];
-        complementary.push({ name: names[idx], color: hex });
-      });
-      [120, 240].forEach((offset, idx) => {
-        const h = (hsl.h + offset) % 360;
-        const newRgb = hslToRgb({ h, s: hsl.s, l: hsl.l, a: 1 });
-        const hex = rgbToHex(newRgb).toUpperCase();
-        const names = ['三等分色 1', '三等分色 2'];
-        complementary.push({ name: names[idx], color: hex });
-      });
-      this.complementaryColors = complementary;
-    },
-    selectScenario(key) {
-      this.selectedScenario = key;
-    },
-    getScenarioPreviewStyle() {
-      return {
-        background: this.currentScenario.bg,
-        borderColor: this.currentScenario.primary
-      };
-    },
-    generateUnique() {
-      const data = {
-        tech: { name: '差异化科技配色', description: '规避常规蓝色，使用暖橙/琥珀/深绿等差异化配色', colors: [
-          { name: '主色', color: '#F59E0B' }, { name: '辅色', color: '#10B981' }, { name: '点缀', color: '#8B5CF6' },
-          { name: '文字', color: '#1F2937' }, { name: '背景', color: '#FFFBEB' }
-        ]},
-        finance: { name: '差异化金融配色', description: '打破红金传统，采用深紫/森林绿/深海蓝', colors: [
-          { name: '主色', color: '#7C3AED' }, { name: '辅色', color: '#047857' }, { name: '点缀', color: '#0891B2' },
-          { name: '文字', color: '#1F2937' }, { name: '背景', color: '#FAF5FF' }
-        ]},
-        ecommerce: { name: '差异化电商配色', description: '远离橙红黄，使用薄荷绿/粉紫/天青蓝', colors: [
-          { name: '主色', color: '#14B8A6' }, { name: '辅色', color: '#A855F7' }, { name: '点缀', color: '#0EA5E9' },
-          { name: '文字', color: '#1F2937' }, { name: '背景', color: '#F0FDFA' }
-        ]},
-        food: { name: '差异化餐饮配色', description: '跳出食物橙红，使用藏红花/橄榄绿/深陶土', colors: [
-          { name: '主色', color: '#B45309' }, { name: '辅色', color: '#4D7C0F' }, { name: '点缀', color: '#BE123C' },
-          { name: '文字', color: '#1C1917' }, { name: '背景', color: '#FEF3C7' }
-        ]}
-      };
-      this.uniqueResult = data[this.selectedAvoidIndustry] || data.tech;
-    },
-    getAvoidIndustryLabel() {
-      const opt = this.avoidIndustryOptions.find(o => o.key === this.selectedAvoidIndustry);
-      return opt ? opt.label : '';
-    },
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label + ': ' + value, 'success');
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .module-intelligent { width: 100%; min-width: 0; }

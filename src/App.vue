@@ -1,3 +1,224 @@
+<script lang="ts" setup>
+import { ref, computed, watch, provide, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import SidebarLayout from './layout/Sidebar/index.vue';
+import HeaderLayout from './layout/Header/index.vue';
+import MainContentLayout from './layout/MainConter/index.vue';
+import ContentBodyLayout from './layout/ContentBody/index.vue';
+import FooterLayout from './layout/Footer/index.vue';
+import Toast from './components/Toast.vue';
+import Dialog from './components/Dialog.vue';
+import Drawer from './components/Drawer.vue';
+import { NAV_MENU_ITEMS } from './data/navMenu.js';
+import { TAB_BY_ROUTE, translate } from './config/i18n.js';
+import { getDetailModuleDescription as getPrintDetailModuleDescription } from './pages/PrintTools/printToolsUtils.js';
+import { getDetailModuleDescription as getColorDetailModuleDescription } from './pages/ColorTools/colorToolsUtils.js';
+
+const route = useRoute();
+const router = useRouter();
+
+const sidebarCollapsed = ref(false);
+const toasts = ref([]);
+const headerActionButtons = ref([]);
+const navDrawerVisible = ref(false);
+const navMenuItems = NAV_MENU_ITEMS;
+const settingVisible = ref(false);
+const themeMode = ref('system');
+const language = ref('zh-CN');
+const themeOptions = [
+  { value: 'system', icon: 'icon-Areality-ModeSwitching', labelKey: 'themeSystem' },
+  { value: 'light', icon: 'icon-Areality-ModeSwitching', labelKey: 'themeLight' },
+  { value: 'dark', icon: 'icon-Areality-ModeSwitching', labelKey: 'themeDark' }
+];
+const languageOptions = [
+  { value: 'zh-CN', icon: 'icon-Areality-ModeSwitching', labelKey: 'langZhCN' },
+  { value: 'zh-TW', icon: 'icon-Areality-ModeSwitching', labelKey: 'langZhTW' },
+  { value: 'en', icon: 'icon-Areality-ModeSwitching', labelKey: 'langEn' },
+  { value: 'ja', icon: 'icon-Areality-ModeSwitching', labelKey: 'langJa' },
+  { value: 'ko', icon: 'icon-Areality-ModeSwitching', labelKey: 'langKo' },
+  { value: 'ru', icon: 'icon-Areality-ModeSwitching', labelKey: 'langRu' }
+];
+
+function t(key) {
+  return translate(language.value, key);
+}
+
+const currentTab = computed(() => {
+  return TAB_BY_ROUTE[route.path] || 'FunctionOverview';
+});
+
+const currentTabLabel = computed(() => {
+  const map = {
+    FunctionOverview: 'functionOverview',
+    BasicKnowledge: 'basicKnowledge',
+    ColorConversion: 'colorConversion',
+    ImageColorSampling: 'imageSampling',
+    PresetColors: 'presetColors',
+    MyCollection: 'myCollection',
+    AccessibilityCheck: 'accessibilityCheck',
+    IntelligentColorMatching: 'intelligentMatching',
+    PaletteManager: 'paletteManager',
+    PrintTools: 'printTools',
+    ColorTools: 'colorTools'
+  };
+  return t(map[currentTab.value] || 'functionOverview');
+});
+
+const pageTitle = computed(() => {
+  if (route.path === '/ImageColorSampling/detailPage') {
+    return t('analysisResult');
+  }
+  if (route.path === '/PaletteManager/viewGroupingDetail') {
+    return route.query.name || '分组详情';
+  }
+  if (route.path === '/PrintTools/CmykDetail') return 'CMYK 校准';
+  if (route.path === '/PrintTools/PantoneDetail') return '潘通匹配';
+  if (route.path === '/PrintTools/OverprintPreviewDetail') return '叠印预览';
+  if (route.path === '/PrintTools/ScreenTintConverDetail') return '网点换算';
+  if (route.path === '/ColorTools/AdjustDetail') return '色阶微调';
+  if (route.path === '/ColorTools/GradientDetail') return '渐变编辑';
+  if (route.path === '/ColorTools/DifferenceDetail') return '色差比对';
+  return currentTabLabel.value;
+});
+
+const pageSubtitle = computed(() => {
+  if (route.path.startsWith('/PrintTools/')) {
+    return getPrintDetailModuleDescription(route.path, route.query || {});
+  }
+  if (route.path.startsWith('/ColorTools/')) {
+    return getColorDetailModuleDescription(route.path);
+  }
+  return '';
+});
+
+const isDetailRoute = computed(() => {
+  return route.path === '/ImageColorSampling/detailPage'
+    || route.path === '/PaletteManager/viewGroupingDetail'
+    || route.path.startsWith('/PrintTools/')
+    || route.path.startsWith('/ColorTools/');
+});
+
+provide('setHeaderActions', (buttons) => {
+  headerActionButtons.value = buttons || [];
+});
+
+provide('clearHeaderActions', () => {
+  headerActionButtons.value = [];
+});
+
+provide('t', (key) => {
+  return t(key);
+});
+
+provide('currentTheme', () => themeMode.value);
+provide('currentLanguage', () => language.value);
+
+function handleTabChange(tabId) {
+  router.push('/' + tabId);
+}
+
+function handleNavDrawerSelect(tabId) {
+  navDrawerVisible.value = false;
+  if (tabId !== currentTab.value) {
+    handleTabChange(tabId);
+  }
+}
+
+function handleBackFromDetail() {
+  if (route.path === '/PaletteManager/viewGroupingDetail') {
+    router.push('/PaletteManager');
+    return;
+  }
+  if (route.path.startsWith('/PrintTools/')) {
+    router.push('/PrintTools');
+    return;
+  }
+  if (route.path.startsWith('/ColorTools/')) {
+    router.push('/ColorTools');
+    return;
+  }
+  router.push('/ImageColorSampling');
+}
+
+function changeTheme(mode) {
+  themeMode.value = mode;
+  applyTheme();
+  persistSettings();
+}
+
+function changeLanguage(lang) {
+  language.value = lang;
+  persistSettings();
+  document.documentElement.setAttribute('lang', lang);
+}
+
+function applyTheme() {
+  const root = document.documentElement;
+  if (themeMode.value === 'system') {
+    root.removeAttribute('data-theme');
+  } else {
+    root.setAttribute('data-theme', themeMode.value);
+  }
+}
+
+function persistSettings() {
+  try {
+    localStorage.setItem('app.theme', themeMode.value);
+    localStorage.setItem('app.language', language.value);
+  } catch (err) {}
+}
+
+function loadSettings() {
+  try {
+    const theme = localStorage.getItem('app.theme');
+    const lang = localStorage.getItem('app.language');
+    if (theme) themeMode.value = theme;
+    if (lang) language.value = lang;
+  } catch (err) {}
+  applyTheme();
+  document.documentElement.setAttribute('lang', language.value);
+}
+
+function listenForSettings() {
+  window.__openSettings__ = function() {
+    settingVisible.value = true;
+  };
+}
+
+watch(() => route.path, () => {
+  headerActionButtons.value = [];
+  navDrawerVisible.value = false;
+});
+
+onMounted(() => {
+  loadSettings();
+  listenForSettings();
+
+  if (window.utools && typeof window.utools.onPluginEnter === 'function') {
+    window.utools.onPluginEnter((action) => {
+      const code = action && action.code;
+      if (code === 'color_preset') {
+        router.push('/PresetColors');
+      } else if (code === 'color_knowledge') {
+        router.push('/BasicKnowledge');
+      } else if (code === 'color_convert') {
+        router.push('/ColorConversion');
+      } else if (code === 'color_image') {
+        router.push('/ImageColorSampling');
+      }
+    });
+  }
+
+  window.__colorToast__ = function(msg, type) {
+    const id = Date.now() + Math.random();
+    toasts.value.push({ id, message: msg, type: type || 'success' });
+    setTimeout(() => {
+      toasts.value = toasts.value.filter(t => t.id !== id);
+    }, 2000);
+  };
+});
+</script>
+
 <template>
   <div class="app-layout">
     <!-- 左侧导航 -->
@@ -131,238 +352,6 @@
     </Dialog>
   </div>
 </template>
-
-<script>
-import { useRoute, useRouter } from 'vue-router';
-import SidebarLayout from './layout/Sidebar/index.vue';
-import HeaderLayout from './layout/Header/index.vue';
-import MainContentLayout from './layout/MainConter/index.vue';
-import ContentBodyLayout from './layout/ContentBody/index.vue';
-import FooterLayout from './layout/Footer/index.vue';
-import Toast from './components/Toast.vue';
-import Dialog from './components/Dialog.vue';
-import Drawer from './components/Drawer.vue';
-import { NAV_MENU_ITEMS } from './data/navMenu.js';
-import { I18N_DICT, TAB_BY_ROUTE, translate } from './config/i18n.js';
-import { getDetailModuleDescription as getPrintDetailModuleDescription } from './pages/PrintTools/printToolsUtils.js';
-import { getDetailModuleDescription as getColorDetailModuleDescription } from './pages/ColorTools/colorToolsUtils.js';
-
-export default {
-  name: 'App',
-  components: {
-    SidebarLayout,
-    HeaderLayout,
-    MainContentLayout,
-    ContentBodyLayout,
-    FooterLayout,
-    Toast,
-    Dialog,
-    Drawer
-  },
-  setup() {
-    const route = useRoute();
-    const router = useRouter();
-    return { route, router };
-  },
-  data() {
-    return {
-      sidebarCollapsed: false,
-      toasts: [],
-      headerActionButtons: [],
-      navDrawerVisible: false,
-      navMenuItems: NAV_MENU_ITEMS,
-      settingVisible: false,
-      themeMode: 'system',
-      language: 'zh-CN',
-      themeOptions: [
-        { value: 'system', icon: 'icon-Areality-ModeSwitching', labelKey: 'themeSystem' },
-        { value: 'light', icon: 'icon-Areality-ModeSwitching', labelKey: 'themeLight' },
-        { value: 'dark', icon: 'icon-Areality-ModeSwitching', labelKey: 'themeDark' }
-      ],
-      languageOptions: [
-        { value: 'zh-CN', icon: 'icon-Areality-ModeSwitching', labelKey: 'langZhCN' },
-        { value: 'zh-TW', icon: 'icon-Areality-ModeSwitching', labelKey: 'langZhTW' },
-        { value: 'en', icon: 'icon-Areality-ModeSwitching', labelKey: 'langEn' },
-        { value: 'ja', icon: 'icon-Areality-ModeSwitching', labelKey: 'langJa' },
-        { value: 'ko', icon: 'icon-Areality-ModeSwitching', labelKey: 'langKo' },
-        { value: 'ru', icon: 'icon-Areality-ModeSwitching', labelKey: 'langRu' }
-      ]
-    };
-  },
-  computed: {
-    currentTab() {
-      return TAB_BY_ROUTE[this.route.path] || 'FunctionOverview';
-    },
-    currentTabLabel() {
-      const map = {
-        FunctionOverview: 'functionOverview',
-        BasicKnowledge: 'basicKnowledge',
-        ColorConversion: 'colorConversion',
-        ImageColorSampling: 'imageSampling',
-        PresetColors: 'presetColors',
-        MyCollection: 'myCollection',
-        AccessibilityCheck: 'accessibilityCheck',
-        IntelligentColorMatching: 'intelligentMatching',
-        PaletteManager: 'paletteManager',
-        PrintTools: 'printTools',
-        ColorTools: 'colorTools'
-      };
-      return this.t(map[this.currentTab] || 'functionOverview');
-    },
-    pageTitle() {
-      if (this.route.path === '/ImageColorSampling/detailPage') {
-        return this.t('analysisResult');
-      }
-      if (this.route.path === '/PaletteManager/viewGroupingDetail') {
-        return this.route.query.name || '分组详情';
-      }
-      if (this.route.path === '/PrintTools/CmykDetail') return 'CMYK 校准';
-      if (this.route.path === '/PrintTools/PantoneDetail') return '潘通匹配';
-      if (this.route.path === '/PrintTools/OverprintPreviewDetail') return '叠印预览';
-      if (this.route.path === '/PrintTools/ScreenTintConverDetail') return '网点换算';
-      if (this.route.path === '/ColorTools/AdjustDetail') return '色阶微调';
-      if (this.route.path === '/ColorTools/GradientDetail') return '渐变编辑';
-      if (this.route.path === '/ColorTools/DifferenceDetail') return '色差比对';
-      return this.currentTabLabel;
-    },
-    pageSubtitle() {
-      if (this.route.path.startsWith('/PrintTools/')) {
-        return getPrintDetailModuleDescription(this.route.path, this.route.query || {});
-      }
-      if (this.route.path.startsWith('/ColorTools/')) {
-        return getColorDetailModuleDescription(this.route.path);
-      }
-      return '';
-    },
-    isDetailRoute() {
-      return this.route.path === '/ImageColorSampling/detailPage'
-        || this.route.path === '/PaletteManager/viewGroupingDetail'
-        || this.route.path.startsWith('/PrintTools/')
-        || this.route.path.startsWith('/ColorTools/');
-    }
-  },
-  provide() {
-    const self = this;
-    return {
-      setHeaderActions(buttons) {
-        self.headerActionButtons = buttons || [];
-      },
-      clearHeaderActions() {
-        self.headerActionButtons = [];
-      },
-      t(key) {
-        return self.t(key);
-      },
-      currentTheme: () => self.themeMode,
-      currentLanguage: () => self.language
-    };
-  },
-  methods: {
-    t(key) {
-      return translate(this.language, key);
-    },
-    handleTabChange(tabId) {
-      this.router.push('/' + tabId);
-    },
-    handleNavDrawerSelect(tabId) {
-      this.navDrawerVisible = false;
-      if (tabId !== this.currentTab) {
-        this.handleTabChange(tabId);
-      }
-    },
-    handleBackFromDetail() {
-      if (this.route.path === '/PaletteManager/viewGroupingDetail') {
-        this.router.push('/PaletteManager');
-        return;
-      }
-      if (this.route.path.startsWith('/PrintTools/')) {
-        this.router.push('/PrintTools');
-        return;
-      }
-      if (this.route.path.startsWith('/ColorTools/')) {
-        this.router.push('/ColorTools');
-        return;
-      }
-      this.router.push('/ImageColorSampling');
-    },
-    changeTheme(mode) {
-      this.themeMode = mode;
-      this.applyTheme();
-      this.persistSettings();
-    },
-    changeLanguage(lang) {
-      this.language = lang;
-      this.persistSettings();
-      document.documentElement.setAttribute('lang', lang);
-    },
-    applyTheme() {
-      const root = document.documentElement;
-      if (this.themeMode === 'system') {
-        root.removeAttribute('data-theme');
-      } else {
-        root.setAttribute('data-theme', this.themeMode);
-      }
-    },
-    persistSettings() {
-      try {
-        localStorage.setItem('app.theme', this.themeMode);
-        localStorage.setItem('app.language', this.language);
-      } catch (err) {}
-    },
-    loadSettings() {
-      try {
-        const theme = localStorage.getItem('app.theme');
-        const lang = localStorage.getItem('app.language');
-        if (theme) this.themeMode = theme;
-        if (lang) this.language = lang;
-      } catch (err) {}
-      this.applyTheme();
-      document.documentElement.setAttribute('lang', this.language);
-    },
-    listenForSettings() {
-      const self = this;
-      window.__openSettings__ = function() {
-        self.settingVisible = true;
-      };
-    }
-  },
-  watch: {
-    '$route.path'() {
-      this.headerActionButtons = [];
-      this.navDrawerVisible = false;
-    }
-  },
-  mounted() {
-    this.loadSettings();
-    this.listenForSettings();
-
-    if (window.utools && typeof window.utools.onPluginEnter === 'function') {
-      const self = this;
-      window.utools.onPluginEnter((action) => {
-        const code = action && action.code;
-        if (code === 'color_preset') {
-          self.router.push('/PresetColors');
-        } else if (code === 'color_knowledge') {
-          self.router.push('/BasicKnowledge');
-        } else if (code === 'color_convert') {
-          self.router.push('/ColorConversion');
-        } else if (code === 'color_image') {
-          self.router.push('/ImageColorSampling');
-        }
-      });
-    }
-
-    const self = this;
-    window.__colorToast__ = function(msg, type) {
-      const id = Date.now() + Math.random();
-      self.toasts.push({ id, message: msg, type: type || 'success' });
-      setTimeout(() => {
-        self.toasts = self.toasts.filter(t => t.id !== id);
-      }, 2000);
-    };
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .app-layout {

@@ -1,9 +1,58 @@
+<script lang="ts" setup>
+import { computed } from 'vue';
+import Dialog from './Dialog.vue';
+import {
+  parseColor,
+  formatHEX,
+  formatRGB,
+  formatRGBA,
+  formatHSL,
+  formatCMYK,
+  formatHSV,
+  copyToClipboard,
+  showToast
+} from '../utils/colorUtils';
+
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false
+  },
+  color: {
+    type: Object,
+    default: () => ({ name: '', hex: '' })
+  }
+});
+
+const emit = defineEmits(['update:visible']);
+
+const formatOutputs = computed(() => {
+  const rgb = parseColor(props.color.hex);
+  if (!rgb) return [];
+  const { r, g, b, a } = rgb;
+  const rgba = { r, g, b, a };
+  return [
+    { label: 'HEX', value: formatHEX(rgba) },
+    { label: 'RGB', value: formatRGB(rgba) },
+    { label: 'RGBA', value: formatRGBA(rgba) },
+    { label: 'HSL', value: formatHSL(rgba) },
+    { label: 'CMYK', value: formatCMYK(rgba) },
+    { label: 'HSV', value: formatHSV(rgba) }
+  ];
+});
+
+const copyValue = (value, label) => {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + label + ': ' + value, 'success');
+};
+</script>
+
 <template>
   <Dialog
     :visible="visible"
     max-width="420px"
-    @update:visible="$emit('update:visible', $event)"
-    @close="$emit('update:visible', false)"
+    @update:visible="emit('update:visible', $event)"
+    @close="emit('update:visible', false)"
   >
     <template #header>
       <div class="modal-title-row">
@@ -28,60 +77,7 @@
   </Dialog>
 </template>
 
-<script>
-import Dialog from './Dialog.vue';
-import {
-  parseColor,
-  formatHEX,
-  formatRGB,
-  formatRGBA,
-  formatHSL,
-  formatCMYK,
-  formatHSV,
-  copyToClipboard,
-  showToast
-} from '../utils/colorUtils';
-
-export default {
-  name: 'ColorFormatDialog',
-  components: { Dialog },
-  props: {
-    visible: {
-      type: Boolean,
-      default: false
-    },
-    color: {
-      type: Object,
-      default: () => ({ name: '', hex: '' })
-    }
-  },
-  emits: ['update:visible'],
-  computed: {
-    formatOutputs() {
-      const rgb = parseColor(this.color.hex);
-      if (!rgb) return [];
-      const { r, g, b, a } = rgb;
-      const rgba = { r, g, b, a };
-      return [
-        { label: 'HEX', value: formatHEX(rgba) },
-        { label: 'RGB', value: formatRGB(rgba) },
-        { label: 'RGBA', value: formatRGBA(rgba) },
-        { label: 'HSL', value: formatHSL(rgba) },
-        { label: 'CMYK', value: formatCMYK(rgba) },
-        { label: 'HSV', value: formatHSV(rgba) }
-      ];
-    }
-  },
-  methods: {
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label + ': ' + value, 'success');
-    }
-  }
-};
-</script>
-
-<style scoped>
+<style lang="scss" scoped>
 .modal-title-row {
   display: flex;
   align-items: center;

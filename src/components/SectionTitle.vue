@@ -1,3 +1,21 @@
+<script lang="ts" setup>
+defineProps({
+  mode: {
+    type: String,
+    default: 'primary',
+    validator: (v) => ['primary', 'secondary'].indexOf(v) !== -1
+  },
+  title: {
+    type: String,
+    default: ''
+  },
+  subtitle: {
+    type: String,
+    default: ''
+  }
+});
+</script>
+
 <template>
   <div :class="['section-title-wrap', `mode-${mode}`]">
     <div :class="['st-title', { 'st-title-primary': mode === 'primary' }]">
@@ -8,27 +26,6 @@
     </div>
   </div>
 </template>
-
-<script>
-export default {
-  name: 'SectionTitle',
-  props: {
-    mode: {
-      type: String,
-      default: 'primary',
-      validator: (v) => ['primary', 'secondary'].indexOf(v) !== -1
-    },
-    title: {
-      type: String,
-      default: ''
-    },
-    subtitle: {
-      type: String,
-      default: ''
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .section-title-wrap {

@@ -17,7 +17,7 @@ defineProps({
   </div>
 </template>
 
-<style>
+<style lang="scss" scoped>
 .hello {
   padding: 10px 28px;
 }

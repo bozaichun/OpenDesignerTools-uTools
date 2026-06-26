@@ -1,3 +1,32 @@
+<script lang="ts" setup>
+import { computed, useSlots } from 'vue';
+
+const props = defineProps({
+  title: {
+    type: String,
+    default: ''
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  icon: {
+    type: String,
+    default: 'icon-Areality-PrintingTool'
+  }
+});
+
+const slots = useSlots();
+
+const hasDescription = computed(() => {
+  return Boolean(props.description) || Boolean(slots.description);
+});
+
+const hasIcon = computed(() => {
+  return Boolean(props.icon) || Boolean(slots.icon);
+});
+</script>
+
 <template>
   <div class="app-banner">
     <div class="app-banner__content">
@@ -19,35 +48,7 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'AppBanner',
-  props: {
-    title: {
-      type: String,
-      default: ''
-    },
-    description: {
-      type: String,
-      default: ''
-    },
-    icon: {
-      type: String,
-      default: 'icon-Areality-PrintingTool'
-    }
-  },
-  computed: {
-    hasDescription() {
-      return Boolean(this.description) || Boolean(this.$slots.description);
-    },
-    hasIcon() {
-      return Boolean(this.icon) || Boolean(this.$slots.icon);
-    }
-  }
-};
-</script>
-
-<style scoped>
+<style lang="scss" scoped>
 .app-banner {
   box-sizing: border-box;
   height: 168px;

@@ -1,3 +1,131 @@
+<script lang="ts" setup>
+import { ref, watch, onMounted, nextTick } from 'vue';
+import {
+  formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
+  showToast
+} from '../utils/colorUtils';
+import Magnifier from './Magnifier.vue';
+
+const props = defineProps({
+  imageSrc: {
+    type: String,
+    required: true
+  },
+  naturalWidth: {
+    type: Number,
+    default: 0
+  },
+  naturalHeight: {
+    type: Number,
+    default: 0
+  }
+});
+
+const emit = defineEmits(['pick']);
+
+const imageContainer = ref(null);
+const canvas = ref(null);
+const pickerPos = ref(null);
+const imageData = ref(null);
+const hoverColor = ref(null);
+const hoverNaturalX = ref(0);
+const hoverNaturalY = ref(0);
+
+const renderCanvas = () => {
+  if (!props.imageSrc) return;
+  const img = new Image();
+  img.onload = function() {
+    const canvasEl = canvas.value;
+    if (!canvasEl) return;
+    const width = props.naturalWidth || img.width;
+    const height = props.naturalHeight || img.height;
+    canvasEl.width = width;
+    canvasEl.height = height;
+    const ctx = canvasEl.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+    imageData.value = ctx.getImageData(0, 0, width, height);
+  };
+  img.src = props.imageSrc;
+};
+
+const handleCanvasLeave = () => {
+  pickerPos.value = null;
+  hoverColor.value = null;
+};
+
+const getPixelAt = (x, y) => {
+  if (!imageData.value) return null;
+  const data = imageData.value.data;
+  const width = imageData.value.width;
+  const idx = (y * width + x) * 4;
+  return {
+    r: data[idx],
+    g: data[idx + 1],
+    b: data[idx + 2],
+    a: data[idx + 3] / 255
+  };
+};
+
+const handleCanvasMove = (e) => {
+  const canvasEl = canvas.value;
+  if (!canvasEl) return;
+  const rect = canvasEl.getBoundingClientRect();
+  const displayX = e.clientX - rect.left;
+  const displayY = e.clientY - rect.top;
+  pickerPos.value = { x: displayX, y: displayY };
+
+  const scaleX = imageData.value ? canvasEl.width / rect.width : 1;
+  const scaleY = imageData.value ? canvasEl.height / rect.height : 1;
+  const naturalX = Math.floor(displayX * scaleX);
+  const naturalY = Math.floor(displayY * scaleY);
+  hoverNaturalX.value = naturalX;
+  hoverNaturalY.value = naturalY;
+
+  const pixel = getPixelAt(naturalX, naturalY);
+  if (pixel) {
+    const rgba = { r: pixel.r, g: pixel.g, b: pixel.b, a: pixel.a };
+    hoverColor.value = { hex: formatHEX(rgba) };
+  }
+};
+
+const handleCanvasClick = (e) => {
+  const canvasEl = canvas.value;
+  if (!canvasEl) return;
+  const rect = canvasEl.getBoundingClientRect();
+  const scaleX = imageData.value ? canvasEl.width / rect.width : 1;
+  const scaleY = imageData.value ? canvasEl.height / rect.height : 1;
+  const x = Math.floor((e.clientX - rect.left) * scaleX);
+  const y = Math.floor((e.clientY - rect.top) * scaleY);
+
+  const pixel = getPixelAt(x, y);
+  if (pixel) {
+    const rgba = { r: pixel.r, g: pixel.g, b: pixel.b, a: pixel.a };
+    const hex = formatHEX(rgba);
+    const colorInfo = {
+      hex,
+      rgb: formatRGB(rgba),
+      hsl: formatHSL(rgba),
+      cmyk: formatCMYK(rgba),
+      hsv: formatHSV(rgba)
+    };
+    emit('pick', colorInfo);
+    showToast(null, '已获取颜色: ' + hex, 'success');
+  }
+};
+
+watch(() => props.imageSrc, () => {
+  nextTick(() => {
+    renderCanvas();
+  });
+});
+
+onMounted(() => {
+  nextTick(() => {
+    renderCanvas();
+  });
+});
+</script>
+
 <template>
   <div class="straw-container" ref="imageContainer">
     <canvas
@@ -23,138 +151,6 @@
     </div>
   </div>
 </template>
-
-<script>
-import {
-  formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
-  showToast
-} from '../utils/colorUtils';
-import Magnifier from './Magnifier.vue';
-
-export default {
-  name: 'Straw',
-  components: { Magnifier },
-  props: {
-    imageSrc: {
-      type: String,
-      required: true
-    },
-    naturalWidth: {
-      type: Number,
-      default: 0
-    },
-    naturalHeight: {
-      type: Number,
-      default: 0
-    }
-  },
-  data() {
-    return {
-      pickerPos: null,
-      imageData: null,
-      hoverColor: null,
-      hoverNaturalX: 0,
-      hoverNaturalY: 0
-    };
-  },
-  mounted() {
-    this.$nextTick(() => {
-      this.renderCanvas();
-    });
-  },
-  watch: {
-    imageSrc() {
-      this.$nextTick(() => {
-        this.renderCanvas();
-      });
-    }
-  },
-  methods: {
-    renderCanvas() {
-      if (!this.imageSrc) return;
-      const self = this;
-      const img = new Image();
-      img.onload = function() {
-        const canvas = self.$refs.canvas;
-        if (!canvas) return;
-        const width = self.naturalWidth || img.width;
-        const height = self.naturalHeight || img.height;
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        self.imageData = ctx.getImageData(0, 0, width, height);
-      };
-      img.src = this.imageSrc;
-    },
-
-    handleCanvasLeave() {
-      this.pickerPos = null;
-      this.hoverColor = null;
-    },
-
-    handleCanvasMove(e) {
-      const canvas = this.$refs.canvas;
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const displayX = e.clientX - rect.left;
-      const displayY = e.clientY - rect.top;
-      this.pickerPos = { x: displayX, y: displayY };
-
-      const scaleX = this.imageData ? canvas.width / rect.width : 1;
-      const scaleY = this.imageData ? canvas.height / rect.height : 1;
-      const naturalX = Math.floor(displayX * scaleX);
-      const naturalY = Math.floor(displayY * scaleY);
-      this.hoverNaturalX = naturalX;
-      this.hoverNaturalY = naturalY;
-
-      const pixel = this.getPixelAt(naturalX, naturalY);
-      if (pixel) {
-        const rgba = { r: pixel.r, g: pixel.g, b: pixel.b, a: pixel.a };
-        this.hoverColor = { hex: formatHEX(rgba) };
-      }
-    },
-
-    getPixelAt(x, y) {
-      if (!this.imageData) return null;
-      const data = this.imageData.data;
-      const width = this.imageData.width;
-      const idx = (y * width + x) * 4;
-      return {
-        r: data[idx],
-        g: data[idx + 1],
-        b: data[idx + 2],
-        a: data[idx + 3] / 255
-      };
-    },
-
-    handleCanvasClick(e) {
-      const canvas = this.$refs.canvas;
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = this.imageData ? canvas.width / rect.width : 1;
-      const scaleY = this.imageData ? canvas.height / rect.height : 1;
-      const x = Math.floor((e.clientX - rect.left) * scaleX);
-      const y = Math.floor((e.clientY - rect.top) * scaleY);
-
-      const pixel = this.getPixelAt(x, y);
-      if (pixel) {
-        const rgba = { r: pixel.r, g: pixel.g, b: pixel.b, a: pixel.a };
-        const hex = formatHEX(rgba);
-        const colorInfo = {
-          hex,
-          rgb: formatRGB(rgba),
-          hsl: formatHSL(rgba),
-          cmyk: formatCMYK(rgba),
-          hsv: formatHSV(rgba)
-        };
-        this.$emit('pick', colorInfo);
-        showToast(this, '已获取颜色: ' + hex, 'success');
-      }
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .straw-container {

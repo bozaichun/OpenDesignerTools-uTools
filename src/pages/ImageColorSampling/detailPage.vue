@@ -1,3 +1,401 @@
+﻿<script lang="ts" setup>
+import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import {
+  formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
+  copyToClipboard, showToast
+} from '../../utils/colorUtils';
+import {
+  isFavorite,
+  toggleFavorite,
+  normalizeFavoriteHex
+} from '../../utils/favoriteStorage';
+import ModuleTitle from '../../components/ModuleTitle.vue';
+import Dialog from '../../components/Dialog.vue';
+import Straw from '../../components/Straw.vue';
+import Loading from '../../components/Loading.vue';
+
+const STORAGE_KEY = 'imageAnalysisData';
+
+const router = useRouter();
+const setHeaderActions = inject('setHeaderActions');
+const clearHeaderActions = inject('clearHeaderActions');
+
+const fileInput = ref(null);
+const paletteCanvasBox = ref(null);
+
+const imageSrc = ref(null);
+const imageNaturalWidth = ref(0);
+const imageNaturalHeight = ref(0);
+const mainColors = ref([]);
+const pickedColor = ref(null);
+const isAnalyzing = ref(false);
+const paletteDialogVisible = ref(false);
+
+const pendingNaturalWidth = ref(0);
+const pendingNaturalHeight = ref(0);
+const pendingImageData = ref(null);
+
+const hasData = computed(() => imageSrc.value && mainColors.value.length > 0);
+const paletteCols = computed(() => {
+  const total = mainColors.value.length;
+  if (total <= 4) return 4;
+  if (total <= 6) return 3;
+  return 4;
+});
+
+let handleFavoritesChanged = null;
+
+function loadAnalysisData() {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      console.warn('没有找到分析数据');
+      return;
+    }
+    const data = JSON.parse(raw);
+    imageSrc.value = data.imageSrc;
+    imageNaturalWidth.value = data.imageNaturalWidth;
+    imageNaturalHeight.value = data.imageNaturalHeight;
+    mainColors.value = data.mainColors || [];
+  } catch (err) {
+    console.error('读取分析数据失败', err);
+    showToast(null, '数据读取失败', 'error');
+  }
+}
+function handleStrawPick(colorInfo) {
+  pickedColor.value = colorInfo;
+}
+function copyValue(value, label) {
+  copyToClipboard(value);
+  showToast(null, '已复制 ' + label + ': ' + value, 'success');
+}
+function getColorFormat(color, type) {
+  if (!color || !color.hex) return '';
+  const h = color.hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  const rgba = { r, g, b, a: 1 };
+  if (type === 'cmyk') return formatCMYK(rgba);
+  if (type === 'hsv') return formatHSV(rgba);
+  return '';
+}
+function searchOnBaidu(hex) {
+  const query = encodeURIComponent(hex + ' 颜色 配色方案 色彩搭配');
+  const url = 'https://www.baidu.com/s?wd=' + query;
+  if (window.utools && typeof window.utools.shellOpenExternal === 'function') {
+    window.utools.shellOpenExternal(url);
+  } else {
+    window.open(url, '_blank');
+  }
+  showToast(null, '正在搜索 ' + hex + ' 的配色方案', 'success');
+}
+function goBack() {
+  router.push('/ImageColorSampling');
+}
+function updateHeaderActions() {
+  if (mainColors.value.length === 0) {
+    clearHeaderActions();
+    return;
+  }
+  const hex = pickedColor.value?.hex;
+  const favorited = hex ? isFavorite(hex) : false;
+  setHeaderActions([
+    {
+      label: favorited ? '★ 已收藏' : '☆ 收藏',
+      onClick: () => handleFavoritePicked(),
+      secondary: true
+    },
+    { label: '重新选择', onClick: () => handleReselect(), secondary: true },
+    { label: '生成色卡', onClick: () => openPaletteDialog() }
+  ]);
+}
+function handleFavoritePicked() {
+  if (!pickedColor.value?.hex) {
+    showToast(null, '请先在图片上取色', 'error');
+    return;
+  }
+  const hex = normalizeFavoriteHex(pickedColor.value.hex) || pickedColor.value.hex;
+  const wasFavorited = isFavorite(hex);
+  const result = toggleFavorite({ hex, name: hex });
+  if (!result.ok) {
+    showToast(null, result.message || '操作失败', 'error');
+    return;
+  }
+  showToast(
+    null,
+    wasFavorited ? '已取消收藏' : `已将 “${hex}” 加入我的收藏`,
+    'success'
+  );
+  updateHeaderActions();
+}
+function handleReselect() {
+  fileInput.value.value = '';
+  fileInput.value.click();
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) loadImage(file);
+}
+function loadImage(file) {
+  const MIN_LOADING_MS = 1000;
+  const startTime = Date.now();
+  isAnalyzing.value = true;
+  pickedColor.value = null;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      parseImageData(img);
+      extractMainColors(e.target.result, startTime, MIN_LOADING_MS);
+    };
+    img.onerror = function() {
+      isAnalyzing.value = false;
+      showToast(null, '图片加载失败', 'error');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function parseImageData(img) {
+  const maxSize = 600;
+  let width = img.width;
+  let height = img.height;
+
+  if (width > maxSize || height > maxSize) {
+    const ratio = Math.min(maxSize / width, maxSize / height);
+    width = Math.floor(width * ratio);
+    height = Math.floor(height * ratio);
+  }
+
+  pendingNaturalWidth.value = width;
+  pendingNaturalHeight.value = height;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, width, height);
+  pendingImageData.value = ctx.getImageData(0, 0, width, height);
+}
+function extractMainColors(newImageSrc, startTime, minLoadingMs) {
+  if (!pendingImageData.value) {
+    const elapsed = Date.now() - startTime;
+    const remaining = Math.max(0, minLoadingMs - elapsed);
+    setTimeout(function() {
+      isAnalyzing.value = false;
+    }, remaining);
+    return;
+  }
+
+  try {
+    const data = pendingImageData.value.data;
+    const step = 4;
+    const buckets = {};
+
+    for (let i = 0; i < data.length; i += 4 * step) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const a = data[i + 3];
+
+      if (a < 50) continue;
+
+      const qr = Math.round(r / 32) * 32;
+      const qg = Math.round(g / 32) * 32;
+      const qb = Math.round(b / 32) * 32;
+      const key = qr + ',' + qg + ',' + qb;
+
+      if (!buckets[key]) {
+        buckets[key] = { sumR: 0, sumG: 0, sumB: 0, count: 0 };
+      }
+      buckets[key].sumR += r;
+      buckets[key].sumG += g;
+      buckets[key].sumB += b;
+      buckets[key].count++;
+    }
+
+    const sorted = Object.entries(buckets)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 12);
+
+    const results = sorted.map(([, d]) => {
+      const avgR = Math.round(d.sumR / d.count);
+      const avgG = Math.round(d.sumG / d.count);
+      const avgB = Math.round(d.sumB / d.count);
+      return { r: avgR, g: avgG, b: avgB };
+    });
+
+    const unique = [];
+    for (let i = 0; i < results.length; i++) {
+      const c = results[i];
+      let isSimilar = false;
+      for (let j = 0; j < unique.length; j++) {
+        const u = unique[j];
+        if (Math.abs(u.r - c.r) < 30 && Math.abs(u.g - c.g) < 30 && Math.abs(u.b - c.b) < 30) {
+          isSimilar = true;
+          break;
+        }
+      }
+      if (!isSimilar) unique.push(c);
+    }
+
+    const newMainColors = unique.slice(0, 8).map(c => {
+      const rgba = { r: c.r, g: c.g, b: c.b, a: 1 };
+      return {
+        hex: formatHEX(rgba),
+        rgb: formatRGB(rgba),
+        hsl: formatHSL(rgba),
+        cmyk: formatCMYK(rgba),
+        hsv: formatHSV(rgba)
+      };
+    });
+
+    const elapsed = Date.now() - startTime;
+    const remaining = Math.max(0, minLoadingMs - elapsed);
+    setTimeout(function() {
+      imageSrc.value = newImageSrc;
+      imageNaturalWidth.value = pendingNaturalWidth.value;
+      imageNaturalHeight.value = pendingNaturalHeight.value;
+      mainColors.value = newMainColors;
+      saveAnalysisData();
+      isAnalyzing.value = false;
+    }, remaining);
+  } catch (err) {
+    console.error('主色调提取失败', err);
+    isAnalyzing.value = false;
+    showToast(null, '颜色提取失败', 'error');
+  }
+}
+function saveAnalysisData() {
+  try {
+    const data = {
+      imageSrc: imageSrc.value,
+      imageNaturalWidth: imageNaturalWidth.value,
+      imageNaturalHeight: imageNaturalHeight.value,
+      mainColors: mainColors.value,
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (err) {
+    console.error('数据存储失败', err);
+    showToast(null, '数据存储失败，请重试', 'error');
+  }
+}
+function openPaletteDialog() {
+  if (!mainColors.value.length) {
+    showToast(null, '没有可用的颜色数据', 'error');
+    return;
+  }
+  paletteDialogVisible.value = true;
+}
+function getContrastTextColor(hex) {
+  const h = (hex || '').replace('#', '');
+  if (h.length !== 6) return '#111111';
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 160 ? '#111111' : '#ffffff';
+}
+function downloadPalette() {
+  if (!mainColors.value.length) {
+    showToast(null, '没有可下载的色卡数据', 'error');
+    return;
+  }
+  try {
+    const colors = mainColors.value.map(c => ({
+      hex: c.hex,
+      rgb: c.rgb,
+      text: getContrastTextColor(c.hex)
+    }));
+    const cols = paletteCols.value;
+    const cardW = 240;
+    const cardH = 260;
+    const swatchH = 180;
+    const padding = 32;
+    const gap = 20;
+    const titleH = 56;
+
+    const rows = Math.ceil(colors.length / cols);
+    const canvas = document.createElement('canvas');
+    const width = padding * 2 + cardW * cols + gap * (cols - 1);
+    const height = padding * 2 + titleH + cardH * rows + gap * (rows - 1);
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#111111';
+    ctx.textBaseline = 'top';
+    ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.fillText('色卡 Palette', padding, padding);
+
+    ctx.fillStyle = '#888888';
+    ctx.font = '14px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.fillText('共 ' + colors.length + ' 种主色调', padding, padding + 34);
+
+    colors.forEach((color, idx) => {
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      const x = padding + col * (cardW + gap);
+      const y = padding + titleH + row * (cardH + gap);
+
+      ctx.fillStyle = '#f5f5f7';
+      ctx.fillRect(x, y, cardW, cardH);
+
+      ctx.fillStyle = color.hex;
+      ctx.fillRect(x, y, cardW, swatchH);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x, y + swatchH, cardW, cardH - swatchH);
+
+      ctx.fillStyle = '#111111';
+      ctx.font = 'bold 16px "SF Mono", Consolas, Monaco, monospace';
+      ctx.fillText(color.hex, x + 16, y + swatchH + 18);
+
+      ctx.fillStyle = '#555555';
+      ctx.font = '12px "SF Mono", Consolas, Monaco, monospace';
+      ctx.fillText(color.rgb, x + 16, y + swatchH + 44);
+    });
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'palette-' + Date.now() + '.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(null, '色卡已开始下载', 'success');
+  } catch (err) {
+    console.error('下载色卡失败', err);
+    showToast(null, '下载失败，请重试', 'error');
+  }
+}
+
+watch(pickedColor, () => {
+  updateHeaderActions();
+});
+watch(mainColors, () => {
+  updateHeaderActions();
+});
+
+onMounted(() => {
+  loadAnalysisData();
+  updateHeaderActions();
+  handleFavoritesChanged = () => updateHeaderActions();
+  window.addEventListener('color-favorites-changed', handleFavoritesChanged);
+});
+onUnmounted(() => {
+  clearHeaderActions();
+  window.removeEventListener('color-favorites-changed', handleFavoritesChanged);
+});
+</script>
+
 <template>
   <div class="module-detail">
     <!-- 隐藏文件选择器，用于「重新选择」按钮触发 -->
@@ -225,439 +623,13 @@
   </div>
 </template>
 
-<script>
-import {
-  formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
-  copyToClipboard, showToast
-} from '../../utils/colorUtils';
-import {
-  isFavorite,
-  toggleFavorite,
-  normalizeFavoriteHex
-} from '../../utils/favoriteStorage';
-import ModuleTitle from '../../components/ModuleTitle.vue';
-import Dialog from '../../components/Dialog.vue';
-import Straw from '../../components/Straw.vue';
-import Loading from '../../components/Loading.vue';
-
-const STORAGE_KEY = 'imageAnalysisData';
-
-export default {
-  name: 'ImageColorSamplingDetail',
-  components: {
-    ModuleTitle,
-    Dialog,
-    Straw,
-    Loading
-  },
-  inject: ['setHeaderActions', 'clearHeaderActions'],
-  data() {
-    return {
-      imageSrc: null,
-      imageNaturalWidth: 0,
-      imageNaturalHeight: 0,
-      mainColors: [],
-      pickedColor: null,
-      isAnalyzing: false,
-      paletteDialogVisible: false
-    };
-  },
-  computed: {
-    hasData() {
-      return this.imageSrc && this.mainColors.length > 0;
-    },
-    paletteCols() {
-      const total = this.mainColors.length;
-      if (total <= 4) return 4;
-      if (total <= 6) return 3;
-      return 4;
-    }
-  },
-  mounted() {
-    this.loadAnalysisData();
-    this.updateHeaderActions();
-    this.handleFavoritesChanged = () => this.updateHeaderActions();
-    window.addEventListener('color-favorites-changed', this.handleFavoritesChanged);
-  },
-  unmounted() {
-    this.clearHeaderActions();
-    window.removeEventListener('color-favorites-changed', this.handleFavoritesChanged);
-  },
-  watch: {
-    pickedColor() {
-      this.updateHeaderActions();
-    },
-    mainColors: {
-      deep: false,
-      handler() {
-        this.updateHeaderActions();
-      }
-    }
-  },
-  methods: {
-    loadAnalysisData() {
-      try {
-        const raw = sessionStorage.getItem(STORAGE_KEY);
-        if (!raw) {
-          console.warn('没有找到分析数据');
-          return;
-        }
-        const data = JSON.parse(raw);
-        this.imageSrc = data.imageSrc;
-        this.imageNaturalWidth = data.imageNaturalWidth;
-        this.imageNaturalHeight = data.imageNaturalHeight;
-        this.mainColors = data.mainColors || [];
-      } catch (err) {
-        console.error('读取分析数据失败', err);
-        showToast(this, '数据读取失败', 'error');
-      }
-    },
-
-    handleStrawPick(colorInfo) {
-      this.pickedColor = colorInfo;
-    },
-
-    copyValue(value, label) {
-      copyToClipboard(value);
-      showToast(this, '已复制 ' + label + ': ' + value, 'success');
-    },
-
-    getColorFormat(color, type) {
-      if (!color || !color.hex) return '';
-      const h = color.hex.replace('#', '');
-      const r = parseInt(h.substring(0, 2), 16);
-      const g = parseInt(h.substring(2, 4), 16);
-      const b = parseInt(h.substring(4, 6), 16);
-      const rgba = { r, g, b, a: 1 };
-      if (type === 'cmyk') return formatCMYK(rgba);
-      if (type === 'hsv') return formatHSV(rgba);
-      return '';
-    },
-
-    searchOnBaidu(hex) {
-      const query = encodeURIComponent(hex + ' 颜色 配色方案 色彩搭配');
-      const url = 'https://www.baidu.com/s?wd=' + query;
-      if (window.utools && typeof window.utools.shellOpenExternal === 'function') {
-        window.utools.shellOpenExternal(url);
-      } else {
-        window.open(url, '_blank');
-      }
-      showToast(this, '正在搜索 ' + hex + ' 的配色方案', 'success');
-    },
-
-    goBack() {
-      this.$router.push('/ImageColorSampling');
-    },
-
-    updateHeaderActions() {
-      if (this.mainColors.length === 0) {
-        this.clearHeaderActions();
-        return;
-      }
-      const hex = this.pickedColor?.hex;
-      const favorited = hex ? isFavorite(hex) : false;
-      this.setHeaderActions([
-        {
-          label: favorited ? '★ 已收藏' : '☆ 收藏',
-          onClick: () => this.handleFavoritePicked(),
-          secondary: true
-        },
-        { label: '重新选择', onClick: () => this.handleReselect(), secondary: true },
-        { label: '生成色卡', onClick: () => this.openPaletteDialog() }
-      ]);
-    },
-    handleFavoritePicked() {
-      if (!this.pickedColor?.hex) {
-        showToast(this, '请先在图片上取色', 'error');
-        return;
-      }
-      const hex = normalizeFavoriteHex(this.pickedColor.hex) || this.pickedColor.hex;
-      const wasFavorited = isFavorite(hex);
-      const result = toggleFavorite({ hex, name: hex });
-      if (!result.ok) {
-        showToast(this, result.message || '操作失败', 'error');
-        return;
-      }
-      showToast(
-        this,
-        wasFavorited ? '已取消收藏' : `已将 “${hex}” 加入我的收藏`,
-        'success'
-      );
-      this.updateHeaderActions();
-    },
-    handleReselect() {
-      this.$refs.fileInput.value = '';
-      this.$refs.fileInput.click();
-    },
-    handleFileSelect(e) {
-      const file = e.target.files[0];
-      if (file) this.loadImage(file);
-    },
-    loadImage(file) {
-      const self = this;
-      const MIN_LOADING_MS = 1000;
-      const startTime = Date.now();
-      this.isAnalyzing = true;
-      this.pickedColor = null;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-          self.parseImageData(img);
-          self.extractMainColors(e.target.result, startTime, MIN_LOADING_MS);
-        };
-        img.onerror = function() {
-          self.isAnalyzing = false;
-          showToast(self, '图片加载失败', 'error');
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    },
-    parseImageData(img) {
-      const maxSize = 600;
-      let width = img.width;
-      let height = img.height;
-
-      if (width > maxSize || height > maxSize) {
-        const ratio = Math.min(maxSize / width, maxSize / height);
-        width = Math.floor(width * ratio);
-        height = Math.floor(height * ratio);
-      }
-
-      this._pendingNaturalWidth = width;
-      this._pendingNaturalHeight = height;
-
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-      this._pendingImageData = ctx.getImageData(0, 0, width, height);
-    },
-    extractMainColors(newImageSrc, startTime, minLoadingMs) {
-      const self = this;
-      if (!this._pendingImageData) {
-        const elapsed = Date.now() - startTime;
-        const remaining = Math.max(0, minLoadingMs - elapsed);
-        setTimeout(function() {
-          self.isAnalyzing = false;
-        }, remaining);
-        return;
-      }
-
-      try {
-        const data = this._pendingImageData.data;
-        const step = 4;
-        const buckets = {};
-
-        for (let i = 0; i < data.length; i += 4 * step) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          const a = data[i + 3];
-
-          if (a < 50) continue;
-
-          const qr = Math.round(r / 32) * 32;
-          const qg = Math.round(g / 32) * 32;
-          const qb = Math.round(b / 32) * 32;
-          const key = qr + ',' + qg + ',' + qb;
-
-          if (!buckets[key]) {
-            buckets[key] = { sumR: 0, sumG: 0, sumB: 0, count: 0 };
-          }
-          buckets[key].sumR += r;
-          buckets[key].sumG += g;
-          buckets[key].sumB += b;
-          buckets[key].count++;
-        }
-
-        const sorted = Object.entries(buckets)
-          .sort((a, b) => b[1].count - a[1].count)
-          .slice(0, 12);
-
-        const results = sorted.map(([, d]) => {
-          const avgR = Math.round(d.sumR / d.count);
-          const avgG = Math.round(d.sumG / d.count);
-          const avgB = Math.round(d.sumB / d.count);
-          return { r: avgR, g: avgG, b: avgB };
-        });
-
-        const unique = [];
-        for (let i = 0; i < results.length; i++) {
-          const c = results[i];
-          let isSimilar = false;
-          for (let j = 0; j < unique.length; j++) {
-            const u = unique[j];
-            if (Math.abs(u.r - c.r) < 30 && Math.abs(u.g - c.g) < 30 && Math.abs(u.b - c.b) < 30) {
-              isSimilar = true;
-              break;
-            }
-          }
-          if (!isSimilar) unique.push(c);
-        }
-
-        const newMainColors = unique.slice(0, 8).map(c => {
-          const rgba = { r: c.r, g: c.g, b: c.b, a: 1 };
-          return {
-            hex: formatHEX(rgba),
-            rgb: formatRGB(rgba),
-            hsl: formatHSL(rgba),
-            cmyk: formatCMYK(rgba),
-            hsv: formatHSV(rgba)
-          };
-        });
-
-        // 分析完成：确保 loading 达到最短展示时间后，再同时更新数据和关闭 loading
-        const elapsed = Date.now() - startTime;
-        const remaining = Math.max(0, minLoadingMs - elapsed);
-        setTimeout(function() {
-          self.imageSrc = newImageSrc;
-          self.imageNaturalWidth = self._pendingNaturalWidth;
-          self.imageNaturalHeight = self._pendingNaturalHeight;
-          self.mainColors = newMainColors;
-          self.saveAnalysisData();
-          self.isAnalyzing = false;
-        }, remaining);
-      } catch (err) {
-        console.error('主色调提取失败', err);
-        this.isAnalyzing = false;
-        showToast(this, '颜色提取失败', 'error');
-      }
-    },
-    saveAnalysisData() {
-      try {
-        const data = {
-          imageSrc: this.imageSrc,
-          imageNaturalWidth: this.imageNaturalWidth,
-          imageNaturalHeight: this.imageNaturalHeight,
-          mainColors: this.mainColors,
-          timestamp: Date.now()
-        };
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      } catch (err) {
-        console.error('数据存储失败', err);
-        showToast(this, '数据存储失败，请重试', 'error');
-      }
-    },
-
-    openPaletteDialog() {
-      if (!this.mainColors.length) {
-        showToast(this, '没有可用的颜色数据', 'error');
-        return;
-      }
-      this.paletteDialogVisible = true;
-    },
-
-    // 根据颜色计算相对亮度，返回深色文字或浅色文字
-    getContrastTextColor(hex) {
-      const h = (hex || '').replace('#', '');
-      if (h.length !== 6) return '#111111';
-      const r = parseInt(h.substring(0, 2), 16);
-      const g = parseInt(h.substring(2, 4), 16);
-      const b = parseInt(h.substring(4, 6), 16);
-      const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-      return yiq >= 160 ? '#111111' : '#ffffff';
-    },
-
-    downloadPalette() {
-      if (!this.mainColors.length) {
-        showToast(this, '没有可下载的色卡数据', 'error');
-        return;
-      }
-      try {
-        const colors = this.mainColors.map(c => ({
-          hex: c.hex,
-          rgb: c.rgb,
-          text: this.getContrastTextColor(c.hex)
-        }));
-        const cols = this.paletteCols;
-        const cardW = 240;
-        const cardH = 260;
-        const swatchH = 180;
-        const padding = 32;
-        const gap = 20;
-        const titleH = 56;
-
-        const rows = Math.ceil(colors.length / cols);
-        const canvas = document.createElement('canvas');
-        const width = padding * 2 + cardW * cols + gap * (cols - 1);
-        const height = padding * 2 + titleH + cardH * rows + gap * (rows - 1);
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-
-        // 背景
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, width, height);
-
-        // 标题
-        ctx.fillStyle = '#111111';
-        ctx.textBaseline = 'top';
-        ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
-        ctx.fillText('色卡 Palette', padding, padding);
-
-        ctx.fillStyle = '#888888';
-        ctx.font = '14px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
-        ctx.fillText('共 ' + colors.length + ' 种主色调', padding, padding + 34);
-
-        // 绘制色卡
-        colors.forEach((color, idx) => {
-          const col = idx % cols;
-          const row = Math.floor(idx / cols);
-          const x = padding + col * (cardW + gap);
-          const y = padding + titleH + row * (cardH + gap);
-
-          // 卡片背景
-          ctx.fillStyle = '#f5f5f7';
-          ctx.fillRect(x, y, cardW, cardH);
-
-          // 色块
-          ctx.fillStyle = color.hex;
-          ctx.fillRect(x, y, cardW, swatchH);
-
-          // 卡片底边分割线
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(x, y + swatchH, cardW, cardH - swatchH);
-
-          // HEX
-          ctx.fillStyle = '#111111';
-          ctx.font = 'bold 16px "SF Mono", Consolas, Monaco, monospace';
-          ctx.fillText(color.hex, x + 16, y + swatchH + 18);
-
-          // RGB
-          ctx.fillStyle = '#555555';
-          ctx.font = '12px "SF Mono", Consolas, Monaco, monospace';
-          ctx.fillText(color.rgb, x + 16, y + swatchH + 44);
-        });
-
-        // 导出图片
-        const dataUrl = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = 'palette-' + Date.now() + '.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showToast(this, '色卡已开始下载', 'success');
-      } catch (err) {
-        console.error('下载色卡失败', err);
-        showToast(this, '下载失败，请重试', 'error');
-      }
-    }
-  }
-};
-</script>
-
 <style lang="scss" scoped>
 .module-detail {
   width: 100%;
   min-width: 0;
 }
 
-/* ============ 空状态 ============ */
+/* ============ 绌虹姸鎬?============ */
 .empty-state {
   text-align: center;
   padding: 60px 20px;
@@ -693,7 +665,7 @@ export default {
   }
 }
 
-/* ============ 顶部行：图片预览 + 吸管取色结果 ============ */
+/* ============ 椤堕儴琛岋細鍥剧墖棰勮 + 鍚哥鍙栬壊缁撴灉 ============ */
 .section-block {
   display: flex;
   flex-direction: column;
@@ -730,7 +702,7 @@ export default {
   border-radius: var(--radius-md);
 }
 
-/* ============ 图片预览区 ============ */
+/* ============ 鍥剧墖棰勮鍖?============ */
 .image-preview-section {
   margin-bottom: 24px;
 }
@@ -741,13 +713,13 @@ export default {
   max-width: 100%;
 }
 
-/* ============ 结果通用样式 ============ */
+/* ============ 缁撴灉閫氱敤鏍峰紡 ============ */
 .colors-result-section,
 .picker-result-section {
   margin-top: 24px;
 }
 
-/* ============ 主色调卡片网格 ============ */
+/* ============ 涓昏壊璋冨崱鐗囩綉鏍?============ */
 .main-colors-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -872,7 +844,7 @@ export default {
   }
 }
 
-/* ============ 吸管取色结果 ============ */
+/* ============ 鍚哥鍙栬壊缁撴灉 ============ */
 .picker-result {
   display: flex;
   gap: 18px;
@@ -947,7 +919,7 @@ export default {
   }
 }
 
-/* ============ 响应式 ============ */
+/* ============ 鍝嶅簲寮?============ */
 @media (max-width: 640px) {
   .analysis-top-row {
     flex-direction: column;
@@ -970,7 +942,7 @@ export default {
   }
 }
 
-/* ============ 色卡弹框 ============ */
+/* ============ 鑹插崱寮规 ============ */
 .palette-dialog-body {
   display: flex;
   flex-direction: column;

@@ -1,3 +1,67 @@
+<script lang="ts" setup>
+import { computed, watch, useSlots, onMounted, onBeforeUnmount } from 'vue';
+
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false
+  },
+  title: {
+    type: String,
+    default: ''
+  },
+  placement: {
+    type: String,
+    default: 'right',
+    validator: (val) => ['left', 'right'].includes(val)
+  },
+  width: {
+    type: String,
+    default: '320px'
+  },
+  closeOnOverlay: {
+    type: Boolean,
+    default: true
+  }
+});
+
+const emit = defineEmits(['close', 'update:visible']);
+
+const slots = useSlots();
+
+const panelStyle = computed(() => ({ width: props.width, maxWidth: '92vw' }));
+
+let keyHandler = null;
+
+const handleClose = () => {
+  if (!props.closeOnOverlay) return;
+  emit('close');
+  emit('update:visible', false);
+};
+
+watch(() => props.visible, (val) => {
+  if (val) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+});
+
+onMounted(() => {
+  keyHandler = (e) => {
+    if (e.key === 'Escape' && props.visible) {
+      handleClose();
+    }
+  };
+  document.addEventListener('keydown', keyHandler);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', keyHandler);
+  document.body.style.overflow = '';
+});
+</script>
+
 <template>
   <div
     v-if="visible"
@@ -26,79 +90,12 @@
       <div class="drawer-body">
         <slot></slot>
       </div>
-      <div v-if="$slots.footer" class="drawer-footer">
+      <div v-if="slots.footer" class="drawer-footer">
         <slot name="footer"></slot>
       </div>
     </div>
   </div>
 </template>
-
-<script>
-export default {
-  name: 'Drawer',
-  props: {
-    visible: {
-      type: Boolean,
-      default: false
-    },
-    title: {
-      type: String,
-      default: ''
-    },
-    placement: {
-      type: String,
-      default: 'right',
-      validator: (val) => ['left', 'right'].includes(val)
-    },
-    width: {
-      type: String,
-      default: '320px'
-    },
-    closeOnOverlay: {
-      type: Boolean,
-      default: true
-    }
-  },
-  emits: ['close', 'update:visible'],
-  computed: {
-    panelStyle() {
-      return { width: this.width, maxWidth: '92vw' };
-    }
-  },
-  watch: {
-    visible(val) {
-      if (val) {
-        document.body.style.overflow = 'hidden';
-      } else {
-        document.body.style.overflow = '';
-      }
-    }
-  },
-  mounted() {
-    this._keyHandler = (e) => {
-      if (e.key === 'Escape' && this.visible) {
-        this.handleClose();
-      }
-    };
-    document.addEventListener('keydown', this._keyHandler);
-  },
-  beforeUnmount() {
-    document.removeEventListener('keydown', this._keyHandler);
-    document.body.style.overflow = '';
-  },
-  beforeDestroy() {
-    document.removeEventListener('keydown', this._keyHandler);
-    document.body.style.overflow = '';
-  },
-  methods: {
-    handleClose() {
-      if (!this.closeOnOverlay) return;
-      this.$emit('close');
-      this.$emit('update:visible', false);
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .drawer-overlay {

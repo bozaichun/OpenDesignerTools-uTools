@@ -1,3 +1,155 @@
+<script lang="ts" setup>
+import { computed, useSlots } from 'vue';
+
+const ROW_STATUS_MAP = {
+  success: 'row-status--success',
+  warning: 'row-status--warning',
+  info: 'row-status--info',
+  danger: 'row-status--danger'
+};
+
+const props = defineProps({
+  data: {
+    type: Array,
+    default: () => []
+  },
+  columns: {
+    type: Array,
+    default: () => []
+  },
+  stripe: {
+    type: Boolean,
+    default: false
+  },
+  border: {
+    type: Boolean,
+    default: false
+  },
+  highlightCurrentRow: {
+    type: Boolean,
+    default: false
+  },
+  currentRow: {
+    type: [Object, String, Number],
+    default: null
+  },
+  rowKey: {
+    type: String,
+    default: ''
+  },
+  statusKey: {
+    type: String,
+    default: 'status'
+  },
+  rowClassName: {
+    type: Function,
+    default: null
+  },
+  actionLabel: {
+    type: String,
+    default: '操作'
+  },
+  actionWidth: {
+    type: String,
+    default: '120px'
+  },
+  emptyText: {
+    type: String,
+    default: '暂无数据'
+  },
+  formatter: {
+    type: Function,
+    default: null
+  },
+  expandedKeys: {
+    type: Array,
+    default: () => []
+  }
+});
+
+const emit = defineEmits(['row-click', 'update:currentRow']);
+
+const slots = useSlots();
+
+const hasActionSlot = computed(() => Boolean(slots.action));
+const hasExpandSlot = computed(() => Boolean(slots.expand));
+const totalColspan = computed(() => props.columns.length + (hasActionSlot.value ? 1 : 0));
+
+const getColStyle = (col) => {
+  if (!col.width) return undefined;
+  return { width: col.width };
+};
+
+const getRowKey = (row, index) => {
+  if (props.rowKey && row[props.rowKey] != null) {
+    return row[props.rowKey];
+  }
+  return index;
+};
+
+const isCurrentRow = (row, index) => {
+  if (!props.highlightCurrentRow || props.currentRow == null) return false;
+  if (typeof props.currentRow === 'object') {
+    if (props.rowKey) {
+      return props.currentRow[props.rowKey] === row[props.rowKey];
+    }
+    return props.currentRow === row;
+  }
+  if (props.rowKey) {
+    return props.currentRow === row[props.rowKey];
+  }
+  return props.currentRow === index;
+};
+
+const getRowClass = (row, index) => {
+  const classes = ['data-table__tr'];
+
+  const status = row[props.statusKey];
+  if (status && ROW_STATUS_MAP[status]) {
+    classes.push(ROW_STATUS_MAP[status]);
+  }
+
+  if (isCurrentRow(row, index)) {
+    classes.push('is-current');
+  }
+
+  if (typeof props.rowClassName === 'function') {
+    const custom = props.rowClassName(row, index);
+    if (typeof custom === 'string' && custom) {
+      classes.push(custom);
+    }
+  }
+
+  return classes;
+};
+
+const formatCell = (row, col) => {
+  const value = row[col.prop];
+  if (typeof col.formatter === 'function') {
+    return col.formatter(row, col, value, row[col.prop]);
+  }
+  if (typeof props.formatter === 'function') {
+    return props.formatter(row, col, value);
+  }
+  return value ?? '';
+};
+
+const handleRowClick = (row, index) => {
+  emit('row-click', row, index);
+  if (props.highlightCurrentRow) {
+    emit('update:currentRow', row);
+  }
+};
+
+const isRowExpanded = (row, index) => {
+  if (!props.expandedKeys.length) return false;
+  const key = props.rowKey && row[props.rowKey] != null
+    ? row[props.rowKey]
+    : index;
+  return props.expandedKeys.includes(key);
+};
+</script>
+
 <template>
   <div
     class="data-table"
@@ -71,159 +223,7 @@
   </div>
 </template>
 
-<script>
-const ROW_STATUS_MAP = {
-  success: 'row-status--success',
-  warning: 'row-status--warning',
-  info: 'row-status--info',
-  danger: 'row-status--danger'
-};
-
-export default {
-  name: 'DataTable',
-  props: {
-    data: {
-      type: Array,
-      default: () => []
-    },
-    columns: {
-      type: Array,
-      default: () => []
-    },
-    stripe: {
-      type: Boolean,
-      default: false
-    },
-    border: {
-      type: Boolean,
-      default: false
-    },
-    highlightCurrentRow: {
-      type: Boolean,
-      default: false
-    },
-    currentRow: {
-      type: [Object, String, Number],
-      default: null
-    },
-    rowKey: {
-      type: String,
-      default: ''
-    },
-    statusKey: {
-      type: String,
-      default: 'status'
-    },
-    rowClassName: {
-      type: Function,
-      default: null
-    },
-    actionLabel: {
-      type: String,
-      default: '操作'
-    },
-    actionWidth: {
-      type: String,
-      default: '120px'
-    },
-    emptyText: {
-      type: String,
-      default: '暂无数据'
-    },
-    formatter: {
-      type: Function,
-      default: null
-    },
-    expandedKeys: {
-      type: Array,
-      default: () => []
-    }
-  },
-  emits: ['row-click', 'update:currentRow'],
-  computed: {
-    hasActionSlot() {
-      return Boolean(this.$slots.action);
-    },
-    hasExpandSlot() {
-      return Boolean(this.$slots.expand);
-    },
-    totalColspan() {
-      return this.columns.length + (this.hasActionSlot ? 1 : 0);
-    }
-  },
-  methods: {
-    getColStyle(col) {
-      if (!col.width) return undefined;
-      return { width: col.width };
-    },
-    getRowKey(row, index) {
-      if (this.rowKey && row[this.rowKey] != null) {
-        return row[this.rowKey];
-      }
-      return index;
-    },
-    isCurrentRow(row, index) {
-      if (!this.highlightCurrentRow || this.currentRow == null) return false;
-      if (typeof this.currentRow === 'object') {
-        if (this.rowKey) {
-          return this.currentRow[this.rowKey] === row[this.rowKey];
-        }
-        return this.currentRow === row;
-      }
-      if (this.rowKey) {
-        return this.currentRow === row[this.rowKey];
-      }
-      return this.currentRow === index;
-    },
-    getRowClass(row, index) {
-      const classes = ['data-table__tr'];
-
-      const status = row[this.statusKey];
-      if (status && ROW_STATUS_MAP[status]) {
-        classes.push(ROW_STATUS_MAP[status]);
-      }
-
-      if (this.isCurrentRow(row, index)) {
-        classes.push('is-current');
-      }
-
-      if (typeof this.rowClassName === 'function') {
-        const custom = this.rowClassName(row, index);
-        if (typeof custom === 'string' && custom) {
-          classes.push(custom);
-        }
-      }
-
-      return classes;
-    },
-    formatCell(row, col) {
-      const value = row[col.prop];
-      if (typeof col.formatter === 'function') {
-        return col.formatter(row, col, value, row[col.prop]);
-      }
-      if (typeof this.formatter === 'function') {
-        return this.formatter(row, col, value);
-      }
-      return value ?? '';
-    },
-    handleRowClick(row, index) {
-      this.$emit('row-click', row, index);
-      if (this.highlightCurrentRow) {
-        this.$emit('update:currentRow', row);
-      }
-    },
-    isRowExpanded(row, index) {
-      if (!this.expandedKeys.length) return false;
-      const key = this.rowKey && row[this.rowKey] != null
-        ? row[this.rowKey]
-        : index;
-      return this.expandedKeys.includes(key);
-    }
-  }
-};
-</script>
-
-<style scoped>
+<style lang="scss" scoped>
 .data-table {
   width: 100%;
   background: var(--bg-card);

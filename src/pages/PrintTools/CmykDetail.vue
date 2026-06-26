@@ -1,3 +1,49 @@
+<script lang="ts" setup>
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import Selector from '../../components/Selector.vue';
+import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
+import { parseColor, getContrastColor as gcc } from '../../utils/colorUtils';
+import { computeCmykResult, computeCmykConvertedHex, readDetailQuery } from './printToolsUtils';
+
+const route = useRoute();
+
+const inputColor = ref('#1677FF');
+const profile = ref('srgb');
+
+const shellQueryExtra = computed(() => {
+  return { profile: profile.value, paper: 'coated' };
+});
+
+const cmykResult = computed(() => {
+  return computeCmykResult(inputColor.value);
+});
+
+const cmykConvertedHex = computed(() => {
+  return computeCmykConvertedHex(cmykResult.value);
+});
+
+function applyRouteQuery() {
+  const q = readDetailQuery(route);
+  inputColor.value = q.color;
+  profile.value = q.profile;
+}
+
+function getContrastColor(hex) {
+  const rgb = parseColor(hex);
+  if (!rgb) return '#000000';
+  return gcc(rgb);
+}
+
+watch(() => route.query, () => {
+  applyRouteQuery();
+});
+
+onMounted(() => {
+  applyRouteQuery();
+});
+</script>
+
 <template>
   <div class="print-detail">
     <PrintToolsDetailShell
@@ -69,55 +115,6 @@
     </section>
   </div>
 </template>
-
-<script>
-import Selector from '../../components/Selector.vue';
-import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
-import { parseColor, getContrastColor as gcc } from '../../utils/colorUtils';
-import { computeCmykResult, computeCmykConvertedHex, readDetailQuery } from './printToolsUtils';
-
-export default {
-  name: 'CmykDetail',
-  components: { Selector, PrintToolsDetailShell },
-  data() {
-    return {
-      inputColor: '#1677FF',
-      profile: 'srgb'
-    };
-  },
-  computed: {
-    shellQueryExtra() {
-      return { profile: this.profile, paper: 'coated' };
-    },
-    cmykResult() {
-      return computeCmykResult(this.inputColor);
-    },
-    cmykConvertedHex() {
-      return computeCmykConvertedHex(this.cmykResult);
-    }
-  },
-  mounted() {
-    this.applyRouteQuery();
-  },
-  watch: {
-    '$route.query'() {
-      this.applyRouteQuery();
-    }
-  },
-  methods: {
-    applyRouteQuery() {
-      const q = readDetailQuery(this.$route);
-      this.inputColor = q.color;
-      this.profile = q.profile;
-    },
-    getContrastColor(hex) {
-      const rgb = parseColor(hex);
-      if (!rgb) return '#000000';
-      return gcc(rgb);
-    }
-  }
-};
-</script>
 
 <style lang="scss" scoped>
 .print-detail { width: 100%; min-width: 0; }
