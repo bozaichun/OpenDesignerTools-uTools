@@ -1,7 +1,14 @@
 ---
-description: AI 编码开发时，需要遵守的界面设计准则（跨浏览器端技术栈 · VibeCoding）
-globs: *
-alwaysApply: true
+description: UI 布局、样式、组件视觉、主题与响应式相关任务时查阅（跨浏览器端技术栈 · VibeCoding）
+globs:
+  - "**/*.vue"
+  - "**/*.scss"
+  - "**/*.less"
+  - "src/**/*.css"
+  - "**/layout/**"
+  - "**/components/**"
+  - "**/pages/**"
+alwaysApply: false
 ---
 
 # 界面设计规范（VibeCoding）
@@ -51,10 +58,15 @@ pages/ 或 views/        # 页面级样式
 
 ### 2.2 深浅色切换（通用机制）
 
-- 根节点：`document.documentElement.setAttribute('data-theme', 'light' | 'dark' | 'system')`
-- 浅色：`:root` / `[data-theme="light"]`
-- 深色：`[data-theme="dark"]` 或 `@media (prefers-color-scheme: dark)`（system 模式，且未显式选 light/dark）
-- **编码规则**：使用 `--bg-*` / `--text-*` / `--accent*` 等语义变量
+| 模式 | 根节点行为 | CSS 选择器 |
+|------|-----------|-----------|
+| 浅色 | `setAttribute('data-theme', 'light')` 或默认 | `:root` · `[data-theme="light"]` |
+| 深色 | `setAttribute('data-theme', 'dark')` | `[data-theme="dark"]` |
+| 跟随系统 | `removeAttribute('data-theme')` | `@media (prefers-color-scheme: dark)` 覆盖 `:root:not([data-theme="light"]):not([data-theme="dark"])` |
+
+应用侧示例：`themeMode === 'system'` 时 `document.documentElement.removeAttribute('data-theme')`；否则 `setAttribute('data-theme', mode)`。
+
+**编码规则**：使用 `--bg-*` / `--text-*` / `--accent*` 等语义变量，勿写裸 hex。
 
 ```html
 <!-- ✅ 原生 HTML -->
@@ -98,37 +110,30 @@ import "./main.css";  // 应用级补充（如 #app）
 
 扩展 Token 时：**语义色** 写入 `ThemeStyle.css` 的 light/dark 块；**尺寸/间距** 写入 `SystemStyle.css`；**重置规则** 仅在确有全局需求时改 `ResetStyle.css`。
 
-### 2.4 核心语义变量（摘自 `ThemeStyle.css`）
+### 2.4 核心语义变量索引
 
-#### 背景
+色值与深浅色赋值以 **`rules/VariableFile/ThemeStyle.css`** 为唯一源码；间距/字号/复合边框以 **`SystemStyle.css`** 为准。视觉对照在浏览器打开 **`rules/PreView/LightMode.html`** · **`DarkMode.html`**（勿将预览 HTML 全文载入 AI 上下文）。
 
-| 变量 | 浅色 | 深色 | 用途 |
-|------|------|------|------|
-| `--bg-primary` | `#f4f4f4` | `#1a1a1a` | 应用底层 / 侧栏外背景 |
-| `--bg-card` | `#ffffff` | `#2d2d2d` | 卡片、页头、内容区 |
-| `--bg-muted` | `#f9f9f9` | `#383838` | 弱化区块、输入区底 |
-| `--bg-hover` | `#eaeaea` | `#3f3f3f` | 悬停背景 |
-| `--bg-input` | `#ffffff` | `#262626` | 输入框背景 |
+下表仅列**变量名与用途**，不复制 hex。
 
-#### 文本
+#### 主题语义（ThemeStyle.css）
 
-| 变量 | 浅色 | 深色 | 用途 |
-|------|------|------|------|
-| `--text-primary` | `#1a1a1a` | `#f0f0f0` | 标题、主内容 |
-| `--text-secondary` | `#555555` | `#b0b0b0` | 正文、说明 |
-| `--text-tertiary` | `#888888` | `#777777` | 辅助、占位 |
-| `--text-invert` | `#ffffff` | `#1a1a1a` | 强调色按钮文字 |
-| `--text-error` | `#dc3545` | `#f87171` | 错误提示 |
+| 类别 | 变量 | 用途 |
+|------|------|------|
+| 背景 | `--bg-primary` · `--bg-card` · `--bg-muted` · `--bg-hover` · `--bg-input` | 页面底、卡片、弱化区、悬停、输入框 |
+| 文本 | `--text-primary` · `--text-secondary` · `--text-tertiary` · `--text-invert` · `--text-error` | 标题/正文/辅助/反色/错误（映射 `--title` 等标准色板） |
+| 边框 | `--border-primary` · `--border-strong` · `--border-focus` | 常规/强调/焦点边框 |
+| 强调 | `--accent` · `--accent-hover` · `--accent-light` · `--accent-soft` | 主按钮与强调态 |
+| 阴影/圆角/字体 | `--shadow-sm` · `--shadow-md` · `--shadow-lg` · `--radius-*` · `--font-stack` | 卡片阴影、圆角层级、字体栈 |
 
-#### 边框 · 强调色 · 阴影 · 圆角
+#### 系统尺寸（SystemStyle.css）
 
-| 类别 | 变量示例 |
-|------|---------|
-| 边框 | `--border-primary` · `--border-strong` · `--border-focus` |
-| 强调 | `--accent` · `--accent-hover` · `--accent-light` · `--accent-soft` |
-| 阴影 | `--shadow-sm` · `--shadow-md` · `--shadow-lg` |
-| 圆角 | `--radius-sm` (4px) · `--radius-md` (8px) · `--radius-lg` (12px) · `--radius-pill` |
-| 字体 | `--font-stack`；body 默认 `14px` · `line-height: 1.5` |
+| 类别 | 变量示例 | 用途 |
+|------|---------|------|
+| 间距 | `--size-8` · `--size-16` · `--size-24` · `--size-40` | 元素/模块/页面边距 |
+| 字号 | `--fs-12` · `--fs-14` · `--fs-16` · `--fs-20` | 辅助/正文/小标题/大标题 |
+| 图标 | `--wh-16` · `--wh-24` · `--wh-32` | 图标与操作按钮尺寸 |
+| 复合边框/阴影 | `--line` · `--solid` · `--shadow` · `--shadow-bottom` | 引用 `var(--border)`，随主题切换 |
 
 色值等宽展示：`font-family: 'SF Mono', Consolas, Monaco, monospace`
 
@@ -136,7 +141,7 @@ import "./main.css";  // 应用级补充（如 #app）
 
 ## 3. 参考项目：颜色值转换器（Vue 3）
 
-> 以下路径与 API 仅适用于本仓库；其他项目请抽取模式，勿照搬路径。
+> **按需阅读**：本节路径与 API **仅适用于本仓库**。非 UI 任务、或其他业务仓库，**跳过 §3**；其他项目请抽取模式，勿照搬路径。
 
 ### 3.1 视觉参考
 

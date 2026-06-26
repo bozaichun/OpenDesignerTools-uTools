@@ -25,6 +25,20 @@
 4. 色值与主题 → 只改 `ThemeStyle.css`；尺寸与排版 → `SystemStyle.css`
 5. 三者（Conduct / CodingSpec / DESIGN）与 VariableFile 冲突时，以**目标业务仓库已定稿实现**为准
 
+### 最小加载集（Token 节约）
+
+按任务类型**只加载必要规范**，避免无关文件全文进入上下文：
+
+| 任务类型 | 应加载 | 通常不必加载 |
+|---------|--------|-------------|
+| 纯逻辑 / 工具函数 | `AGENTS.md` · `CodeConduct.md` | `DESIGN.md` · VariableFile · PreView HTML |
+| 编写 / 修改业务代码 | + `CodingSpec.md`（对应该框架 §） | `DESIGN.md`（无 UI 变更时） |
+| UI 布局 / 组件视觉 | + `DESIGN.md`（§3 仅本仓库 UI 任务） | PreView HTML 全文 |
+| 改主题色 / 深浅色 | + `ThemeStyle.css` | `DESIGN.md` §2.4 色表（已索引至 CSS） |
+| 改间距 / 字号 / 阴影 | + `SystemStyle.css` | — |
+| 改全局 reset | + `ResetStyle.css`（慎改） | — |
+| 深浅色视觉验收 | 浏览器打开 PreView HTML | 勿将 HTML 载入 AI 上下文 |
+
 **开发者预览**（非运行时依赖）：`rules/PreView/LightMode.html` · `rules/PreView/DarkMode.html`
 
 ---
@@ -127,12 +141,12 @@
 
 ---
 
-## 5. 业务注释规范（CodingSpec §13）
+## 5. 业务注释规范（详见 CodingSpec §13）
 
-- **模板**：`<!-- 页头操作区 -->`、`<!-- 生成色卡预览弹框 -->`
-- **Script 关键路径**：路由分发、持久化、跨模块协作
+- **模板**：`<!-- 区块说明 -->`（如 `<!-- 页头操作区 -->`）
+- **Script 关键路径**：单行 `// 说明`（路由分发、持久化、跨模块协作）
 - **工具模块**：文件顶部分节说明职责
-- **原则**：只注释「做什么 / 为什么」，不重复代码字面含义
+- **原则**：只注释「做什么 / 为什么」，不重复代码字面含义；完整示例与书写原则见 **`CodingSpec.md` §13**
 
 ---
 
