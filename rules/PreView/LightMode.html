@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>颜色值转换器 · VibeCoding 设计规范（浅色模式）</title>
-  <link rel="stylesheet" href="../../src/main.css" />
-  <link rel="stylesheet" href="../../src/iconfont/iconfont.css" />
+  <title>ThemeStyle · SystemStyle 预览（浅色模式）</title>
+  <link rel="stylesheet" href="../VariableFile/ThemeStyle.css" />
+  <link rel="stylesheet" href="../VariableFile/SystemStyle.css" />
+  <link rel="stylesheet" href="../VariableFile/ResetStyle.css" />
   <style>
-    /* 预览页使用浏览器级滚动条（覆盖 main.css 的 overflow: hidden） */
     html {
       overflow-y: auto;
       overflow-x: hidden;
@@ -33,197 +33,290 @@
     .preview-page { min-height: 100vh; background: var(--bg-primary); }
     .preview-header {
       position: sticky; top: 0; z-index: 100;
-      padding: 16px 24px;
+      padding: var(--size-16) var(--size-24);
       background: var(--bg-card);
-      border-bottom: 1px solid var(--border-primary);
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      border-bottom: var(--solid);
+      display: flex; align-items: center; justify-content: space-between; gap: var(--size-16);
+      box-shadow: var(--shadow-sm);
     }
-    .preview-header h1 { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0; }
-    .preview-header p { font-size: 12px; color: var(--text-tertiary); margin: 4px 0 0; }
+    .preview-header h1 {
+      font-size: var(--fs-18);
+      font-weight: 600;
+      color: var(--title);
+      margin: 0;
+    }
+    .preview-header p {
+      font-size: var(--fs-12);
+      color: var(--secondary-text);
+      margin: var(--size-4) 0 0;
+    }
     .preview-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 14px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 500;
-      background: var(--accent-soft); border: 1px solid var(--accent-light); color: var(--accent);
-      text-decoration: none; transition: all 0.15s ease;
+      display: inline-flex; align-items: center; gap: var(--size-6);
+      padding: var(--size-6) var(--size-16);
+      border-radius: var(--radius-pill);
+      font-size: var(--fs-12);
+      font-weight: 500;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-light);
+      color: var(--accent);
+      text-decoration: none;
+      transition: all 0.15s ease;
     }
     .preview-badge:hover { background: var(--accent-light); color: var(--accent-hover); }
-    .preview-main { max-width: 960px; margin: 0 auto; padding: 24px 24px 64px; }
-    .preview-section { margin-bottom: 40px; }
-    .section-label { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 6px; }
-    .section-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0 0 16px; }
-    .section-desc { font-size: 13px; color: var(--text-secondary); margin: -8px 0 16px; line-height: 1.6; }
+    .preview-main { max-width: 960px; margin: 0 auto; padding: var(--size-24) var(--size-24) var(--size-48); }
+    .preview-section { margin-bottom: var(--size-40); }
+    .section-label {
+      font-size: var(--fs-12);
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: var(--size-6);
+    }
+    .section-title {
+      font-size: var(--fs-16);
+      font-weight: 600;
+      color: var(--title);
+      margin: 0 0 var(--size-16);
+    }
+    .section-desc {
+      font-size: var(--fs-14);
+      color: var(--main-text);
+      margin: calc(var(--size-8) * -1) 0 var(--size-16);
+      line-height: 1.6;
+    }
 
-    .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: var(--size-8);
+    }
     .swatch {
-      border-radius: var(--radius-md); overflow: hidden;
-      border: 1px solid var(--border-primary); background: var(--bg-card);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: var(--solid);
+      background: var(--bg-card);
       box-shadow: var(--shadow-sm);
     }
     .swatch-color { height: 48px; }
-    .swatch-info { padding: 8px 10px; }
-    .swatch-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
-    .swatch-token { font-size: 11px; color: var(--text-tertiary); font-family: monospace; margin-top: 2px; }
+    .swatch-info { padding: var(--size-8) var(--size-12); }
+    .swatch-name { font-size: var(--fs-12); font-weight: 600; color: var(--title); }
+    .swatch-token {
+      font-size: 11px;
+      color: var(--secondary-text);
+      font-family: 'SF Mono', Consolas, Monaco, monospace;
+      margin-top: 2px;
+    }
+
+    .type-row {
+      display: flex; align-items: baseline; gap: var(--size-16);
+      padding: var(--size-12) var(--size-16);
+      background: var(--bg-card);
+      border: var(--solid);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--size-8);
+    }
+    .type-meta {
+      width: 140px; flex-shrink: 0;
+      font-size: var(--fs-12);
+      color: var(--secondary-text);
+      font-family: 'SF Mono', Consolas, Monaco, monospace;
+    }
+    .text-title { font-size: var(--fs-16); font-weight: 600; color: var(--title); }
+    .text-main { font-size: var(--fs-14); color: var(--main-text); }
+    .text-secondary { font-size: var(--fs-14); color: var(--secondary-text); }
+    .text-disabled { font-size: var(--fs-14); color: var(--disabled-text); }
 
     .demo-card {
-      background: var(--bg-card); border: 1px solid var(--border-primary);
-      border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm);
+      background: var(--bg-card);
+      border: var(--solid);
+      border-radius: var(--radius-lg);
+      padding: var(--size-20);
+      box-shadow: var(--shadow-sm);
     }
-    .demo-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .demo-row { display: flex; flex-wrap: wrap; gap: var(--size-12); align-items: center; }
 
     .btn-primary {
-      padding: 8px 16px; border: 1px solid var(--accent); border-radius: var(--radius-md);
-      background: var(--accent); color: var(--text-invert); font-size: 13px; font-weight: 500; cursor: pointer;
+      padding: var(--size-8) var(--size-16);
+      border: 1px solid var(--primary);
+      border-radius: var(--radius-md);
+      background: var(--primary);
+      color: var(--white);
+      font-size: var(--fs-14);
+      font-weight: 500;
+      cursor: pointer;
     }
-    .btn-secondary {
-      padding: 8px 16px; border: 1px solid var(--accent-light); border-radius: var(--radius-md);
-      background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 500; cursor: pointer;
+    .btn-success {
+      padding: var(--size-8) var(--size-16);
+      border: 1px solid var(--success);
+      border-radius: var(--radius-md);
+      background: var(--success-bg);
+      color: var(--success);
+      font-size: var(--fs-14);
+      cursor: pointer;
     }
     .btn-outline {
-      padding: 8px 16px; border: 1px solid var(--border-primary); border-radius: var(--radius-md);
-      background: var(--bg-card); color: var(--text-secondary); font-size: 13px; cursor: pointer;
+      padding: var(--size-8) var(--size-16);
+      border: var(--solid);
+      border-radius: var(--radius-md);
+      background: var(--bg-card);
+      color: var(--main-text);
+      font-size: var(--fs-14);
+      cursor: pointer;
     }
-    .copy-icon {
-      width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
-      background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius-sm);
-      color: var(--text-secondary); cursor: pointer;
-    }
-    .copy-icon .iconfont { font-size: 12px; }
+    .btn-outline:hover { background: var(--hover); }
 
-    .color-block {
-      width: 100%; height: 56px; border-radius: var(--radius-md);
-      border: 1px solid var(--border-primary);
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'SF Mono', Consolas, Monaco, monospace;
-      font-size: 13px; font-weight: 600;
+    .spacing-demo { display: flex; flex-wrap: wrap; gap: var(--size-12); align-items: flex-end; }
+    .spacing-box {
+      display: flex; flex-direction: column; align-items: center; gap: var(--size-4);
+      font-size: 11px; color: var(--secondary-text);
     }
-    .code-block {
-      background: #1e1e2e; color: #cdd6f4; padding: 16px; border-radius: var(--radius-md);
-      font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6;
-      overflow-x: auto;
+    .spacing-bar {
+      background: var(--accent-light);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-sm);
     }
-    .radius-demo { display: flex; gap: 16px; flex-wrap: wrap; }
+
+    .radius-demo { display: flex; gap: var(--size-16); flex-wrap: wrap; }
     .radius-box {
-      width: 72px; height: 48px; background: var(--bg-muted); border: 1px solid var(--border-primary);
-      display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-secondary);
+      width: 72px; height: 48px;
+      background: var(--bg-muted);
+      border: var(--solid);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--main-text);
     }
-    .shadow-demo { display: flex; gap: 16px; flex-wrap: wrap; }
+    .shadow-demo { display: flex; gap: var(--size-16); flex-wrap: wrap; }
     .shadow-box {
-      width: 100px; height: 64px; background: var(--bg-card); border-radius: var(--radius-md);
-      border: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: center;
-      font-size: 11px; color: var(--text-secondary);
+      width: 100px; height: 64px;
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      border: var(--solid);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--main-text);
     }
     .shadow-box.sm { box-shadow: var(--shadow-sm); }
     .shadow-box.md { box-shadow: var(--shadow-md); }
     .shadow-box.lg { box-shadow: var(--shadow-lg); }
-
-    .type-row {
-      display: flex; align-items: baseline; gap: 16px; padding: 10px 14px;
-      background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius-md); margin-bottom: 8px;
-    }
-    .type-meta { width: 120px; flex-shrink: 0; font-size: 12px; color: var(--text-tertiary); font-family: monospace; }
+    .shadow-box.sys { box-shadow: var(--shadow); }
 
     .code-hint {
-      padding: 16px; border-radius: var(--radius-md);
-      background: var(--bg-muted); border: 1px dashed var(--border-primary);
-      font-size: 12px; color: var(--text-secondary); line-height: 1.8;
+      padding: var(--size-16);
+      border-radius: var(--radius-md);
+      background: var(--bg-muted);
+      border: var(--dashed);
+      font-size: var(--fs-12);
+      color: var(--main-text);
+      line-height: 1.8;
     }
-    .code-hint code { font-family: monospace; color: var(--accent); background: var(--accent-soft); padding: 1px 6px; border-radius: 4px; }
+    .code-hint code {
+      font-family: monospace;
+      color: var(--primary);
+      background: var(--primary-bg);
+      padding: 1px var(--size-6);
+      border-radius: var(--radius-sm);
+    }
   </style>
 </head>
 <body class="preview-page">
   <header class="preview-header">
     <div>
-      <h1>颜色值转换器 · VibeCoding 设计规范</h1>
-      <p>浅色模式 · Token 来源 <code style="font-family:monospace;font-size:11px">src/main.css</code></p>
+      <h1>ThemeStyle · SystemStyle 开发者预览</h1>
+      <p>浅色模式 · <code style="font-family:monospace;font-size:11px">data-theme="light"</code> · 来源 <code style="font-family:monospace;font-size:11px">rules/VariableFile/</code></p>
     </div>
     <a class="preview-badge" href="./DarkMode.html">深色模式 →</a>
   </header>
 
   <main class="preview-main">
     <section class="preview-section">
-      <div class="section-label">01 · Colors</div>
-      <h2 class="section-title">背景 · 文本 · 强调色</h2>
-      <p class="section-desc">业务组件禁止硬编码色值，统一引用 CSS 变量。</p>
+      <div class="section-label">01 · Text Tokens</div>
+      <h2 class="section-title">标准文本色（浅色背景）</h2>
+      <p class="section-desc"><code>--title</code> / <code>--main-text</code> / <code>--secondary-text</code> / <code>--disabled-text</code>；语义别名 <code>--text-primary</code> 等自动映射。</p>
+      <div class="type-row"><span class="type-meta">--title</span><span class="text-title">标题文字 #262626</span></div>
+      <div class="type-row"><span class="type-meta">--main-text</span><span class="text-main">正文与说明 #595959</span></div>
+      <div class="type-row"><span class="type-meta">--secondary-text</span><span class="text-secondary">辅助与占位 #8c8c8c</span></div>
+      <div class="type-row"><span class="type-meta">--disabled-text</span><span class="text-disabled">禁用状态 #bfbfbf</span></div>
+    </section>
+
+    <section class="preview-section">
+      <div class="section-label">02 · Semantic Background</div>
+      <h2 class="section-title">语义背景 Token</h2>
       <div class="swatch-grid">
         <div class="swatch"><div class="swatch-color" style="background:var(--bg-primary)"></div><div class="swatch-info"><div class="swatch-name">页面底</div><div class="swatch-token">--bg-primary</div></div></div>
         <div class="swatch"><div class="swatch-color" style="background:var(--bg-card)"></div><div class="swatch-info"><div class="swatch-name">卡片</div><div class="swatch-token">--bg-card</div></div></div>
         <div class="swatch"><div class="swatch-color" style="background:var(--bg-muted)"></div><div class="swatch-info"><div class="swatch-name">弱化区</div><div class="swatch-token">--bg-muted</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--accent)"></div><div class="swatch-info"><div class="swatch-name">强调色</div><div class="swatch-token">--accent</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--accent-soft)"></div><div class="swatch-info"><div class="swatch-name">浅蓝底</div><div class="swatch-token">--accent-soft</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--accent-light)"></div><div class="swatch-info"><div class="swatch-name">浅蓝边</div><div class="swatch-token">--accent-light</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--text-primary)"></div><div class="swatch-info"><div class="swatch-name">主文字</div><div class="swatch-token">--text-primary</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--text-error)"></div><div class="swatch-info"><div class="swatch-name">错误</div><div class="swatch-token">--text-error</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--bg-hover)"></div><div class="swatch-info"><div class="swatch-name">悬停</div><div class="swatch-token">--bg-hover</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--bg)"></div><div class="swatch-info"><div class="swatch-name">标准底</div><div class="swatch-token">--bg</div></div></div>
       </div>
     </section>
 
     <section class="preview-section">
-      <div class="section-label">02 · Typography</div>
-      <h2 class="section-title">字体层级</h2>
-      <div class="type-row"><span class="type-meta">body 14px</span><span style="font-size:14px;color:var(--text-primary)">正文 · 表单 · 列表（默认）</span></div>
-      <div class="type-row"><span class="type-meta">12px</span><span style="font-size:12px;color:var(--text-secondary)">辅助说明 · 按钮 · 标签</span></div>
-      <div class="type-row"><span class="type-meta">15~18px</span><span style="font-size:16px;font-weight:600;color:var(--text-primary)">面板标题 · 模块标题</span></div>
-      <div class="type-row"><span class="type-meta">mono</span><span style="font-family:'SF Mono',Consolas,monospace;font-size:13px;color:var(--text-primary)">#1677FF · rgb(22, 119, 255)</span></div>
+      <div class="section-label">03 · Functional Colors</div>
+      <h2 class="section-title">标准功能色</h2>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="swatch-color" style="background:var(--primary)"></div><div class="swatch-info"><div class="swatch-name">主题</div><div class="swatch-token">--primary</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--success)"></div><div class="swatch-info"><div class="swatch-name">成功</div><div class="swatch-token">--success</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--warning)"></div><div class="swatch-info"><div class="swatch-name">警告</div><div class="swatch-token">--warning</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--error)"></div><div class="swatch-info"><div class="swatch-name">错误</div><div class="swatch-token">--error</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--accent)"></div><div class="swatch-info"><div class="swatch-name">强调</div><div class="swatch-token">--accent</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--accent-soft)"></div><div class="swatch-info"><div class="swatch-name">浅强调底</div><div class="swatch-token">--accent-soft</div></div></div>
+      </div>
     </section>
 
     <section class="preview-section">
-      <div class="section-label">03 · Radius & Shadow</div>
+      <div class="section-label">04 · Typography（SystemStyle）</div>
+      <h2 class="section-title">字号层级</h2>
+      <div class="type-row"><span class="type-meta">--fs-12</span><span style="font-size:var(--fs-12);color:var(--main-text)">辅助文字 · 标签 · 提示</span></div>
+      <div class="type-row"><span class="type-meta">--fs-14</span><span style="font-size:var(--fs-14);color:var(--main-text)">正文 · 列表 · 表单（默认 body）</span></div>
+      <div class="type-row"><span class="type-meta">--fs-16</span><span style="font-size:var(--fs-16);font-weight:600;color:var(--title)">小标题 · 卡片标题</span></div>
+      <div class="type-row"><span class="type-meta">--fs-20</span><span style="font-size:var(--fs-20);font-weight:600;color:var(--title)">页面主标题</span></div>
+    </section>
+
+    <section class="preview-section">
+      <div class="section-label">05 · Spacing（SystemStyle）</div>
+      <h2 class="section-title">间距尺度</h2>
+      <div class="spacing-demo">
+        <div class="spacing-box"><div class="spacing-bar" style="width:var(--size-8);height:var(--size-8)"></div>--size-8</div>
+        <div class="spacing-box"><div class="spacing-bar" style="width:var(--size-12);height:var(--size-12)"></div>--size-12</div>
+        <div class="spacing-box"><div class="spacing-bar" style="width:var(--size-16);height:var(--size-16)"></div>--size-16</div>
+        <div class="spacing-box"><div class="spacing-bar" style="width:var(--size-24);height:var(--size-24)"></div>--size-24</div>
+        <div class="spacing-box"><div class="spacing-bar" style="width:var(--size-32);height:var(--size-32)"></div>--size-32</div>
+        <div class="spacing-box"><div class="spacing-bar" style="width:var(--size-40);height:var(--size-40)"></div>--size-40</div>
+      </div>
+    </section>
+
+    <section class="preview-section">
+      <div class="section-label">06 · Radius & Shadow</div>
       <h2 class="section-title">圆角与阴影</h2>
-      <div class="radius-demo" style="margin-bottom:16px">
-        <div class="radius-box" style="border-radius:var(--radius-sm)">sm 4px</div>
-        <div class="radius-box" style="border-radius:var(--radius-md)">md 8px</div>
-        <div class="radius-box" style="border-radius:var(--radius-lg)">lg 12px</div>
+      <div class="radius-demo" style="margin-bottom:var(--size-16)">
+        <div class="radius-box" style="border-radius:var(--radius-sm)">sm</div>
+        <div class="radius-box" style="border-radius:var(--radius-md)">md</div>
+        <div class="radius-box" style="border-radius:var(--radius-lg)">lg</div>
+        <div class="radius-box" style="border-radius:var(--radius-pill)">pill</div>
       </div>
       <div class="shadow-demo">
-        <div class="shadow-box sm">shadow-sm</div>
-        <div class="shadow-box md">shadow-md</div>
-        <div class="shadow-box lg">shadow-lg</div>
+        <div class="shadow-box sm">--shadow-sm</div>
+        <div class="shadow-box md">--shadow-md</div>
+        <div class="shadow-box lg">--shadow-lg</div>
+        <div class="shadow-box sys">--shadow</div>
       </div>
     </section>
 
     <section class="preview-section">
-      <div class="section-label">04 · Buttons</div>
-      <h2 class="section-title">页头与面板按钮</h2>
+      <div class="section-label">07 · Components</div>
+      <h2 class="section-title">按钮示例</h2>
       <div class="demo-card">
         <div class="demo-row">
-          <button class="btn-primary" type="button">主按钮 · 复制 CSS 代码</button>
-          <button class="btn-secondary" type="button">次要 · ☆ 已收藏</button>
-          <button class="btn-outline" type="button">线框 · 重新选择</button>
-          <button class="copy-icon" type="button" title="复制"><span class="iconfont icon-Copy"></span></button>
-        </div>
-        <p style="font-size:12px;color:var(--text-tertiary);margin:12px 0 0">页头操作见 <code>App.vue</code> · <code>setHeaderActions</code></p>
-      </div>
-    </section>
-
-    <section class="preview-section">
-      <div class="section-label">05 · Color Block</div>
-      <h2 class="section-title">色块居中 HEX（我的收藏）</h2>
-      <div class="demo-card" style="max-width:220px">
-        <div class="color-block" style="background:#166EE9;color:#fff">#166EE9</div>
-        <div class="demo-row" style="margin-top:10px;justify-content:space-between">
-          <button class="btn-outline" type="button" style="font-size:12px;padding:5px 8px">添加到色板</button>
-          <button class="copy-icon" type="button"><span class="iconfont icon-Copy"></span></button>
-          <button class="btn-outline" type="button" style="font-size:12px;padding:5px 8px">取消收藏</button>
+          <button class="btn-primary" type="button">主按钮 · --primary</button>
+          <button class="btn-success" type="button">成功 · --success-bg</button>
+          <button class="btn-outline" type="button">线框 · --border</button>
         </div>
       </div>
-    </section>
-
-    <section class="preview-section">
-      <div class="section-label">06 · Code Block</div>
-      <h2 class="section-title">CSS 渐变代码区</h2>
-      <pre class="code-block">background: linear-gradient(
-  to right,
-  #1677FF 0%,
-  #69B1FF 50%,
-  #8B5CF6 100%
-);</pre>
     </section>
 
     <div class="code-hint">
-      <strong>VibeCoding 提示</strong><br>
-      1. 完整规范见 <code>rules/DESIGN.md</code><br>
-      2. 全局 Token 仅维护于 <code>src/main.css</code><br>
-      3. 页头主操作使用 <code>setHeaderActions</code> / <code>clearHeaderActions</code><br>
-      4. 图标字体 <code>src/iconfont/iconfont.css</code> · 常用 <code>icon-Copy</code>
+      <strong>开发者提示</strong><br>
+      1. Token 维护：<code>rules/VariableFile/ThemeStyle.css</code> · <code>SystemStyle.css</code><br>
+      2. 设计规范：<code>rules/DESIGN.md</code> · AI 路由：<code>AGENTS.md</code><br>
+      3. 系统主题：移除 <code>data-theme</code> 后由 <code>prefers-color-scheme</code> 决定深浅文本色<br>
+      4. 本页仅供预览，非应用运行时依赖
     </div>
   </main>
 </body>

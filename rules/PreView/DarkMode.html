@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>颜色值转换器 · VibeCoding 设计规范（深色模式）</title>
-  <link rel="stylesheet" href="../../src/main.css" />
-  <link rel="stylesheet" href="../../src/iconfont/iconfont.css" />
+  <title>ThemeStyle · SystemStyle 预览（深色模式）</title>
+  <link rel="stylesheet" href="../VariableFile/ThemeStyle.css" />
+  <link rel="stylesheet" href="../VariableFile/SystemStyle.css" />
+  <link rel="stylesheet" href="../VariableFile/ResetStyle.css" />
   <style>
-    /* 预览页使用浏览器级滚动条（覆盖 main.css 的 overflow: hidden） */
     html {
       overflow-y: auto;
       overflow-x: hidden;
@@ -33,186 +33,286 @@
     .preview-page { min-height: 100vh; background: var(--bg-primary); }
     .preview-header {
       position: sticky; top: 0; z-index: 100;
-      padding: 16px 24px;
+      padding: var(--size-16) var(--size-24);
       background: var(--bg-card);
-      border-bottom: 1px solid var(--border-primary);
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      border-bottom: var(--solid);
+      display: flex; align-items: center; justify-content: space-between; gap: var(--size-16);
+      box-shadow: var(--shadow-sm);
     }
-    .preview-header h1 { font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0; }
-    .preview-header p { font-size: 12px; color: var(--text-tertiary); margin: 4px 0 0; }
+    .preview-header h1 {
+      font-size: var(--fs-18);
+      font-weight: 600;
+      color: var(--title);
+      margin: 0;
+    }
+    .preview-header p {
+      font-size: var(--fs-12);
+      color: var(--secondary-text);
+      margin: var(--size-4) 0 0;
+    }
     .preview-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 14px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 500;
-      background: var(--accent-soft); border: 1px solid var(--accent-light); color: var(--accent);
-      text-decoration: none; transition: all 0.15s ease;
+      display: inline-flex; align-items: center; gap: var(--size-6);
+      padding: var(--size-6) var(--size-16);
+      border-radius: var(--radius-pill);
+      font-size: var(--fs-12);
+      font-weight: 500;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-light);
+      color: var(--accent);
+      text-decoration: none;
+      transition: all 0.15s ease;
     }
     .preview-badge:hover { background: var(--accent-light); color: var(--accent-hover); }
-    .preview-main { max-width: 960px; margin: 0 auto; padding: 24px 24px 64px; }
-    .preview-section { margin-bottom: 40px; }
-    .section-label { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 6px; }
-    .section-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0 0 16px; }
-    .section-desc { font-size: 13px; color: var(--text-secondary); margin: -8px 0 16px; line-height: 1.6; }
+    .preview-main { max-width: 960px; margin: 0 auto; padding: var(--size-24) var(--size-24) var(--size-48); }
+    .preview-section { margin-bottom: var(--size-40); }
+    .section-label {
+      font-size: var(--fs-12);
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: var(--size-6);
+    }
+    .section-title {
+      font-size: var(--fs-16);
+      font-weight: 600;
+      color: var(--title);
+      margin: 0 0 var(--size-16);
+    }
+    .section-desc {
+      font-size: var(--fs-14);
+      color: var(--main-text);
+      margin: calc(var(--size-8) * -1) 0 var(--size-16);
+      line-height: 1.6;
+    }
 
-    .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: var(--size-8);
+    }
     .swatch {
-      border-radius: var(--radius-md); overflow: hidden;
-      border: 1px solid var(--border-primary); background: var(--bg-card);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: var(--solid);
+      background: var(--bg-card);
       box-shadow: var(--shadow-sm);
     }
     .swatch-color { height: 48px; }
-    .swatch-info { padding: 8px 10px; }
-    .swatch-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
-    .swatch-token { font-size: 11px; color: var(--text-tertiary); font-family: monospace; margin-top: 2px; }
+    .swatch-info { padding: var(--size-8) var(--size-12); }
+    .swatch-name { font-size: var(--fs-12); font-weight: 600; color: var(--title); }
+    .swatch-token {
+      font-size: 11px;
+      color: var(--secondary-text);
+      font-family: 'SF Mono', Consolas, Monaco, monospace;
+      margin-top: 2px;
+    }
+
+    .type-row {
+      display: flex; align-items: baseline; gap: var(--size-16);
+      padding: var(--size-12) var(--size-16);
+      background: var(--bg-card);
+      border: var(--solid);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--size-8);
+    }
+    .type-meta {
+      width: 140px; flex-shrink: 0;
+      font-size: var(--fs-12);
+      color: var(--secondary-text);
+      font-family: 'SF Mono', Consolas, Monaco, monospace;
+    }
+    .text-title { font-size: var(--fs-16); font-weight: 600; color: var(--title); }
+    .text-main { font-size: var(--fs-14); color: var(--main-text); }
+    .text-secondary { font-size: var(--fs-14); color: var(--secondary-text); }
+    .text-disabled { font-size: var(--fs-14); color: var(--disabled-text); }
 
     .demo-card {
-      background: var(--bg-card); border: 1px solid var(--border-primary);
-      border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm);
+      background: var(--bg-card);
+      border: var(--solid);
+      border-radius: var(--radius-lg);
+      padding: var(--size-20);
+      box-shadow: var(--shadow-sm);
     }
-    .demo-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .demo-row { display: flex; flex-wrap: wrap; gap: var(--size-12); align-items: center; }
 
     .btn-primary {
-      padding: 8px 16px; border: 1px solid var(--accent); border-radius: var(--radius-md);
-      background: var(--accent); color: var(--text-invert); font-size: 13px; font-weight: 500; cursor: pointer;
+      padding: var(--size-8) var(--size-16);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-md);
+      background: var(--accent);
+      color: var(--text-invert);
+      font-size: var(--fs-14);
+      font-weight: 500;
+      cursor: pointer;
     }
     .btn-secondary {
-      padding: 8px 16px; border: 1px solid var(--accent-light); border-radius: var(--radius-md);
-      background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 500; cursor: pointer;
+      padding: var(--size-8) var(--size-16);
+      border: 1px solid var(--accent-light);
+      border-radius: var(--radius-md);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: var(--fs-14);
+      cursor: pointer;
     }
     .btn-outline {
-      padding: 8px 16px; border: 1px solid var(--border-primary); border-radius: var(--radius-md);
-      background: var(--bg-muted); color: var(--text-secondary); font-size: 13px; cursor: pointer;
+      padding: var(--size-8) var(--size-16);
+      border: var(--solid);
+      border-radius: var(--radius-md);
+      background: var(--bg-muted);
+      color: var(--main-text);
+      font-size: var(--fs-14);
+      cursor: pointer;
     }
-    .copy-icon {
-      width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
-      background: var(--bg-muted); border: 1px solid var(--border-primary); border-radius: var(--radius-sm);
-      color: var(--text-secondary); cursor: pointer;
-    }
-    .copy-icon .iconfont { font-size: 12px; }
+    .btn-outline:hover { background: var(--bg-hover); }
 
-    .color-block {
-      width: 100%; height: 56px; border-radius: var(--radius-md);
-      border: 1px solid var(--border-primary);
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'SF Mono', Consolas, Monaco, monospace;
-      font-size: 13px; font-weight: 600;
+    .spacing-demo { display: flex; flex-wrap: wrap; gap: var(--size-12); align-items: flex-end; }
+    .spacing-box {
+      display: flex; flex-direction: column; align-items: center; gap: var(--size-4);
+      font-size: 11px; color: var(--secondary-text);
     }
-    .code-block {
-      background: #1e1e2e; color: #cdd6f4; padding: 16px; border-radius: var(--radius-md);
-      font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 13px; line-height: 1.6;
-      overflow-x: auto;
+    .spacing-bar {
+      background: var(--accent-light);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-sm);
     }
-    .radius-demo { display: flex; gap: 16px; flex-wrap: wrap; }
+
+    .radius-demo { display: flex; gap: var(--size-16); flex-wrap: wrap; }
     .radius-box {
-      width: 72px; height: 48px; background: var(--bg-muted); border: 1px solid var(--border-primary);
-      display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-secondary);
+      width: 72px; height: 48px;
+      background: var(--bg-muted);
+      border: var(--solid);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--main-text);
     }
-    .shadow-demo { display: flex; gap: 16px; flex-wrap: wrap; }
+    .shadow-demo { display: flex; gap: var(--size-16); flex-wrap: wrap; }
     .shadow-box {
-      width: 100px; height: 64px; background: var(--bg-card); border-radius: var(--radius-md);
-      border: 1px solid var(--border-primary); display: flex; align-items: center; justify-content: center;
-      font-size: 11px; color: var(--text-secondary);
+      width: 100px; height: 64px;
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      border: var(--solid);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--main-text);
     }
     .shadow-box.sm { box-shadow: var(--shadow-sm); }
     .shadow-box.md { box-shadow: var(--shadow-md); }
     .shadow-box.lg { box-shadow: var(--shadow-lg); }
-
-    .type-row {
-      display: flex; align-items: baseline; gap: 16px; padding: 10px 14px;
-      background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius-md); margin-bottom: 8px;
-    }
-    .type-meta { width: 120px; flex-shrink: 0; font-size: 12px; color: var(--text-tertiary); font-family: monospace; }
+    .shadow-box.sys { box-shadow: var(--shadow); }
 
     .code-hint {
-      padding: 16px; border-radius: var(--radius-md);
-      background: var(--bg-muted); border: 1px dashed var(--border-primary);
-      font-size: 12px; color: var(--text-secondary); line-height: 1.8;
+      padding: var(--size-16);
+      border-radius: var(--radius-md);
+      background: var(--bg-muted);
+      border: var(--dashed);
+      font-size: var(--fs-12);
+      color: var(--main-text);
+      line-height: 1.8;
     }
-    .code-hint code { font-family: monospace; color: var(--accent); background: var(--accent-soft); padding: 1px 6px; border-radius: 4px; }
+    .code-hint code {
+      font-family: monospace;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 1px var(--size-6);
+      border-radius: var(--radius-sm);
+    }
   </style>
 </head>
 <body class="preview-page">
   <header class="preview-header">
     <div>
-      <h1>颜色值转换器 · VibeCoding 设计规范</h1>
-      <p>深色模式 · <code style="font-family:monospace;font-size:11px">data-theme="dark"</code></p>
+      <h1>ThemeStyle · SystemStyle 开发者预览</h1>
+      <p>深色模式 · <code style="font-family:monospace;font-size:11px">data-theme="dark"</code> · 文本 Token 与 <code style="font-family:monospace;font-size:11px">--title-dark</code> 系列对齐</p>
     </div>
     <a class="preview-badge" href="./LightMode.html">← 浅色模式</a>
   </header>
 
   <main class="preview-main">
     <section class="preview-section">
-      <div class="section-label">01 · Colors</div>
-      <h2 class="section-title">背景 · 文本 · 强调色（深色）</h2>
-      <p class="section-desc">深色变量定义于 <code>src/main.css</code> 的 <code>[data-theme="dark"]</code> 块。</p>
+      <div class="section-label">01 · Text Tokens</div>
+      <h2 class="section-title">标准文本色（深色背景）</h2>
+      <p class="section-desc">深色模式下 <code>--title</code> 等变量自动切换为原 <code>--title-dark</code> 色值；<code>--text-primary</code> 仍映射 <code>var(--title)</code>。</p>
+      <div class="type-row"><span class="type-meta">--title</span><span class="text-title">标题文字 #d9d9d9</span></div>
+      <div class="type-row"><span class="type-meta">--main-text</span><span class="text-main">正文与说明 #a6a6a6</span></div>
+      <div class="type-row"><span class="type-meta">--secondary-text</span><span class="text-secondary">辅助与占位 #737373</span></div>
+      <div class="type-row"><span class="type-meta">--disabled-text</span><span class="text-disabled">禁用状态 #4d4d4d</span></div>
+    </section>
+
+    <section class="preview-section">
+      <div class="section-label">02 · Semantic Background</div>
+      <h2 class="section-title">语义背景 Token（深色）</h2>
       <div class="swatch-grid">
-        <div class="swatch"><div class="swatch-color" style="background:var(--bg-primary)"></div><div class="swatch-info"><div class="swatch-name">页面底</div><div class="swatch-token">--bg-primary #1a1a1a</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--bg-card)"></div><div class="swatch-info"><div class="swatch-name">卡片</div><div class="swatch-token">--bg-card #2d2d2d</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--bg-primary)"></div><div class="swatch-info"><div class="swatch-name">页面底</div><div class="swatch-token">--bg-primary</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--bg-card)"></div><div class="swatch-info"><div class="swatch-name">卡片</div><div class="swatch-token">--bg-card</div></div></div>
         <div class="swatch"><div class="swatch-color" style="background:var(--bg-muted)"></div><div class="swatch-info"><div class="swatch-name">弱化区</div><div class="swatch-token">--bg-muted</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--accent)"></div><div class="swatch-info"><div class="swatch-name">强调色</div><div class="swatch-token">--accent #60a5fa</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--accent-soft)"></div><div class="swatch-info"><div class="swatch-name">浅蓝底</div><div class="swatch-token">--accent-soft</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--bg-hover)"></div><div class="swatch-info"><div class="swatch-name">悬停</div><div class="swatch-token">--bg-hover</div></div></div>
         <div class="swatch"><div class="swatch-color" style="background:var(--border-primary)"></div><div class="swatch-info"><div class="swatch-name">边框</div><div class="swatch-token">--border-primary</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--text-primary)"></div><div class="swatch-info"><div class="swatch-name">主文字</div><div class="swatch-token">--text-primary</div></div></div>
-        <div class="swatch"><div class="swatch-color" style="background:var(--text-error)"></div><div class="swatch-info"><div class="swatch-name">错误</div><div class="swatch-token">--text-error</div></div></div>
       </div>
     </section>
 
     <section class="preview-section">
-      <div class="section-label">02 · Typography</div>
-      <h2 class="section-title">深色模式文字对比</h2>
-      <div class="type-row"><span class="type-meta">primary</span><span style="font-size:14px;color:var(--text-primary)">主标题与正文 — 确保与卡片背景对比充足</span></div>
-      <div class="type-row"><span class="type-meta">secondary</span><span style="font-size:13px;color:var(--text-secondary)">说明文字 · 表单标签</span></div>
-      <div class="type-row"><span class="type-meta">tertiary</span><span style="font-size:12px;color:var(--text-tertiary)">辅助 · HEX 副文案</span></div>
-      <div class="type-row"><span class="type-meta">mono</span><span style="font-family:'SF Mono',Consolas,monospace;font-size:13px;color:var(--accent)">#60A5FA</span></div>
+      <div class="section-label">03 · Accent & Functional</div>
+      <h2 class="section-title">强调色与功能色</h2>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="swatch-color" style="background:var(--accent)"></div><div class="swatch-info"><div class="swatch-name">强调</div><div class="swatch-token">--accent</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--accent-soft)"></div><div class="swatch-info"><div class="swatch-name">浅强调底</div><div class="swatch-token">--accent-soft</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--accent-light)"></div><div class="swatch-info"><div class="swatch-name">强调边</div><div class="swatch-token">--accent-light</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--primary)"></div><div class="swatch-info"><div class="swatch-name">主题（静态）</div><div class="swatch-token">--primary</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:var(--text-error)"></div><div class="swatch-info"><div class="swatch-name">错误文本</div><div class="swatch-token">--text-error</div></div></div>
+      </div>
     </section>
 
     <section class="preview-section">
-      <div class="section-label">03 · Radius & Shadow</div>
+      <div class="section-label">04 · Typography（SystemStyle）</div>
+      <h2 class="section-title">字号层级（深色对比）</h2>
+      <div class="type-row"><span class="type-meta">--fs-12</span><span style="font-size:var(--fs-12);color:var(--secondary-text)">辅助 · 标签</span></div>
+      <div class="type-row"><span class="type-meta">--fs-14</span><span style="font-size:var(--fs-14);color:var(--main-text)">正文 · 列表</span></div>
+      <div class="type-row"><span class="type-meta">--fs-16</span><span style="font-size:var(--fs-16);font-weight:600;color:var(--title)">小标题</span></div>
+      <div class="type-row"><span class="type-meta">--fs-20</span><span style="font-size:var(--fs-20);font-weight:600;color:var(--title)">页面主标题</span></div>
+    </section>
+
+    <section class="preview-section">
+      <div class="section-label">05 · Spacing（SystemStyle）</div>
+      <h2 class="section-title">间距尺度</h2>
+      <div class="spacing-demo">
+        <div class="spacing-box"><div class="spacing-bar" style="width:var(--size-8);height:var(--size-8)"></div>--size-8</div>
+        <div class="spacing-box"><div class="spacing-bar" style="width:var(--size-16);height:var(--size-16)"></div>--size-16</div>
+        <div class="spacing-box"><div class="spacing-bar" style="width:var(--size-24);height:var(--size-24)"></div>--size-24</div>
+        <div class="spacing-box"><div class="spacing-bar" style="width:var(--size-32);height:var(--size-32)"></div>--size-32</div>
+      </div>
+    </section>
+
+    <section class="preview-section">
+      <div class="section-label">06 · Radius & Shadow</div>
       <h2 class="section-title">圆角与阴影（深色加强）</h2>
-      <div class="radius-demo" style="margin-bottom:16px">
+      <div class="radius-demo" style="margin-bottom:var(--size-16)">
         <div class="radius-box" style="border-radius:var(--radius-sm)">sm</div>
         <div class="radius-box" style="border-radius:var(--radius-md)">md</div>
         <div class="radius-box" style="border-radius:var(--radius-lg)">lg</div>
       </div>
       <div class="shadow-demo">
-        <div class="shadow-box sm">shadow-sm</div>
-        <div class="shadow-box md">shadow-md</div>
-        <div class="shadow-box lg">shadow-lg</div>
+        <div class="shadow-box sm">--shadow-sm</div>
+        <div class="shadow-box md">--shadow-md</div>
+        <div class="shadow-box lg">--shadow-lg</div>
+        <div class="shadow-box sys">--shadow</div>
       </div>
     </section>
 
     <section class="preview-section">
-      <div class="section-label">04 · Buttons</div>
-      <h2 class="section-title">页头与面板按钮（深色）</h2>
+      <div class="section-label">07 · Components</div>
+      <h2 class="section-title">按钮示例（深色）</h2>
       <div class="demo-card">
         <div class="demo-row">
-          <button class="btn-primary" type="button">主按钮</button>
-          <button class="btn-secondary" type="button">次要 · 已收藏</button>
-          <button class="btn-outline" type="button">线框按钮</button>
-          <button class="copy-icon" type="button"><span class="iconfont icon-Copy"></span></button>
+          <button class="btn-primary" type="button">主按钮 · --accent</button>
+          <button class="btn-secondary" type="button">次要 · --accent-soft</button>
+          <button class="btn-outline" type="button">线框 · --border</button>
         </div>
       </div>
     </section>
 
-    <section class="preview-section">
-      <div class="section-label">05 · Panels</div>
-      <h2 class="section-title">面板与色块</h2>
-      <div class="demo-card">
-        <p style="font-size:14px;color:var(--text-secondary);margin:0 0 12px">面板：<code>background: var(--bg-card)</code> · <code>border: var(--border-primary)</code></p>
-        <div class="color-block" style="background:#2563EB;color:#fff;max-width:200px">#2563EB</div>
-      </div>
-    </section>
-
-    <section class="preview-section">
-      <div class="section-label">06 · Code Block</div>
-      <h2 class="section-title">代码区（固定深色底，两模式通用）</h2>
-      <pre class="code-block">background: linear-gradient(to right, #1677FF, #8B5CF6);</pre>
-    </section>
-
     <div class="code-hint">
-      <strong>深色模式切换</strong><br>
-      1. 设置页选择主题，或 <code>document.documentElement.setAttribute('data-theme','dark')</code><br>
-      2. system 模式跟随 <code>prefers-color-scheme</code><br>
-      3. 规范文档 <code>rules/DESIGN.md</code> · 对照 <code>LightMode.html</code>
+      <strong>系统主题切换</strong><br>
+      1. 设置页 <code>themeMode === 'system'</code> 时移除 <code>data-theme</code>，由 OS 深浅决定文本色<br>
+      2. 显式深色：<code>document.documentElement.setAttribute('data-theme','dark')</code><br>
+      3. 规范：<code>rules/DESIGN.md</code> · 对照 <code>LightMode.html</code><br>
+      4. 本页仅供开发者预览 Token，非应用运行时依赖
     </div>
   </main>
 </body>

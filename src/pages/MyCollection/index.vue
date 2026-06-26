@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, inject, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Dialog from '../../components/Dialog.vue';
 import Input from '../../components/Input.vue';
@@ -12,20 +12,56 @@ import {
 } from '../../utils/favoriteStorage';
 import { loadPalettes, savePalettes } from '../PaletteManager/paletteStorage.js';
 import { copyToClipboard, showToast, parseColor, getContrastColor as gcc } from '../../utils/colorUtils';
+import {
+  getPaletteColumnCount,
+  downloadPaletteCard
+} from '../../utils/paletteCard';
 
 const router = useRouter();
+const setHeaderActions = inject('setHeaderActions');
+const clearHeaderActions = inject('clearHeaderActions');
 
 const favorites = ref([]);
 const modalVisible = ref(false);
 const modalColor = ref({ name: '', hex: '' });
 const paletteDialogVisible = ref(false);
+const colorCardDialogVisible = ref(false);
 const paletteGroups = ref([]);
 const selectedGroupId = ref('');
 const paletteColorName = ref('');
 const paletteTargetColor = ref(null);
 
+const paletteCols = computed(() => getPaletteColumnCount(favorites.value.length));
+
 function loadFavorites() {
   favorites.value = getAllFavorites();
+  updateHeaderActions();
+}
+
+function updateHeaderActions() {
+  if (!favorites.value.length) {
+    clearHeaderActions();
+    return;
+  }
+  setHeaderActions([
+    { label: '生成色卡', onClick: () => openColorCardDialog() }
+  ]);
+}
+
+function openColorCardDialog() {
+  if (!favorites.value.length) {
+    showToast(null, '暂无收藏颜色，无法生成色卡', 'error');
+    return;
+  }
+  colorCardDialogVisible.value = true;
+}
+
+function handleDownloadColorCard() {
+  downloadPaletteCard(favorites.value, {
+    title: '我的收藏色卡',
+    subtitle: '共 ' + favorites.value.length + ' 种收藏色',
+    filenamePrefix: 'my-favorites-palette'
+  });
 }
 
 function openColorModal(item) {
@@ -99,6 +135,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  clearHeaderActions();
   window.removeEventListener('color-favorites-changed', handleFavoritesChanged);
 });
 </script>
@@ -160,6 +197,44 @@ onUnmounted(() => {
       v-model:visible="modalVisible"
       :color="modalColor"
     />
+
+    <!-- 生成色卡预览弹框 -->
+    <Dialog
+      :visible="colorCardDialogVisible"
+      title="色卡预览"
+      max-width="860px"
+      @close="colorCardDialogVisible = false"
+    >
+      <div class="palette-dialog-body">
+        <div v-if="!favorites.length" class="palette-empty">暂无可用色卡数据</div>
+        <div v-else class="palette-grid" :class="'palette-cols-' + paletteCols">
+          <div
+            v-for="item in favorites"
+            :key="item.hex"
+            class="palette-card"
+          >
+            <div
+              class="palette-swatch"
+              :style="{ background: item.hex }"
+            ></div>
+            <div class="palette-value">
+              <span>{{ item.hex }}</span>
+              <button
+                class="palette-copy"
+                @click.stop="copyHex(item.hex)"
+                title="复制颜色值"
+              >
+                <span class="iconfont icon-Copy"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="palette-dialog-footer">
+        <button class="palette-btn secondary" @click="colorCardDialogVisible = false">取消</button>
+        <button class="palette-btn" @click="handleDownloadColorCard">下载色卡</button>
+      </div>
+    </Dialog>
 
     <Dialog
       v-model:visible="paletteDialogVisible"
@@ -443,6 +518,151 @@ onUnmounted(() => {
   .card-actions {
     flex-wrap: wrap;
     justify-content: space-between;
+  }
+}
+
+.palette-dialog-body {
+  display: flex;
+  flex-direction: column;
+  margin: -16px -20px 0;
+  padding: 0;
+}
+
+.palette-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+.palette-grid {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.palette-grid.palette-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.palette-grid.palette-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.palette-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+  }
+}
+
+.palette-swatch {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  min-height: 80px;
+}
+
+.palette-value {
+  padding: 10px 12px;
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+  background: var(--bg-muted);
+  border-top: 1px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.palette-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  padding: 0;
+
+  &:hover {
+    background: var(--accent);
+    color: #ffffff;
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.palette-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  margin: 0 -20px -24px;
+  border-top: 1px solid var(--border-primary);
+  background: var(--bg-muted);
+}
+
+.palette-btn {
+  min-width: 88px;
+  height: 34px;
+  padding: 0 18px;
+  background: var(--accent);
+  color: var(--text-invert);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+
+  &:hover {
+    opacity: 0.88;
+  }
+
+  &.secondary {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border-color: var(--border-primary);
+
+    &:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      opacity: 1;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .palette-grid.palette-cols-3,
+  .palette-grid.palette-cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .palette-dialog-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+
+    .palette-btn {
+      width: 100%;
+    }
   }
 }
 </style>

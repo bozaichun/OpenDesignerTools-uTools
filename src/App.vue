@@ -38,7 +38,7 @@ const languageOptions = [
   { value: 'ko', icon: 'icon-Areality-ModeSwitching', labelKey: 'langKo' },
   { value: 'ru', icon: 'icon-Areality-ModeSwitching', labelKey: 'langRu' }
 ];
-
+ 
 function t(key) {
   return translate(language.value, key);
 }
@@ -354,6 +354,7 @@ onMounted(() => {
 </template>
 
 <style lang="scss" scoped>
+
 .app-layout {
   height: 100%;
   width: 100%;
