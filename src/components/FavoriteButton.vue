@@ -15,6 +15,11 @@ const props = defineProps({
   name: {
     type: String,
     default: ''
+  },
+  variant: {
+    type: String,
+    default: 'icon',
+    validator: (value) => ['icon', 'text'].includes(value)
   }
 });
 
@@ -71,11 +76,12 @@ const handleToggle = () => {
 <template>
   <button
     class="favorite-btn"
-    :class="{ active: favorited }"
+    :class="{ active: favorited, 'favorite-btn--text': variant === 'text' }"
     :title="favorited ? '取消收藏' : '收藏'"
     @click.stop="handleToggle"
   >
-    <span class="favorite-icon">{{ favorited ? '★' : '☆' }}</span>
+    <span v-if="variant === 'text'" class="favorite-text">{{ favorited ? '已收藏' : '收藏' }}</span>
+    <span v-else class="favorite-icon">{{ favorited ? '★' : '☆' }}</span>
   </button>
 </template>
 
@@ -112,5 +118,33 @@ const handleToggle = () => {
 
 .favorite-btn.active:hover {
   color: #d48806;
+}
+
+.favorite-btn--text {
+  width: auto;
+  height: auto;
+  padding: 6px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.favorite-btn--text:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--bg-card);
+}
+
+.favorite-btn--text.active {
+  color: var(--accent);
+  border-color: var(--accent-light);
+  background: var(--accent-soft);
+}
+
+.favorite-btn--text.active:hover {
+  color: var(--accent-hover);
+  border-color: var(--accent);
 }
 </style>

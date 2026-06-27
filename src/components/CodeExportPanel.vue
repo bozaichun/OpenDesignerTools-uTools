@@ -244,8 +244,6 @@ const handleExport = () => {
   line-height: 1.6;
   overflow-x: auto;
   margin: 0;
-  max-height: 420px;
-  overflow-y: auto;
 }
 
 .code-block code {

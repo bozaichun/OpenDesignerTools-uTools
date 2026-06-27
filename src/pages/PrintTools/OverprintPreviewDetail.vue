@@ -2,6 +2,7 @@
 import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ColorPicker from '../../components/ColorPicker.vue';
+import FavoriteButton from '../../components/FavoriteButton.vue';
 import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
 import {
   parseColor,
@@ -288,13 +289,20 @@ onUnmounted(() => {
             <span :style="{ color: getContrastColor(overprintMixedHex) }"
               >叠印效果</span
             >
-            <button
-              class="action-icon-btn swatch-copy-btn"
-              title="复制颜色"
-              @click="copyValue(overprintMixedHex, '叠印色')"
-            >
-              <span class="iconfont icon-Copy"></span>
-            </button>
+            <div class="swatch-action-group">
+              <FavoriteButton
+                :hex="overprintMixedHex"
+                name="叠印效果"
+                class="swatch-favorite-btn"
+              />
+              <button
+                class="action-icon-btn swatch-copy-btn"
+                title="复制颜色"
+                @click="copyValue(overprintMixedHex, '叠印色')"
+              >
+                <span class="iconfont icon-Copy"></span>
+              </button>
+            </div>
           </div>
           <div class="overprint-label">{{ overprintMixedHex }}</div>
         </div>
@@ -372,15 +380,31 @@ onUnmounted(() => {
   position: relative;
 }
 .swatch-copy-btn {
-  position: absolute;
-  top: 3px;
-  right: 3px;
+  position: static;
   width: 16px;
   height: 16px;
   background: var(--chip-on-color-bg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
   .iconfont {
+    font-size: 9px;
+  }
+}
+.swatch-action-group {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+:deep(.swatch-favorite-btn.favorite-btn) {
+  width: 16px;
+  height: 16px;
+  background: var(--chip-on-color-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  .favorite-icon {
     font-size: 9px;
   }
 }

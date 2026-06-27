@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import Selector from '../../components/Selector.vue';
+import FavoriteButton from '../../components/FavoriteButton.vue';
 import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
 import { parseColor, getContrastColor as gcc } from '../../utils/colorUtils';
 import { computeCmykResult, computeCmykConvertedHex, readDetailQuery } from './printToolsUtils';
@@ -66,8 +67,13 @@ onMounted(() => {
     <section class="panel module-panel">
       <div class="cmyk-preview">
         <div class="cmyk-preview-item">
-          <div class="cmyk-preview-swatch" :style="{ background: inputColor }">
+          <div class="cmyk-preview-swatch cmyk-preview-swatch-with-action" :style="{ background: inputColor }">
             <span class="cmyk-preview-text" :style="{ color: getContrastColor(inputColor) }">屏幕色</span>
+            <FavoriteButton
+              :hex="inputColor"
+              name="屏幕色"
+              class="cmyk-swatch-favorite-btn"
+            />
           </div>
           <div class="cmyk-preview-label">原始 RGB</div>
           <div class="cmyk-preview-value">{{ inputColor }}</div>
@@ -132,6 +138,22 @@ onMounted(() => {
   width: 120px; height: 120px; border-radius: var(--radius-md);
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 10px; border: 1px solid var(--border-primary);
+}
+.cmyk-preview-swatch-with-action {
+  position: relative;
+}
+:deep(.cmyk-swatch-favorite-btn.favorite-btn) {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  background: var(--chip-on-color-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  .favorite-icon {
+    font-size: 12px;
+  }
 }
 .cmyk-preview-text { font-size: 14px; font-weight: 600; }
 .cmyk-preview-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; }

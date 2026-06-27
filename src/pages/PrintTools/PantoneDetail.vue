@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import Selector from '../../components/Selector.vue';
+import FavoriteButton from '../../components/FavoriteButton.vue';
 import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
 import { copyToClipboard, showToast } from '../../utils/colorUtils';
 import { computePantoneResults, readDetailQuery } from './printToolsUtils';
@@ -79,7 +80,12 @@ onMounted(() => {
                 <td>{{ p.name }}</td>
                 <td class="mono">{{ p.hex }}</td>
                 <td>{{ p.deltaE.toFixed(2) }}</td>
-                <td><button class="sm-btn" @click="copyValue(p.hex, p.code)">复制</button></td>
+                <td>
+                  <div class="table-actions">
+                    <button class="sm-btn" @click="copyValue(p.hex, p.code)">复制</button>
+                    <FavoriteButton variant="text" :hex="p.hex" :name="p.code" />
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -119,5 +125,11 @@ onMounted(() => {
   border: 1px solid var(--border-primary); border-radius: var(--radius-sm);
   font-size: 12px; cursor: pointer; color: var(--text-primary);
   &:hover { border-color: var(--accent); color: var(--accent); }
+}
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 </style>
