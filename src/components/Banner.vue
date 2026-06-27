@@ -10,9 +10,25 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  /** icon | image | url，默认 iconfont 图标 */
+  mode: {
+    type: String,
+    default: 'icon',
+    validator: (value) => ['icon', 'image', 'url'].includes(value)
+  },
   icon: {
     type: String,
     default: 'icon-Areality-PrintingTool'
+  },
+  /** 项目静态图片（Vite import 或 public 路径） */
+  image: {
+    type: String,
+    default: ''
+  },
+  /** 远程图片链接 */
+  imageUrl: {
+    type: String,
+    default: ''
   }
 });
 
@@ -22,8 +38,20 @@ const hasDescription = computed(() => {
   return Boolean(props.description) || Boolean(slots.description);
 });
 
-const hasIcon = computed(() => {
-  return Boolean(props.icon) || Boolean(slots.icon);
+const hasVisual = computed(() => {
+  if (slots.icon) return true;
+  if (props.mode === 'icon') return Boolean(props.icon);
+  if (props.mode === 'image') return Boolean(props.image);
+  if (props.mode === 'url') return Boolean(props.imageUrl);
+  return false;
+});
+
+const isImageMode = computed(() => props.mode === 'image' || props.mode === 'url');
+
+const visualSrc = computed(() => {
+  if (props.mode === 'image') return props.image;
+  if (props.mode === 'url') return props.imageUrl;
+  return '';
 });
 </script>
 
@@ -40,9 +68,20 @@ const hasIcon = computed(() => {
         <slot name="extra"></slot>
       </div>
     </div>
-    <div v-if="hasIcon" class="app-banner__icon" aria-hidden="true">
+    <div
+      v-if="hasVisual"
+      class="app-banner__icon"
+      :class="{ 'app-banner__icon--image': isImageMode }"
+      aria-hidden="true"
+    >
       <slot name="icon">
-        <span :class="['iconfont', icon]"></span>
+        <span v-if="mode === 'icon'" :class="['iconfont', icon]"></span>
+        <img
+          v-else
+          class="app-banner__image"
+          :src="visualSrc"
+          alt=""
+        />
       </slot>
     </div>
   </div>
@@ -97,18 +136,27 @@ const hasIcon = computed(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
+  width: 110px;
+  height: 110px;
   border-radius: var(--radius-lg);
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
   color: var(--accent);
-  box-shadow: var(--shadow-sm);
 }
 
 .app-banner__icon .iconfont {
   font-size: 36px;
   line-height: 1;
+}
+
+.app-banner__icon--image {
+  padding: 6px;
+  overflow: hidden;
+}
+
+.app-banner__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 @media (max-width: 640px) {

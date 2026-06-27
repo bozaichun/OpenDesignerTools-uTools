@@ -184,9 +184,10 @@ watch(() => inputs.hex, () => {
 <template>
   <div class="module-convert">
     <Banner
+      mode="url"
+      image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/ColorConversion.png"
       title="任输一个色值，五种格式同步转换"
       description="在 HEX / RGB / HSL / CMYK / HSV 任一格式框输入颜色，其余四栏自动同步换算结果"
-      icon="icon-Areality-ColorConversion"
     />
     <div class="convert-layout">
       <!-- 左：颜色预览 -->

@@ -314,7 +314,8 @@ onUnmounted(() => {
     <Banner
       title="统一管理品牌色与项目色板"
       description="支持个人 / 项目 / 品牌三类分组，自动查重合并、一键生成代码并与团队共享色板"
-      icon="icon-Areality-Palette"
+      mode="url"
+      image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/ColorPaletteManagement.png"
     />
     <DataTable
         :data="paginatedGroups"

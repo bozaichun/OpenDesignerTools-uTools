@@ -256,9 +256,10 @@ onBeforeUnmount(() => {
 <template>
   <div class="module-knowledge">
     <Banner
+      mode="url"
+      image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/BasicKnowledge.png"
       title="从零了解色彩设计基础"
       description="掌握三原色原理、色环规律与颜色格式知识，帮你更科学地运用色彩"
-      icon="icon-Areality-ColorMixing"
     />
     <!-- 知识卡片列表 -->
     <div class="knowledge-grid">

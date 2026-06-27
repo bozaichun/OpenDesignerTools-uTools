@@ -76,7 +76,8 @@ function goToDetail(moduleId, extra = {}) {
     <Banner
       title="输入色值，四项印刷分析一步完成"
       description="选择或输入颜色，同步查看 CMYK 校准、潘通匹配、叠印预览、网点换算结果"
-      icon="icon-Areality-PrintingTool"
+      mode="url"
+      image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/PrintingTool.png"
     />
     <!-- 统一色值输入 -->
     <section class="panel unified-panel">

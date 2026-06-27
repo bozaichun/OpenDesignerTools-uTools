@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import Banner from '../../components/Banner.vue';
-import ColorPicker from '../../components/ColorPicker.vue';
-import { parseColor, rgbToHsl } from '../../utils/colorUtils';
+import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
+import Banner from "../../components/Banner.vue";
+import ColorPicker from "../../components/ColorPicker.vue";
+import { parseColor, rgbToHsl } from "../../utils/colorUtils";
 import {
   DETAIL_MODULES,
   DEFAULT_DIFF_COLOR_B,
@@ -14,21 +14,21 @@ import {
   computeDeltaE76,
   computeGradientStyle,
   getDeltaEDescription,
-  getDeltaEClass
-} from './colorToolsUtils';
+  getDeltaEClass,
+} from "./colorToolsUtils";
 
 const DIRECTION_LABELS = {
-  'to right': '从左到右',
-  'to bottom': '从上到下',
-  'to bottom right': '对角线',
-  circle: '圆形辐射',
-  '45deg': '45° 斜向',
-  '135deg': '135° 斜向'
+  "to right": "从左到右",
+  "to bottom": "从上到下",
+  "to bottom right": "对角线",
+  circle: "圆形辐射",
+  "45deg": "45° 斜向",
+  "135deg": "135° 斜向",
 };
 
 const router = useRouter();
 
-const inputColor = ref('#1677FF');
+const inputColor = ref("#1677FF");
 const diffColorB = ref(DEFAULT_DIFF_COLOR_B);
 
 const summaryHsl = computed(() => {
@@ -37,12 +37,16 @@ const summaryHsl = computed(() => {
 });
 
 const adjustedColor = computed(() => {
-  return computeAdjustedColor(summaryHsl.value.h, summaryHsl.value.s, summaryHsl.value.l);
+  return computeAdjustedColor(
+    summaryHsl.value.h,
+    summaryHsl.value.s,
+    summaryHsl.value.l,
+  );
 });
 
 const gradientStops = computed(() => {
   return DEFAULT_GRADIENT_STOPS.map((s, idx) =>
-    idx === 0 ? { ...s, color: inputColor.value } : { ...s }
+    idx === 0 ? { ...s, color: inputColor.value } : { ...s },
   );
 });
 
@@ -51,7 +55,9 @@ const gradientStyle = computed(() => {
 });
 
 const gradientDirectionLabel = computed(() => {
-  return DIRECTION_LABELS[DEFAULT_GRADIENT_DIRECTION] || DEFAULT_GRADIENT_DIRECTION;
+  return (
+    DIRECTION_LABELS[DEFAULT_GRADIENT_DIRECTION] || DEFAULT_GRADIENT_DIRECTION
+  );
 });
 
 const deltaE76 = computed(() => {
@@ -71,7 +77,7 @@ function goToDetail(moduleId) {
   if (!target) return;
   router.push({
     path: target.route,
-    query: buildHomeQuery(inputColor.value)
+    query: buildHomeQuery(inputColor.value),
   });
 }
 </script>
@@ -81,7 +87,8 @@ function goToDetail(moduleId) {
     <Banner
       title="输入色值，三项调色分析一步完成"
       description="选择或输入颜色，同步查看色阶微调、渐变编辑、色差比对结果"
-      icon="icon-Areality-ColorMixing"
+      mode="url"
+      image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/ColorAdjustmentTool.png"
     />
 
     <!-- 三项调色统一面板 -->
@@ -93,37 +100,57 @@ function goToDetail(moduleId) {
       <div class="summary-grid">
         <div class="summary-card">
           <div class="summary-label">色阶微调</div>
-          <div class="summary-swatch" :style="{ background: adjustedColor }"></div>
+          <div
+            class="summary-swatch"
+            :style="{ background: adjustedColor }"
+          ></div>
           <div class="summary-value">{{ adjustedColor }}</div>
           <div class="summary-status">
             HSL {{ summaryHsl.h }}° / {{ summaryHsl.s }}% / {{ summaryHsl.l }}%
           </div>
           <div class="summary-actions">
-            <button class="sm-btn" @click="goToDetail('adjust')">查看详情</button>
+            <button class="sm-btn" @click="goToDetail('adjust')">
+              查看详情
+            </button>
           </div>
         </div>
 
         <div class="summary-card">
           <div class="summary-label">渐变编辑</div>
-          <div class="summary-swatch gradient-swatch" :style="gradientStyle"></div>
+          <div
+            class="summary-swatch gradient-swatch"
+            :style="gradientStyle"
+          ></div>
           <div class="summary-value">{{ gradientStops.length }} 个节点</div>
           <div class="summary-status">{{ gradientDirectionLabel }}</div>
           <div class="summary-actions">
-            <button class="sm-btn" @click="goToDetail('gradient')">查看详情</button>
+            <button class="sm-btn" @click="goToDetail('gradient')">
+              查看详情
+            </button>
           </div>
         </div>
 
         <div class="summary-card">
           <div class="summary-label">色差比对</div>
           <div class="summary-dual">
-            <div class="summary-swatch small" :style="{ background: inputColor }"></div>
+            <div
+              class="summary-swatch small"
+              :style="{ background: inputColor }"
+            ></div>
             <span class="summary-dual-arrow">↔</span>
-            <div class="summary-swatch small" :style="{ background: diffColorB }"></div>
+            <div
+              class="summary-swatch small"
+              :style="{ background: diffColorB }"
+            ></div>
           </div>
           <div class="summary-value">ΔE {{ deltaE76.toFixed(2) }}</div>
-          <div class="summary-status" :class="deltaEStatusClass">{{ deltaEDescription }}</div>
+          <div class="summary-status" :class="deltaEStatusClass">
+            {{ deltaEDescription }}
+          </div>
           <div class="summary-actions">
-            <button class="sm-btn" @click="goToDetail('difference')">查看详情</button>
+            <button class="sm-btn" @click="goToDetail('difference')">
+              查看详情
+            </button>
           </div>
         </div>
       </div>
@@ -192,10 +219,18 @@ function goToDetail(moduleId) {
   font-size: 11px;
   color: var(--text-tertiary);
   margin-bottom: 8px;
-  &.excellent { color: var(--success); }
-  &.good { color: var(--accent); }
-  &.medium { color: var(--warning); }
-  &.poor { color: var(--error); }
+  &.excellent {
+    color: var(--success);
+  }
+  &.good {
+    color: var(--accent);
+  }
+  &.medium {
+    color: var(--warning);
+  }
+  &.poor {
+    color: var(--error);
+  }
 }
 
 .summary-swatch {
@@ -204,8 +239,16 @@ function goToDetail(moduleId) {
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-primary);
   margin: 0 auto 6px;
-  &.gradient-swatch { width: 100%; max-width: 120px; height: 32px; }
-  &.small { width: 28px; height: 28px; margin: 0; }
+  &.gradient-swatch {
+    width: 100%;
+    max-width: 120px;
+    height: 32px;
+  }
+  &.small {
+    width: 28px;
+    height: 28px;
+    margin: 0;
+  }
 }
 
 .summary-dual {
@@ -244,6 +287,8 @@ function goToDetail(moduleId) {
 }
 
 @media (max-width: 1024px) {
-  .summary-grid { grid-template-columns: 1fr; }
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

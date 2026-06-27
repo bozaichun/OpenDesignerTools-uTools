@@ -227,7 +227,8 @@ onUnmounted(() => {
       v-if="!imageLoaded"
       title="上传图片，一键提取配色"
       description="支持拖拽或点击上传，自动分析主色调并生成完整色值报告"
-      icon="icon-Areality-Picture"
+      mode="url"
+      image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/ImageColorSampling.png"
     />
 
     <!-- 上传区域（图片已加载后隐藏） -->

@@ -39,7 +39,8 @@ function copyValue(value, label) {
     <Banner
       title="按色系浏览，一键获取颜色值"
       description="覆盖红橙黄绿蓝紫黑白灰等常用色系，支持名称与 HEX 搜索快速定位"
-      icon="icon-Areality-Color"
+      mode="url"
+      image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/PresetColors.png"
     />
     <!-- 筛选与搜索 -->
     <div class="preset-filter-bar">

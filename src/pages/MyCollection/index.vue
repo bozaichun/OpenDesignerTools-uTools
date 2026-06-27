@@ -145,7 +145,8 @@ onUnmounted(() => {
     <Banner
       title="收藏常用色，快速取用"
       description="在预置颜色或其他页面点击收藏图标，将颜色保存到这里统一管理，可一键添加到色板"
-      icon="icon-Areality-Color"
+      mode="url"
+      image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/MyCollection.png"
     />
     <div v-if="favorites.length > 0" class="favorites-grid">
       <div
