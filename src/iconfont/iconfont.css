@@ -1,8 +1,8 @@
 @font-face {
   font-family: "iconfont"; /* Project id 4020260 */
-  src: url('iconfont.woff2?t=1781867148301') format('woff2'),
-       url('iconfont.woff?t=1781867148301') format('woff'),
-       url('iconfont.ttf?t=1781867148301') format('truetype');
+  src: url('iconfont.woff2?t=1782564806790') format('woff2'),
+       url('iconfont.woff?t=1782564806790') format('woff'),
+       url('iconfont.ttf?t=1782564806790') format('truetype');
 }
 
 .iconfont {
@@ -107,6 +107,22 @@
 
 .icon-Copyright:before {
   content: "\ec0b";
+}
+
+.icon-Areality-MyCollection:before {
+  content: "\ec12";
+}
+
+.icon-Collection:before {
+  content: "\ec13";
+}
+
+.icon-Areality-UsageGuide:before {
+  content: "\ec14";
+}
+
+.icon-Areality-Collection:before {
+  content: "\ec15";
 }
 
 .icon-Attention:before {

@@ -3,7 +3,7 @@ export const NAV_MENU_ITEMS = [
   {
     id: 'FunctionOverview',
     label: '功能概览',
-    icon: 'icon-Query'
+    icon: 'icon-Areality-UsageGuide'
   },
   {
     id: 'BasicKnowledge',
@@ -54,6 +54,6 @@ export const NAV_MENU_ITEMS = [
   {
     id: 'MyCollection',
     label: '我的收藏',
-    icon: 'icon-Copyright'
+    icon: 'icon-Areality-MyCollection'
   }
 ];

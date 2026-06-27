@@ -174,6 +174,34 @@
       "unicode_decimal": 60427
     },
     {
+      "icon_id": "47948726",
+      "name": "我的收藏",
+      "font_class": "Areality-MyCollection",
+      "unicode": "ec12",
+      "unicode_decimal": 60434
+    },
+    {
+      "icon_id": "47948727",
+      "name": "收藏",
+      "font_class": "Collection",
+      "unicode": "ec13",
+      "unicode_decimal": 60435
+    },
+    {
+      "icon_id": "47948728",
+      "name": "使用指南",
+      "font_class": "Areality-UsageGuide",
+      "unicode": "ec14",
+      "unicode_decimal": 60436
+    },
+    {
+      "icon_id": "47948729",
+      "name": "收藏",
+      "font_class": "Areality-Collection",
+      "unicode": "ec15",
+      "unicode_decimal": 60437
+    },
+    {
       "icon_id": "16401954",
       "name": "提示",
       "font_class": "Attention",

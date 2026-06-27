@@ -81,7 +81,11 @@ const handleToggle = () => {
     @click.stop="handleToggle"
   >
     <span v-if="variant === 'text'" class="favorite-text">{{ favorited ? '已收藏' : '收藏' }}</span>
-    <span v-else class="favorite-icon">{{ favorited ? '★' : '☆' }}</span>
+    <span
+      v-else
+      class="iconfont favorite-icon"
+      :class="favorited ? 'icon-Areality-Collection' : 'icon-Collection'"
+    ></span>
   </button>
 </template>
 
@@ -103,7 +107,7 @@ const handleToggle = () => {
 }
 
 .favorite-icon {
-  font-size: 16px;
+  font-size: 12px;
   line-height: 1;
 }
 
