@@ -230,10 +230,10 @@ function goToDetail(moduleId, extra = {}) {
   margin-bottom: 8px;
 }
 .summary-status.ok {
-  color: #10b981;
+  color: var(--success);
 }
 .summary-status.warn {
-  color: #f59e0b;
+  color: var(--warning);
 }
 .summary-swatch {
   width: 32px;

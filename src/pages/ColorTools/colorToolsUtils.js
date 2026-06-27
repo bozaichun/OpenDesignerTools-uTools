@@ -1,3 +1,4 @@
+// 调色工具：色阶微调 / 渐变 / 色差比对计算与详情描述
 import { parseColor, rgbToHex, rgbToHsl, hslToRgb } from '../../utils/colorUtils';
 
 export const DEFAULT_GRADIENT_STOPS = [

@@ -1,3 +1,4 @@
+// 印刷工具：CMYK / 潘通 / 网点换算等计算与详情路由参数
 import { parseColor } from '../../utils/colorUtils';
 
 export const DETAIL_MODULES = [

@@ -46,6 +46,7 @@ onMounted(() => {
 
 <template>
   <div class="print-detail">
+    <!-- 印刷详情壳层 -->
     <PrintToolsDetailShell
       current-module="cmyk"
       :color="inputColor"
@@ -142,14 +143,14 @@ onMounted(() => {
 .result-card {
   padding: 14px; border-radius: var(--radius-md); text-align: center;
   border: 1px solid var(--border-primary); background: var(--bg-muted);
-  &.ok { border-color: #10B981; background: rgba(16,185,129,0.08); }
-  &.warn { border-color: #F59E0B; background: rgba(245,158,11,0.08); }
+  &.ok { border-color: var(--success); background: var(--success-bg); }
+  &.warn { border-color: var(--warning); background: var(--warning-bg); }
 }
 .result-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
 .result-value { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
 .result-status { font-size: 11px; color: var(--text-tertiary); }
 .cmyk-bar {
-  height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden; margin-top: 8px;
+  height: 8px; background: var(--border-primary); border-radius: 4px; overflow: hidden; margin-top: 8px;
 }
 .cmyk-bar-fill {
   height: 100%; border-radius: 4px;
@@ -159,9 +160,9 @@ onMounted(() => {
   &.k { background: #231F20; }
 }
 .warning-box {
-  padding: 14px 18px; background: rgba(245, 158, 11, 0.1);
-  border: 1px solid #F59E0B; border-radius: var(--radius-md);
-  font-size: 13px; color: #B45309;
+  padding: 14px 18px; background: var(--warning-bg);
+  border: 1px solid var(--warning); border-radius: var(--radius-md);
+  font-size: 13px; color: var(--warning-active);
 }
 @media (max-width: 1024px) {
   .cmyk-result-grid { grid-template-columns: repeat(2, 1fr); }

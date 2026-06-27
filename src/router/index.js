@@ -1,3 +1,4 @@
+// 应用路由表：Hash 模式 + 页面懒加载
 import { createRouter, createWebHashHistory } from 'vue-router';
 
 const routes = [

@@ -1,3 +1,4 @@
+// 色板卡片 Canvas 渲染与布局计算
 import { parseColor, formatRGB, showToast } from './colorUtils';
 
 export function getPaletteColumnCount(total) {

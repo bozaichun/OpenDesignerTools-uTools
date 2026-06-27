@@ -11,6 +11,7 @@ const copyrightText = computed(() => {
 
 <template>
   <footer class="app-footer">
+    <!-- 版权信息 -->
     <span class="footer-text">{{ copyrightText }}</span>
   </footer>
 </template>

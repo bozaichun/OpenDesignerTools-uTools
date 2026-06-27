@@ -1,3 +1,4 @@
+// 侧边栏导航菜单配置
 export const NAV_MENU_ITEMS = [
   {
     id: 'FunctionOverview',

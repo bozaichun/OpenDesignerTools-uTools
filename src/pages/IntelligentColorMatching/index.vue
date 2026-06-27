@@ -197,7 +197,7 @@ function generateMonochrome() {
   });
   complementaryColors.value = complementary;
 }
-function selectScenario(key) {
+function handleScenarioSelect(key) {
   selectedScenario.value = key;
 }
 function getScenarioPreviewStyle() {
@@ -245,6 +245,7 @@ onMounted(() => {
 
 <template>
   <div class="module-intelligent">
+    <!-- 功能 Tab -->
     <div class="tab-row">
       <div class="tab-scroll">
         <button
@@ -283,7 +284,7 @@ onMounted(() => {
         <div class="color-grid-5">
           <div
             v-for="(c, idx) in semanticResult.colors"
-            :key="idx"
+            :key="c.name"
             class="color-card"
             :style="{ background: c.color }"
           >
@@ -319,7 +320,7 @@ onMounted(() => {
         <div class="color-grid-9">
           <div
             v-for="(c, idx) in monochromeShades"
-            :key="'shade-' + idx"
+            :key="c"
             class="color-card-sm"
             :style="{ background: c }"
           >
@@ -334,7 +335,7 @@ onMounted(() => {
         <div class="color-grid-3">
           <div
             v-for="(c, idx) in analogousColors"
-            :key="'analog-' + idx"
+            :key="c.name"
             class="color-card"
             :style="{ background: c.color }"
           >
@@ -352,7 +353,7 @@ onMounted(() => {
         <div class="color-grid-4">
           <div
             v-for="(c, idx) in complementaryColors"
-            :key="'compl-' + idx"
+            :key="c.name"
             class="color-card"
             :style="{ background: c.color }"
           >
@@ -378,7 +379,7 @@ onMounted(() => {
           :key="s.key"
           class="scenario-card"
           :class="{ active: selectedScenario === s.key }"
-          @click="selectScenario(s.key)"
+          @click="handleScenarioSelect(s.key)"
         >
           <div class="scenario-icon">{{ s.emoji }}</div>
           <div class="scenario-name">{{ s.label }}</div>
@@ -416,7 +417,7 @@ onMounted(() => {
         <div class="color-grid-5">
           <div
             v-for="(c, idx) in currentScenarioColors"
-            :key="idx"
+            :key="c.name"
             class="color-card"
             :style="{ background: c.color }"
           >
@@ -449,7 +450,7 @@ onMounted(() => {
         <div class="color-grid-5">
           <div
             v-for="(c, idx) in uniqueResult.colors"
-            :key="idx"
+            :key="c.name"
             class="color-card"
             :style="{ background: c.color }"
           >
@@ -467,7 +468,7 @@ onMounted(() => {
         <div class="color-grid-4">
           <div
             v-for="(c, idx) in avoidColors"
-            :key="idx"
+            :key="c.name"
             class="color-card-sm"
             :style="{ background: c.color }"
           >
@@ -554,10 +555,10 @@ onMounted(() => {
 .color-card-sm-hex { font-size: 11px; font-family: monospace; }
 
 .copy-btn-sm, .copy-btn-xs {
-  padding: 4px 10px; background: rgba(255,255,255,0.85);
-  border: 1px solid rgba(0,0,0,0.15); border-radius: var(--radius-sm);
-  font-size: 11px; cursor: pointer; color: #111;
-  &:hover { background: #fff; }
+  padding: 4px 10px; background: var(--chip-on-color-bg);
+  border: 1px solid var(--chip-on-color-border); border-radius: var(--radius-sm);
+  font-size: 11px; cursor: pointer; color: var(--chip-on-color-text);
+  &:hover { background: var(--bg-card); }
 }
 .copy-btn-xs { padding: 2px 6px; font-size: 10px; }
 

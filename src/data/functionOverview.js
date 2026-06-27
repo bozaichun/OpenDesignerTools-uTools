@@ -1,3 +1,4 @@
+// 功能概览页：快速入门步骤与使用提示
 export const QUICK_START_STEPS = [
   {
     step: 1,

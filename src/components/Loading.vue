@@ -35,7 +35,7 @@ defineProps({
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--overlay-bg-strong);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -44,14 +44,14 @@ defineProps({
 
   &.loading-inline {
     position: absolute;
-    background: rgba(255, 255, 255, 0.75);
+    background: var(--chip-on-color-bg);
     border-radius: 8px;
     z-index: 10;
   }
 
   &.loading-local {
     position: absolute;
-    background: rgba(0, 0, 0, 0.55);
+    background: var(--overlay-bg-strong);
     border-radius: 0;
     z-index: 10;
   }
@@ -59,7 +59,7 @@ defineProps({
 
 @media (prefers-color-scheme: dark) {
   .loading-overlay.loading-inline {
-    background: rgba(30, 30, 30, 0.75);
+    background: var(--chip-on-color-bg);
   }
 }
 
@@ -87,19 +87,19 @@ defineProps({
 
 .loading-text {
   font-size: 12px;
-  color: #fff;
+  color: var(--tooltip-text);
   font-weight: 500;
   white-space: nowrap;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  text-shadow: var(--shadow-sm);
 }
 
 .loading-overlay.loading-inline .loading-text {
-  color: rgb(88, 164, 246);
+  color: var(--accent);
   text-shadow: none;
 }
 
 .loading-overlay.loading-local .loading-text {
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  color: var(--tooltip-text);
+  text-shadow: var(--shadow-sm);
 }
 </style>

@@ -1,3 +1,4 @@
+// 色板分组 localStorage 读写与默认数据
 export const STORAGE_KEY = 'color_palette_manager_v1';
 
 const DEFAULT_PALETTES = [

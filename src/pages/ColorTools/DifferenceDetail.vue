@@ -220,7 +220,7 @@ onMounted(() => {
       <div class="color-strip-section">
         <div class="section-title inline">A → B 过渡色（10 阶）</div>
         <div class="color-strip-grid color-strip-grid--10">
-          <div v-for="(color, idx) in transitionColors" :key="idx" class="color-strip-cell">
+          <div v-for="color in transitionColors" :key="color" class="color-strip-cell">
             <div class="color-strip-swatch" :style="{ background: color }">
               <span class="color-strip-label" :style="{ color: getContrastColor(color) }">{{ Math.round(idx / 9 * 100) }}%</span>
             </div>
@@ -329,10 +329,10 @@ onMounted(() => {
 }
 .diff-result-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
 .diff-result-value { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
-.diff-result-value.excellent { color: #10B981; }
-.diff-result-value.good { color: #3B82F6; }
-.diff-result-value.medium { color: #F59E0B; }
-.diff-result-value.poor { color: #EF4444; }
+.diff-result-value.excellent { color: var(--success); }
+.diff-result-value.good { color: var(--accent); }
+.diff-result-value.medium { color: var(--warning); }
+.diff-result-value.poor { color: var(--error); }
 .diff-result-status { font-size: 11px; color: var(--text-tertiary); }
 .diff-hint {
   padding: 12px 16px; background: var(--accent-soft); border-radius: var(--radius-md);

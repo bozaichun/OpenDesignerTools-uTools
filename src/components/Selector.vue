@@ -213,6 +213,7 @@ onBeforeUnmount(() => {
     class="app-selector"
     :class="selectorClass"
   >
+    <!-- 触发器 -->
     <button
       type="button"
       class="app-selector__trigger"

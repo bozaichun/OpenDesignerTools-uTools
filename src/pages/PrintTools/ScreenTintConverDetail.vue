@@ -81,7 +81,7 @@ onMounted(() => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(level, idx) in halftoneLevels" :key="idx">
+            <tr v-for="level in halftoneLevels" :key="level.percent">
               <td>{{ level.percent }}%</td>
               <td><span class="table-swatch lg" :style="{ background: level.color }"></span></td>
               <td class="mono">{{ level.color }}</td>

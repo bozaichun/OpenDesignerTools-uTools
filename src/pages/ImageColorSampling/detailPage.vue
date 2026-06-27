@@ -419,7 +419,7 @@ onUnmounted(() => {
         <div v-else class="palette-grid" :class="'palette-cols-' + paletteCols">
           <div
             v-for="(color, idx) in mainColors"
-            :key="idx"
+            :key="color.hex"
             class="palette-card"
           >
             <div
@@ -562,7 +562,7 @@ onUnmounted(() => {
         <div class="main-colors-grid">
           <div
             v-for="(color, idx) in mainColors"
-            :key="idx"
+            :key="color.hex"
             class="color-card"
           >
             <div

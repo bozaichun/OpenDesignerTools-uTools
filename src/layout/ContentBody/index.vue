@@ -8,6 +8,7 @@ const bodyRef = ref(null);
 watch(
   () => route.fullPath,
   () => {
+    // 路由切换后滚动回内容区顶部
     nextTick(() => {
       const el = bodyRef.value;
       if (el) el.scrollTop = 0;
@@ -18,6 +19,7 @@ watch(
 
 <template>
   <section ref="bodyRef" class="content-body">
+    <!-- 页面主内容插槽 -->
     <slot></slot>
   </section>
 </template>

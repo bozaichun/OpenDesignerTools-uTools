@@ -127,7 +127,7 @@ function handlePropsClickOutside(event) {
   }
 }
 
-function selectGradientDirection(value) {
+function handleGradientDirectionSelect(value) {
   gradientDirection.value = value;
   propsPanelOpen.value = false;
 }
@@ -179,7 +179,7 @@ onUnmounted(() => {
       <div class="gradient-workbench">
         <div class="gradient-control-col">
           <div class="gradient-color-inputs">
-            <div v-for="(stop, idx) in gradientStops" :key="idx" class="gradient-stop-input">
+            <div v-for="stop in gradientStops" :key="stop.position" class="gradient-stop-input">
               <label>节点 {{ idx + 1 }}</label>
               <ColorPicker v-model="stop.color" />
               <input v-model="stop.position" type="range" min="0" max="100" class="gradient-pos-slider" />
@@ -216,7 +216,7 @@ onUnmounted(() => {
                     :key="opt.value"
                     class="gradient-direction-item"
                     :class="{ 'is-selected': gradientDirection === opt.value }"
-                    @click="selectGradientDirection(opt.value)"
+                    @click="handleGradientDirectionSelect(opt.value)"
                   >
                     {{ opt.label }}
                   </li>
@@ -230,7 +230,7 @@ onUnmounted(() => {
       <div class="color-strip-section">
         <div class="section-title inline">自动提取的 8 个节点色值</div>
         <div class="color-strip-grid color-strip-grid--8">
-          <div v-for="(color, idx) in extractedGradientColors" :key="idx" class="color-strip-cell">
+          <div v-for="color in extractedGradientColors" :key="color" class="color-strip-cell">
             <div class="color-strip-swatch" :style="{ background: color }"></div>
             <div class="color-strip-meta">
               <span class="color-strip-hex">{{ color }}</span>
@@ -293,7 +293,7 @@ onUnmounted(() => {
   border: 1px solid var(--border-primary); border-radius: var(--radius-sm);
   font-size: 12px; cursor: pointer; color: var(--text-primary);
   &:hover { border-color: var(--accent); color: var(--accent); }
-  &.danger:hover { border-color: #EF4444; color: #EF4444; }
+  &.danger:hover { border-color: var(--error); color: var(--error); }
 }
 .section-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 20px 0 12px; }
 .gradient-workbench {
@@ -335,7 +335,7 @@ onUnmounted(() => {
   width: 28px;
   height: 28px;
   padding: 0;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--chip-on-color-bg);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-sm);
   color: var(--text-secondary);

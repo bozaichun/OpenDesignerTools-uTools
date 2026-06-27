@@ -71,7 +71,9 @@ onBeforeUnmount(() => {
     @click.self="handleClose"
     tabindex="-1"
   >
+    <!-- 弹窗主体 -->
     <div class="dialog-card" :style="cardStyle" @click.stop>
+      <!-- 弹窗页头 -->
       <div class="dialog-header">
         <slot name="header">
           <h3 class="dialog-title">{{ title }}</h3>
@@ -84,6 +86,7 @@ onBeforeUnmount(() => {
           <span class="iconfont icon-Failure"></span>
         </button>
       </div>
+      <!-- 弹窗内容 -->
       <div class="dialog-body">
         <slot></slot>
       </div>
@@ -98,7 +101,7 @@ onBeforeUnmount(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;

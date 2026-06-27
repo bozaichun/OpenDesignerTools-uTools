@@ -167,7 +167,7 @@ onUnmounted(() => {
       <div class="color-strip-section">
         <div class="section-title inline">同色系 9 阶色卡</div>
         <div class="color-strip-grid color-strip-grid--9">
-          <div v-for="(shade, idx) in adjustedShades" :key="idx" class="color-strip-cell">
+          <div v-for="shade in adjustedShades" :key="shade.level" class="color-strip-cell">
             <div class="color-strip-swatch" :style="{ background: shade.color }">
               <span class="color-strip-label" :style="{ color: getContrastColor(shade.color) }">{{ shade.level }}</span>
             </div>

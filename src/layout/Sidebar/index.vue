@@ -23,13 +23,14 @@ const handleItemClick = (item) => {
   emit('update:currentTab', item.id);
 };
 
-const toggleCollapse = () => {
+const handleToggleCollapse = () => {
   emit('toggle-collapse');
 };
 </script>
 
 <template>
   <aside class="sidebar" :class="{ collapsed: props.collapsed }">
+    <!-- 导航菜单 -->
     <nav class="sidebar-menu">
       <div v-for="item in menuItems" :key="item.id" class="menu-item" :class="{ active: props.currentTab === item.id }"
         @click="handleItemClick(item)" :title="item.label">
@@ -38,8 +39,9 @@ const toggleCollapse = () => {
       </div>
     </nav>
 
+    <!-- 折叠切换 -->
     <div class="sidebar-footer">
-      <button class="collapse-toggle" @click="toggleCollapse" :title="props.collapsed ? '展开导航' : '收起导航'">
+      <button class="collapse-toggle" @click="handleToggleCollapse" :title="props.collapsed ? '展开导航' : '收起导航'">
         <span class="iconfont collapse-icon" :class="props.collapsed ? 'icon-Expand' : 'icon-Fold'"></span>
         <span class="collapse-label">{{ props.collapsed ? '展开' : '收起' }}</span>
       </button>

@@ -1,3 +1,4 @@
+// 色板颜色类型标签与分类映射
 export const COLOR_VALUE_TYPES = [
   { value: 'theme', label: '主题色', tagClass: 'type-theme' },
   { value: 'functional', label: '功能色', tagClass: 'type-functional' },

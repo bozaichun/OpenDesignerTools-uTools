@@ -1,3 +1,4 @@
+// 色板多格式代码导出（CSS / SCSS / Tailwind / 小程序等）
 import { parseColor } from './colorUtils';
 
 export const CODE_EXPORT_TABS = [

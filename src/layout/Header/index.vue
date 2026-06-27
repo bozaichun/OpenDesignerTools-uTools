@@ -21,6 +21,7 @@ defineEmits(['toggle-mode', 'show-setting', 'back']);
 
 <template>
   <header class="page-header">
+    <!-- 页头左侧：标题与返回 -->
     <div class="header-left">
       <SectionTitle :title="title" mode="primary" />
       <template v-if="isDetail">
@@ -36,6 +37,7 @@ defineEmits(['toggle-mode', 'show-setting', 'back']);
         </span>
       </span>
     </div>
+    <!-- 页头操作区 -->
     <div class="header-actions">
       <slot name="actions"></slot>
       <slot name="extra"></slot>
@@ -113,14 +115,14 @@ defineEmits(['toggle-mode', 'show-setting', 'back']);
   width: max-content;
   max-width: min(320px, 70vw);
   padding: 8px 12px;
-  background: rgba(30, 33, 38, 0.95);
-  color: #fff;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
   border-radius: 6px;
   font-size: 12px;
   font-weight: 400;
   line-height: 1.5;
   text-align: left;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
   pointer-events: none;
   transition: opacity 0.15s ease, visibility 0.15s ease;
 }

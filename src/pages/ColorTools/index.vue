@@ -84,6 +84,7 @@ function goToDetail(moduleId) {
       icon="icon-Areality-ColorMixing"
     />
 
+    <!-- 三项调色统一面板 -->
     <section class="panel unified-panel">
       <div class="unified-input-row">
         <ColorPicker v-model="inputColor" />
@@ -191,10 +192,10 @@ function goToDetail(moduleId) {
   font-size: 11px;
   color: var(--text-tertiary);
   margin-bottom: 8px;
-  &.excellent { color: #10B981; }
-  &.good { color: #3B82F6; }
-  &.medium { color: #F59E0B; }
-  &.poor { color: #EF4444; }
+  &.excellent { color: var(--success); }
+  &.good { color: var(--accent); }
+  &.medium { color: var(--warning); }
+  &.poor { color: var(--error); }
 }
 
 .summary-swatch {

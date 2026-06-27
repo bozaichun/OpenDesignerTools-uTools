@@ -18,6 +18,7 @@ function goToFeature(routeId) {
 
 <template>
   <div class="module-overview">
+    <!-- 页头介绍 -->
     <section class="hero-section">
       <div class="hero-content">
         <h2 class="hero-title">颜色值转换器</h2>
@@ -34,6 +35,7 @@ function goToFeature(routeId) {
       </div>
     </section>
 
+    <!-- 快速开始 -->
     <section class="quick-section">
       <h3 class="section-title">快速开始</h3>
       <div class="quick-grid">
@@ -81,10 +83,11 @@ function goToFeature(routeId) {
       </div>
     </section>
 
+    <!-- 使用提示 -->
     <section class="tips-section">
       <h3 class="section-title">使用提示</h3>
       <ul class="tips-list">
-        <li v-for="(tip, idx) in usageTips" :key="idx">{{ tip }}</li>
+        <li v-for="tip in usageTips" :key="tip">{{ tip }}</li>
       </ul>
     </section>
   </div>

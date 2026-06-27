@@ -550,27 +550,27 @@ onUnmounted(() => {
 }
 
 .type-functional {
-  color: #059669;
-  background: rgba(16, 185, 129, 0.12);
-  border-color: rgba(16, 185, 129, 0.24);
+  color: var(--success);
+  background: var(--success-bg);
+  border-color: var(--success-border);
 }
 
 .type-text-light {
-  color: #475569;
-  background: rgba(100, 116, 139, 0.12);
-  border-color: rgba(100, 116, 139, 0.24);
+  color: var(--text-secondary);
+  background: var(--bg-muted);
+  border-color: var(--border-primary);
 }
 
 .type-text-dark {
-  color: #334155;
-  background: rgba(51, 65, 85, 0.12);
-  border-color: rgba(51, 65, 85, 0.24);
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
 }
 
 .type-auxiliary {
-  color: #9333ea;
-  background: rgba(147, 51, 234, 0.12);
-  border-color: rgba(147, 51, 234, 0.24);
+  color: var(--accent-hover);
+  background: var(--accent-soft);
+  border-color: var(--accent-light);
 }
 
 .type-default {

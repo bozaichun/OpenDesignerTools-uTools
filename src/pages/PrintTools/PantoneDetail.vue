@@ -70,7 +70,7 @@ onMounted(() => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(p, idx) in pantoneResults" :key="'t-' + idx">
+              <tr v-for="(p, idx) in pantoneResults" :key="p.code">
                 <td>{{ idx + 1 }}</td>
                 <td>
                   <span class="table-swatch" :style="{ background: p.hex }"></span>

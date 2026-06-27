@@ -5,6 +5,7 @@ import BackToTop from '../../components/BackToTop.vue';
 <template>
   <main class="main-content">
     <slot></slot>
+    <!-- 回到顶部 -->
     <BackToTop />
   </main>
 </template>

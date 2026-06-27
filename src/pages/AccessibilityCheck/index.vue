@@ -166,18 +166,18 @@ function buildContrastResult(ratio, threshold) {
   if (gap < 1) return { class: 'warn', status: '接近' };
   return { class: 'fail', status: '不通过' };
 }
-function onFgPicker() {}
-function onBgPicker() {}
-function onFgText() {
+function handleFgPicker() {}
+function handleBgPicker() {}
+function handleFgText() {
   if (!fgColor.value.startsWith('#')) fgColor.value = '#' + fgColor.value;
 }
-function onBgText() {
+function handleBgText() {
   if (!bgColor.value.startsWith('#')) bgColor.value = '#' + bgColor.value;
 }
-function onSimText() {
+function handleSimText() {
   if (!simColor.value.startsWith('#')) simColor.value = '#' + simColor.value;
 }
-function onTextBgText() {
+function handleTextBgText() {
   if (!textBgColor.value.startsWith('#')) textBgColor.value = '#' + textBgColor.value;
 }
 function applyPair(p) {
@@ -388,7 +388,7 @@ onMounted(() => {
           <div class="sim-colors">
             <div
               v-for="(c, i) in sim.colors"
-              :key="i"
+              :key="c"
               class="sim-color-cell"
               :style="{ background: c }"
               :title="c"
@@ -682,9 +682,9 @@ onMounted(() => {
 .result-card {
   padding: 14px; border-radius: var(--radius-md); text-align: center;
   border: 1px solid var(--border-primary); background: var(--bg-muted);
-  &.ok { border-color: #10B981; background: rgba(16,185,129,0.1); }
-  &.warn { border-color: #F59E0B; background: rgba(245,158,11,0.1); }
-  &.fail { border-color: #EF4444; background: rgba(239,68,68,0.1); }
+  &.ok { border-color: var(--success); background: var(--success-bg); }
+  &.warn { border-color: var(--warning); background: var(--warning-bg); }
+  &.fail { border-color: var(--error); background: var(--error-bg); }
 }
 .result-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
 .result-value { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
@@ -766,14 +766,14 @@ onMounted(() => {
   width: auto;
   max-width: 100%;
   padding: 8px 10px;
-  background: rgba(30, 33, 38, 0.95);
-  color: #fff;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
   border-radius: 6px;
   font-size: 12px;
   font-weight: 400;
   line-height: 1.5;
   text-align: left;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
   pointer-events: none;
   transition: opacity 0.15s ease, visibility 0.15s ease;
 }
@@ -792,7 +792,7 @@ onMounted(() => {
   justify-content: center;
   min-height: 36px;
   padding: 8px 6px;
-  background: #fff;
+  background: var(--bg-card);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-sm);
 }
@@ -827,8 +827,8 @@ onMounted(() => {
 .gov-check-card {
   padding: 14px; border-radius: var(--radius-md);
   border: 1px solid var(--border-primary); background: var(--bg-muted);
-  &.pass { border-color: #10B981; background: rgba(16,185,129,0.08); }
-  &.warn { border-color: #F59E0B; background: rgba(245,158,11,0.08); }
+  &.pass { border-color: var(--success); background: var(--success-bg); }
+  &.warn { border-color: var(--warning); background: var(--warning-bg); }
 }
 .gov-check-head {
   display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
@@ -837,8 +837,8 @@ onMounted(() => {
   display: inline-flex; align-items: center; justify-content: center;
   width: 22px; height: 22px; border-radius: 50%; font-size: 12px; font-weight: 700;
   background: var(--accent); color: var(--text-invert);
-  .pass & { background: #10B981; }
-  .warn & { background: #F59E0B; }
+  .pass & { background: var(--success); }
+  .warn & { background: var(--warning); }
 }
 .gov-check-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
 .gov-check-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
@@ -870,10 +870,10 @@ onMounted(() => {
 .text-suggest-row-2 { font-size: 11px; margin-bottom: 4px; }
 .text-suggest-row-3 { font-size: 11px; font-weight: 600; }
 .copy-btn-sm {
-  margin-top: 10px; padding: 4px 10px; background: rgba(255,255,255,0.8);
-  border: 1px solid rgba(0,0,0,0.15); border-radius: var(--radius-sm);
-  font-size: 11px; cursor: pointer; color: #111;
-  &:hover { background: #fff; }
+  margin-top: 10px; padding: 4px 10px; background: var(--chip-on-color-bg);
+  border: 1px solid var(--chip-on-color-border); border-radius: var(--radius-sm);
+  font-size: 11px; cursor: pointer; color: var(--chip-on-color-text);
+  &:hover { background: var(--bg-card); }
 }
 
 @media (max-width: 960px) {

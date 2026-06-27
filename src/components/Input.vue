@@ -166,7 +166,7 @@ const handleClear = () => {
 }
 
 .app-input--default.is-invalid {
-  border-color: var(--text-error, #ef4444);
+  border-color: var(--text-error);
 }
 
 .app-input--ghost {

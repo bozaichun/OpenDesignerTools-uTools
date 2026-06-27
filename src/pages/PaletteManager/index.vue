@@ -340,7 +340,7 @@ onUnmounted(() => {
           <div class="group-colors">
             <div
               v-for="(c, idx) in row.colors.slice(0, 10)"
-              :key="idx"
+              :key="c.name || c.color"
               class="group-color-swatch"
               :style="{ background: c.color }"
               :title="c.name"
@@ -420,7 +420,7 @@ onUnmounted(() => {
             <div class="share-colors">
               <div
                 v-for="(c, idx) in shareTargetGroup.colors"
-                :key="idx"
+                :key="c.name || c.color"
                 class="share-color-item"
                 :style="{ background: c.color }"
               >
@@ -612,7 +612,7 @@ onUnmounted(() => {
   &:hover { opacity: 0.8; }
 
   &.danger {
-    color: var(--text-error, #ef4444);
+    color: var(--text-error);
   }
 }
 
@@ -678,8 +678,8 @@ onUnmounted(() => {
 }
 
 .danger-btn {
-  background: var(--text-error, #ef4444);
-  border-color: var(--text-error, #ef4444);
+  background: var(--text-error);
+  border-color: var(--text-error);
 }
 
 .confirm-text {

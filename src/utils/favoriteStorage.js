@@ -1,3 +1,4 @@
+// 收藏持久化：uTools DB 优先，浏览器 localStorage 降级
 import { parseColor } from './colorUtils';
 
 export const FAVORITE_DOC_PREFIX = 'color-favorites/';

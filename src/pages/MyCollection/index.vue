@@ -379,9 +379,9 @@ onUnmounted(() => {
   }
 
   &.danger:hover {
-    background: #ff4d4f;
-    border-color: #ff4d4f;
-    color: #fff;
+    background: var(--error);
+    border-color: var(--error);
+    color: var(--text-invert);
   }
 }
 
@@ -600,7 +600,7 @@ onUnmounted(() => {
 
   &:hover {
     background: var(--accent);
-    color: #ffffff;
+    color: var(--text-invert);
     transform: scale(1.05);
   }
 

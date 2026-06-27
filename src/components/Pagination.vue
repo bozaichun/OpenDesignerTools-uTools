@@ -88,6 +88,7 @@ const handlePageSizeChange = (nextSize) => {
     :class="[`is-${mode}`]"
   >
     <div v-if="mode === 'full'" class="pagination__meta">
+      <!-- 总数与每页条数 -->
       <span class="pagination__total">共 {{ total }} 条</span>
       <Selector
         variant="compact"
@@ -105,6 +106,7 @@ const handlePageSizeChange = (nextSize) => {
       </Selector>
     </div>
 
+    <!-- 页码切换 -->
     <div class="pagination__pager">
       <button
         type="button"
@@ -116,7 +118,7 @@ const handlePageSizeChange = (nextSize) => {
         <span class="pagination__arrow">&lt;</span>
       </button>
 
-      <template v-for="(page, idx) in visiblePages" :key="idx">
+      <template v-for="(page, idx) in visiblePages" :key="typeof page === 'number' ? page : `ellipsis-${idx}`">
         <span
           v-if="page === 'ellipsis'"
           class="pagination__btn pagination__ellipsis"

@@ -260,6 +260,7 @@ onBeforeUnmount(() => {
       description="掌握三原色原理、色环规律与颜色格式知识，帮你更科学地运用色彩"
       icon="icon-Areality-ColorMixing"
     />
+    <!-- 知识卡片列表 -->
     <div class="knowledge-grid">
       <div
         v-for="item in KNOWLEDGE_DATA"
@@ -301,7 +302,7 @@ onBeforeUnmount(() => {
       max-width="680px"
       @close="closeDetail"
     >
-      <div v-for="(section, sIdx) in currentDetailItem.sections" :key="sIdx" class="knowledge-section">
+      <div v-for="section in currentDetailItem.sections" :key="section.title" class="knowledge-section">
         <h4 class="knowledge-section-title">{{ section.title }}</h4>
         <p class="knowledge-section-content">{{ section.content }}</p>
       </div>
@@ -428,8 +429,8 @@ onBeforeUnmount(() => {
 .tooltip-box {
   position: fixed;
   z-index: 9999;
-  background: rgba(30, 33, 38, 0.95);
-  color: #fff;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 13px;
@@ -452,7 +453,7 @@ onBeforeUnmount(() => {
   height: 0;
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-bottom: 6px solid rgba(30, 33, 38, 0.95);
+  border-bottom: 6px solid var(--tooltip-bg);
 }
 
 @keyframes tooltipFadeIn {

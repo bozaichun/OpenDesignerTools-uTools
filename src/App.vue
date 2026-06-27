@@ -44,6 +44,7 @@ function t(key) {
 }
 
 const currentTab = computed(() => {
+  // 根据当前路由 path 映射侧边栏高亮 tab
   return TAB_BY_ROUTE[route.path] || 'FunctionOverview';
 });
 
@@ -65,6 +66,7 @@ const currentTabLabel = computed(() => {
 });
 
 const pageTitle = computed(() => {
+  // 详情页标题：按路由 path 分支返回不同文案
   if (route.path === '/ImageColorSampling/detailPage') {
     return t('analysisResult');
   }
@@ -140,19 +142,20 @@ function handleBackFromDetail() {
   router.push('/ImageColorSampling');
 }
 
-function changeTheme(mode) {
+function handleThemeChange(mode) {
   themeMode.value = mode;
   applyTheme();
   persistSettings();
 }
 
-function changeLanguage(lang) {
+function handleLanguageChange(lang) {
   language.value = lang;
   persistSettings();
   document.documentElement.setAttribute('lang', lang);
 }
 
 function applyTheme() {
+  // system 模式移除 data-theme，由 prefers-color-scheme 接管
   const root = document.documentElement;
   if (themeMode.value === 'system') {
     root.removeAttribute('data-theme');
@@ -194,6 +197,7 @@ onMounted(() => {
   loadSettings();
   listenForSettings();
 
+  // uTools 插件入口：按 feature code 跳转对应页面
   if (window.utools && typeof window.utools.onPluginEnter === 'function') {
     window.utools.onPluginEnter((action) => {
       const code = action && action.code;
@@ -244,7 +248,7 @@ onMounted(() => {
           <div id="color-tools-header-slot" class="color-tools-header-slot"></div>
         </template>
         <template #actions>
-          <template v-for="(btn, idx) in headerActionButtons" :key="idx">
+          <template v-for="(btn, idx) in headerActionButtons" :key="btn.label || idx">
             <button
               class="header-action-btn"
               :class="{ secondary: btn.secondary, 'icon-only': btn.iconOnly }"
@@ -324,7 +328,7 @@ onMounted(() => {
             :key="opt.value"
             class="setting-option"
             :class="{ active: themeMode === opt.value }"
-            @click="changeTheme(opt.value)"
+            @click="handleThemeChange(opt.value)"
           >
             <span :class="['iconfont', opt.icon]"></span>
             <span>{{ t(opt.labelKey) }}</span>
@@ -340,7 +344,7 @@ onMounted(() => {
             :key="opt.value"
             class="setting-option"
             :class="{ active: language === opt.value }"
-            @click="changeLanguage(opt.value)"
+            @click="handleLanguageChange(opt.value)"
           >
             <span :class="['iconfont', opt.icon]"></span>
             <span>{{ t(opt.labelKey) }}</span>

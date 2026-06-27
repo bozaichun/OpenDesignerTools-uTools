@@ -76,7 +76,7 @@ function handleToggleFavorite() {
   updateHeaderActions();
 }
 
-function onInputChange(format) {
+function handleInputChange(format) {
   if (isUpdating.value) return;
   isUpdating.value = true;
 
@@ -117,7 +117,7 @@ function onInputChange(format) {
   isUpdating.value = false;
 }
 
-function onColorPickerChange(hex) {
+function handleColorPickerChange(hex) {
   if (isUpdating.value) return;
   isUpdating.value = true;
   const rgb = parseColor(hex);
@@ -128,7 +128,7 @@ function onColorPickerChange(hex) {
   isUpdating.value = false;
 }
 
-function onAlphaChange() {
+function handleAlphaChange() {
   if (isUpdating.value) return;
   isUpdating.value = true;
   currentRGB.value = {
@@ -209,7 +209,7 @@ watch(() => inputs.hex, () => {
             <span class="input-label">HEX</span>
             <ColorPicker
               v-model="inputs.hex"
-              @change="onColorPickerChange"
+              @change="handleColorPickerChange"
               @clear-all="clearInputs"
             />
             <button
@@ -230,7 +230,7 @@ watch(() => inputs.hex, () => {
               :clearable="false"
               :invalid="invalidFormat === 'rgb'"
               placeholder="rgb(r, g, b)"
-              @input="onInputChange('rgb')"
+              @input="handleInputChange('rgb')"
             />
             <button
               class="copy-icon-btn"
@@ -250,7 +250,7 @@ watch(() => inputs.hex, () => {
               :clearable="false"
               :invalid="invalidFormat === 'hsl'"
               placeholder="hsl(h, s%, l%)"
-              @input="onInputChange('hsl')"
+              @input="handleInputChange('hsl')"
             />
             <button
               class="copy-icon-btn"
@@ -270,7 +270,7 @@ watch(() => inputs.hex, () => {
               :clearable="false"
               :invalid="invalidFormat === 'cmyk'"
               placeholder="cmyk(c%, m%, y%, k%)"
-              @input="onInputChange('cmyk')"
+              @input="handleInputChange('cmyk')"
             />
             <button
               class="copy-icon-btn"
@@ -290,7 +290,7 @@ watch(() => inputs.hex, () => {
               :clearable="false"
               :invalid="invalidFormat === 'hsv'"
               placeholder="hsv(h, s%, v%)"
-              @input="onInputChange('hsv')"
+              @input="handleInputChange('hsv')"
             />
             <button
               class="copy-icon-btn"
@@ -308,7 +308,7 @@ watch(() => inputs.hex, () => {
               min="0"
               max="100"
               v-model.number="alphaPercent"
-              @input="onAlphaChange"
+              @input="handleAlphaChange"
             />
             <span class="alpha-value">{{ alphaPercent }}%</span>
           </div>
@@ -481,7 +481,7 @@ watch(() => inputs.hex, () => {
   font-size: 12px;
   margin-top: 8px;
   padding: 8px 12px;
-  background: rgba(220, 53, 69, 0.08);
+  background: var(--error-bg);
   border-radius: var(--radius-sm);
   border-left: 3px solid var(--text-error);
 }
