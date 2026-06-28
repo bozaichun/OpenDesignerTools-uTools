@@ -29,6 +29,7 @@ function docToSession(doc) {
     _rev: doc._rev,
     question: doc.question || '',
     reply: doc.reply || '',
+    turns: Array.isArray(doc.turns) ? doc.turns : [],
     preview: doc.preview || doc.question || '',
     createdAt: doc.createdAt || 0
   };
@@ -51,17 +52,25 @@ export function getAllChatSessions() {
   return readFallbackSessions().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 }
 
-export function saveChatSession({ question, reply }) {
+export function saveChatSession({ question, reply, turns }) {
   const q = (question || '').trim();
-  const r = (reply || '').trim();
-  if (!q && !r) return null;
+  const normalizedTurns = Array.isArray(turns) && turns.length
+    ? turns.map((turn) => ({
+      id: turn.id,
+      user: (turn.user || '').trim(),
+      assistant: (turn.assistant || '').trim()
+    }))
+    : [{ user: q, assistant: (reply || '').trim() }];
+  const lastReply = normalizedTurns[normalizedTurns.length - 1]?.assistant || (reply || '').trim();
+  if (!q && !lastReply) return null;
 
   const id = String(Date.now());
   const doc = {
     _id: `${SESSION_PREFIX}${id}`,
-    question: q,
-    reply: r,
-    preview: q.slice(0, 48) || r.slice(0, 48),
+    question: q || normalizedTurns[0]?.user || '',
+    reply: lastReply,
+    turns: normalizedTurns,
+    preview: (q || normalizedTurns[0]?.user || '').slice(0, 48) || lastReply.slice(0, 48),
     createdAt: Date.now()
   };
 
@@ -79,6 +88,23 @@ export function saveChatSession({ question, reply }) {
   writeFallbackSessions(list.slice(0, 50));
   notifyChatHistoryChanged();
   return docToSession(doc);
+}
+
+export function removeAllChatSessions() {
+  if (hasUtoolsDb()) {
+    const docs = window.utools.db.allDocs(SESSION_PREFIX);
+    let changed = false;
+    docs.forEach((doc) => {
+      if (!doc.question && !doc.reply) return;
+      const result = window.utools.db.remove({ _id: doc._id, _rev: doc._rev });
+      if (result.ok) changed = true;
+    });
+    if (changed) notifyChatHistoryChanged();
+    return true;
+  }
+  writeFallbackSessions([]);
+  notifyChatHistoryChanged();
+  return true;
 }
 
 export function removeChatSession(session) {

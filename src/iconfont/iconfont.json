@@ -242,6 +242,27 @@
       "font_class": "Attention",
       "unicode": "ebf8",
       "unicode_decimal": 60408
+    },
+    {
+      "icon_id": "47949584",
+      "name": "发送",
+      "font_class": "Areality-Send",
+      "unicode": "ec1b",
+      "unicode_decimal": 60443
+    },
+    {
+      "icon_id": "47949585",
+      "name": "停止",
+      "font_class": "Areality-Stop",
+      "unicode": "ec1c",
+      "unicode_decimal": 60444
+    },
+    {
+      "icon_id": "47949586",
+      "name": "反馈",
+      "font_class": "Areality-Feedback",
+      "unicode": "ec1d",
+      "unicode_decimal": 60445
     }
   ]
 }

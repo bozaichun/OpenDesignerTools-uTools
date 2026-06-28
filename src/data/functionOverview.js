@@ -19,7 +19,7 @@ export const QUICK_START_STEPS = [
     title: '收藏与管理',
     desc: '收藏常用颜色，一键添加到色板分组',
     routeId: 'MyCollection',
-    icon: 'icon-Copyright'
+    icon: 'icon-Areality-MyCollection'
   }
 ];
 

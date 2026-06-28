@@ -39,7 +39,29 @@ function handleNewSession() {
 
 <template>
   <div class="module-intelligent">
-    <!-- 页头工具：历史会话 + 模式切换 -->
+    <!-- 页头左侧：模式切换 -->
+    <Teleport to="#page-header-leading-slot">
+      <div v-if="!(pageMode === 'chat' && chatInSession)" class="mode-row">
+        <button
+          class="mode-btn"
+          :class="{ active: pageMode === 'chat' }"
+          title="智能模式"
+          @click="pageMode = 'chat'"
+        >
+          <span class="iconfont icon-Areality-AIMode mode-btn-icon"></span>
+        </button>
+        <button
+          class="mode-btn"
+          :class="{ active: pageMode === 'advanced' }"
+          title="专业模式"
+          @click="pageMode = 'advanced'"
+        >
+          <span class="iconfont icon-Areality-ProfessionalMode mode-btn-icon"></span>
+        </button>
+      </div>
+    </Teleport>
+
+    <!-- 页头右侧：历史会话 / 新会话 -->
     <Teleport to="#intelligent-color-matching-header-slot">
       <div class="icm-header-tools">
         <button
@@ -58,24 +80,6 @@ function handleNewSession() {
         >
           <span class="iconfont icon-Areality-HistoricalRecord"></span>
         </button>
-        <div v-if="!(pageMode === 'chat' && chatInSession)" class="mode-row">
-          <button
-            class="mode-btn"
-            :class="{ active: pageMode === 'chat' }"
-            @click="pageMode = 'chat'"
-          >
-            <span class="iconfont icon-Areality-AIMode mode-btn-icon"></span>
-            <span>智能模式</span>
-          </button>
-          <button
-            class="mode-btn"
-            :class="{ active: pageMode === 'advanced' }"
-            @click="pageMode = 'advanced'"
-          >
-            <span class="iconfont icon-Areality-ProfessionalMode mode-btn-icon"></span>
-            <span>专业模式</span>
-          </button>
-        </div>
       </div>
     </Teleport>
 
@@ -156,30 +160,30 @@ function handleNewSession() {
     background: var(--accent-soft);
   }
 }
-.intelligent-color-matching-header-slot .mode-row {
+.page-header-leading-slot .mode-row {
   display: inline-flex;
-  gap: 4px;
+  gap: 2px;
   background: var(--bg-muted);
-  padding: 4px;
-  border-radius: var(--radius-md);
+  padding: 2px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-primary);
 }
-.intelligent-color-matching-header-slot .mode-btn {
+.page-header-leading-slot .mode-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   border: none;
   background: transparent;
-  font-size: 12px;
-  font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
   border-radius: var(--radius-sm);
   transition: all 0.15s ease;
-  white-space: nowrap;
+  flex-shrink: 0;
   .mode-btn-icon {
-    font-size: 14px;
+    font-size: 13px;
     line-height: 1;
   }
   &:hover { color: var(--text-primary); }

@@ -47,7 +47,7 @@ defineEmits(['toggle-mode', 'show-setting', 'back']);
       <slot name="extra"></slot>
       <slot name="mobile-expand"></slot>
       <button class="icon-btn feedback-btn" title="需求反馈" @click="openFeedbackForm">
-        <span class="iconfont icon-Prompt"></span>
+        <span class="iconfont icon-Areality-Feedback"></span>
       </button>
       <button class="icon-btn" @click="$emit('toggle-mode')" title="切换模式">
         <span class="iconfont icon-Areality-ModeSwitching"></span>

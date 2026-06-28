@@ -20,6 +20,16 @@ window.services = {
     fs.writeFileSync(filePath, text, { encoding: 'utf-8' })
     return filePath
   },
+  // 文本写入到指定路径
+  writeTextToPath (text, filePath) {
+    fs.writeFileSync(filePath, text, { encoding: 'utf-8' })
+    return filePath
+  },
+  // 下载目录下的默认保存路径
+  getDefaultSavePath (fileName) {
+    const safeName = String(fileName || 'document.txt').replace(/[\\/:*?"<>|]/g, '-')
+    return path.join(window.utools.getPath('downloads'), safeName)
+  },
   // 图片写入到下载目录
   writeImageFile (base64Url) {
     const matchs = /^data:image\/([a-z]{1,20});base64,/i.exec(base64Url)

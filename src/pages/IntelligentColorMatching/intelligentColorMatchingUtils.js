@@ -27,3 +27,36 @@ export function truncateSessionTitle(text, maxLen = 12) {
   if (trimmed.length <= maxLen) return trimmed;
   return `${trimmed.slice(0, maxLen)}...`;
 }
+
+/** 导出 Markdown 文档内容 */
+export function buildChatMarkdownDocument(question, reply, turns) {
+  const timeStr = new Date().toLocaleString('zh-CN', { hour12: false });
+  if (Array.isArray(turns) && turns.length) {
+    let md = `# 智能配色问答\n\n> 导出时间：${timeStr}\n\n`;
+    turns.forEach((turn, index) => {
+      const q = (turn.user || '').trim();
+      const r = (turn.assistant || '').trim();
+      if (!q && !r) return;
+      md += `## 第 ${index + 1} 轮\n\n### 问题\n\n${q}\n\n### 波仔回复\n\n${r}\n\n`;
+    });
+    return md;
+  }
+  const q = (question || '').trim();
+  const r = (reply || '').trim();
+  return `# 智能配色问答\n\n> 导出时间：${timeStr}\n\n## 问题\n\n${q}\n\n## 波仔回复\n\n${r}\n`;
+}
+
+/** 组装 AI 请求消息（含多轮上下文） */
+export function buildAiChatMessages(turns) {
+  const messages = [{ role: 'system', content: AI_SYSTEM_PROMPT }];
+  (turns || []).forEach((turn) => {
+    const userContent = (turn.user || '').trim();
+    if (!userContent) return;
+    messages.push({ role: 'user', content: userContent });
+    const assistantContent = (turn.assistant || '').trim();
+    if (assistantContent) {
+      messages.push({ role: 'assistant', content: assistantContent });
+    }
+  });
+  return messages;
+}

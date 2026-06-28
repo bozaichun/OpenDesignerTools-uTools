@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, nextTick, watch, onUnmounted } from 'vue';
 import { showToast } from '../../utils/colorUtils';
-import { AI_SYSTEM_PROMPT } from './intelligentColorMatchingUtils';
+import { buildAiChatMessages } from './intelligentColorMatchingUtils';
 import { saveChatSession } from './chatHistoryStorage';
 import ChatSessionDetail from './ChatSessionDetail.vue';
 import ChatSessionShell from './ChatSessionShell.vue';
@@ -10,7 +10,7 @@ const emit = defineEmits(['session-active']);
 
 const userInput = ref('');
 const userQuestion = ref('');
-const assistantReply = ref('');
+const conversationTurns = ref([]);
 const isLoading = ref(false);
 const hasConversation = ref(false);
 const chatBodyRef = ref(null);
@@ -18,10 +18,44 @@ const stickToBottom = ref(true);
 const showScrollBottomBtn = ref(false);
 
 const INPUT_PLACEHOLDER = '输入你的智能配色问题… · 按 Enter 发送 · Shift+Enter 换行';
+const SCROLL_BOTTOM_THRESHOLD = 48;
 
 let aiRequest = null;
+let activeTurnIndex = -1;
+
+function createTurn(user, assistant = '') {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    user,
+    assistant
+  };
+}
+
+function appendAssistantChunk(turnIndex, chunk) {
+  conversationTurns.value = conversationTurns.value.map((turn, index) => {
+    if (index !== turnIndex) return turn;
+    return { ...turn, assistant: `${turn.assistant || ''}${chunk}` };
+  });
+}
+
+function setAssistantReply(turnIndex, content) {
+  conversationTurns.value = conversationTurns.value.map((turn, index) => {
+    if (index !== turnIndex) return turn;
+    return { ...turn, assistant: content };
+  });
+}
 
 const canSend = computed(() => userInput.value.trim().length > 0 && !isLoading.value);
+const hasInputContent = computed(() => userInput.value.length > 0);
+
+function handleClearInput() {
+  userInput.value = '';
+}
+
+function isNearBottom(el) {
+  if (!el) return true;
+  return el.scrollHeight - el.scrollTop - el.clientHeight <= SCROLL_BOTTOM_THRESHOLD;
+}
 
 function scrollToBottom(instant = true) {
   const el = chatBodyRef.value;
@@ -29,21 +63,31 @@ function scrollToBottom(instant = true) {
   el.scrollTo({ top: el.scrollHeight, behavior: instant ? 'auto' : 'smooth' });
 }
 
-function handleChatWheel() {
-  if (!hasConversation.value) return;
-  stickToBottom.value = false;
-  showScrollBottomBtn.value = true;
+function syncScrollBottomState() {
+  if (!hasConversation.value) {
+    showScrollBottomBtn.value = false;
+    return;
+  }
+  const el = chatBodyRef.value;
+  if (!el) return;
+  const nearBottom = isNearBottom(el);
+  stickToBottom.value = nearBottom;
+  showScrollBottomBtn.value = !nearBottom;
+}
+
+function handleChatScroll() {
+  syncScrollBottomState();
 }
 
 function handleScrollToBottomClick() {
   stickToBottom.value = true;
   showScrollBottomBtn.value = false;
-  scrollToBottom(false);
+  scrollToBottom(true);
 }
 
 function resetConversation() {
   userQuestion.value = '';
-  assistantReply.value = '';
+  conversationTurns.value = [];
   hasConversation.value = false;
   stickToBottom.value = true;
   showScrollBottomBtn.value = false;
@@ -63,13 +107,25 @@ function loadSession(session) {
     aiRequest?.abort?.();
     isLoading.value = false;
   }
-  userQuestion.value = session.question || '';
-  assistantReply.value = session.reply || '';
+  if (Array.isArray(session.turns) && session.turns.length) {
+    conversationTurns.value = session.turns.map((turn, index) => ({
+      id: turn.id || `loaded-${index}-${Date.now()}`,
+      user: turn.user || '',
+      assistant: turn.assistant || ''
+    }));
+    userQuestion.value = conversationTurns.value[0]?.user || session.question || '';
+  } else {
+    userQuestion.value = session.question || '';
+    conversationTurns.value = [createTurn(session.question || '', session.reply || '')];
+  }
   hasConversation.value = true;
   stickToBottom.value = true;
   showScrollBottomBtn.value = false;
   emit('session-active', true);
-  nextTick(() => scrollToBottom(true));
+  nextTick(() => {
+    scrollToBottom(true);
+    syncScrollBottomState();
+  });
 }
 
 async function handleSend() {
@@ -81,38 +137,53 @@ async function handleSend() {
     return;
   }
 
-  resetConversation();
-  userQuestion.value = text;
+  const isFollowUp = hasConversation.value && conversationTurns.value.length > 0;
+
+  if (!isFollowUp) {
+    userQuestion.value = text;
+    hasConversation.value = true;
+    emit('session-active', true);
+    conversationTurns.value = [createTurn(text)];
+  } else {
+    conversationTurns.value = [...conversationTurns.value, createTurn(text)];
+  }
+
   userInput.value = '';
-  hasConversation.value = true;
   isLoading.value = true;
-  assistantReply.value = '';
   stickToBottom.value = true;
   showScrollBottomBtn.value = false;
-  emit('session-active', true);
 
-  const messages = [
-    { role: 'system', content: AI_SYSTEM_PROMPT },
-    { role: 'user', content: text }
-  ];
+  const turnIndex = conversationTurns.value.length - 1;
+  activeTurnIndex = turnIndex;
+  const messages = buildAiChatMessages(conversationTurns.value);
 
   try {
     aiRequest = window.utools.ai({ messages }, (chunk) => {
-      if (chunk?.content) {
-        assistantReply.value += chunk.content;
+      if (chunk?.content && activeTurnIndex === turnIndex) {
+        appendAssistantChunk(turnIndex, chunk.content);
         if (stickToBottom.value) {
           nextTick(() => scrollToBottom(true));
         }
       }
     });
     await aiRequest;
-    saveChatSession({ question: userQuestion.value, reply: assistantReply.value });
+    if (!conversationTurns.value[turnIndex]?.assistant?.trim()) {
+      setAssistantReply(turnIndex, '抱歉，未收到有效回复，请重试。');
+    }
+    saveChatSession({
+      question: userQuestion.value,
+      reply: conversationTurns.value[turnIndex].assistant,
+      turns: conversationTurns.value
+    });
   } catch (err) {
     if (err?.name !== 'AbortError') {
-      assistantReply.value = assistantReply.value || '抱歉，回答生成失败，请稍后重试。';
+      const fallback = conversationTurns.value[turnIndex]?.assistant?.trim()
+        || '抱歉，回答生成失败，请稍后重试。';
+      setAssistantReply(turnIndex, fallback);
       showToast(null, 'AI 回答失败，请重试', 'error');
     }
   } finally {
+    activeTurnIndex = -1;
     isLoading.value = false;
     aiRequest = null;
     if (stickToBottom.value) {
@@ -122,11 +193,22 @@ async function handleSend() {
   }
 }
 
+function getLastAssistantReply() {
+  const turns = conversationTurns.value;
+  if (!turns.length) return '';
+  return turns[turns.length - 1].assistant || '';
+}
+
 function handleStop() {
   aiRequest?.abort?.();
+  activeTurnIndex = -1;
   isLoading.value = false;
-  if (assistantReply.value) {
-    saveChatSession({ question: userQuestion.value, reply: assistantReply.value });
+  if (getLastAssistantReply()) {
+    saveChatSession({
+      question: userQuestion.value,
+      reply: getLastAssistantReply(),
+      turns: conversationTurns.value
+    });
   }
 }
 
@@ -137,13 +219,16 @@ function handleKeydown(e) {
   }
 }
 
-watch(assistantReply, () => {
+watch(conversationTurns, () => {
   if (stickToBottom.value && isLoading.value) {
     nextTick(() => scrollToBottom(true));
+  } else if (hasConversation.value) {
+    nextTick(() => syncScrollBottomState());
   }
-});
+}, { deep: true });
 
 onUnmounted(() => {
+  activeTurnIndex = -1;
   aiRequest?.abort?.();
   emit('session-active', false);
 });
@@ -162,7 +247,7 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
     <div
       ref="chatBodyRef"
       class="chat-body"
-      @wheel="handleChatWheel"
+      @scroll="handleChatScroll"
     >
       <div v-if="!hasConversation" class="chat-welcome">
         <div class="welcome-avatar">波</div>
@@ -186,8 +271,8 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
 
       <ChatSessionDetail
         v-else
-        :user-question="userQuestion"
-        :assistant-reply="assistantReply"
+        :turns="conversationTurns"
+        :session-question="userQuestion"
         :is-loading="isLoading"
       />
     </div>
@@ -202,17 +287,45 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
         <span class="iconfont icon-BackTop scroll-bottom-icon"></span>
       </button>
       <div class="input-wrap">
-        <textarea
-          v-model="userInput"
-          class="chat-textarea"
-          :placeholder="INPUT_PLACEHOLDER"
-          rows="2"
-          :disabled="isLoading"
-          @keydown="handleKeydown"
-        ></textarea>
+        <button
+          v-if="hasInputContent && !isLoading"
+          type="button"
+          class="input-clear-btn"
+          title="清空"
+          @click="handleClearInput"
+        >
+          <span class="iconfont icon-Close"></span>
+        </button>
+        <div class="input-field">
+          <textarea
+            v-model="userInput"
+            class="chat-textarea"
+            :placeholder="INPUT_PLACEHOLDER"
+            rows="2"
+            :disabled="isLoading"
+            @keydown="handleKeydown"
+          ></textarea>
+        </div>
         <div class="input-toolbar">
-          <button v-if="isLoading" class="send-btn stop-btn" @click="handleStop">停止</button>
-          <button v-else class="send-btn" :disabled="!canSend" @click="handleSend">发送</button>
+          <button
+            v-if="isLoading"
+            type="button"
+            class="input-icon-btn stop-btn"
+            title="停止"
+            @click="handleStop"
+          >
+            <span class="iconfont icon-Areality-Stop"></span>
+          </button>
+          <button
+            v-else
+            type="button"
+            class="input-icon-btn send-icon-btn"
+            :disabled="!canSend"
+            title="发送"
+            @click="handleSend"
+          >
+            <span class="iconfont icon-Areality-Send"></span>
+          </button>
         </div>
       </div>
     </div>
@@ -276,8 +389,8 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
 }
 .scroll-bottom-btn {
   position: absolute;
-  top: -44px;
   left: 50%;
+  bottom: calc(100% + 10px);
   transform: translateX(-50%);
   z-index: 20;
   width: 36px;
@@ -306,12 +419,14 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
 }
 .chat-input-area {
   flex-shrink: 0;
+  position: relative;
   z-index: 10;
   padding: 12px 0;
   background: var(--bg-card);
   border-top: 1px solid var(--border-primary);
 }
 .input-wrap {
+  position: relative;
   display: flex;
   gap: 10px;
   align-items: flex-end;
@@ -321,8 +436,43 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
   padding: 10px 12px;
   &:focus-within { border-color: var(--accent); }
 }
+.input-field {
+  flex: 1;
+  min-width: 0;
+}
+.input-clear-btn {
+  position: absolute;
+  top: -9px;
+  right: 4px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--border-primary);
+  border-radius: 50%;
+  background: var(--bg-card);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+
+  .iconfont {
+    font-size: 8px;
+    line-height: 1;
+  }
+
+  &:hover {
+    color: var(--error);
+    border-color: var(--error-border);
+    background: var(--error-bg);
+  }
+}
 .chat-textarea {
   flex: 1;
+  width: 100%;
   border: none;
   background: transparent;
   resize: none;
@@ -337,17 +487,58 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
   &:disabled { opacity: 0.6; }
 }
 .input-toolbar { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
-.send-btn {
-  padding: 8px 18px;
-  background: var(--accent);
-  color: var(--text-invert);
-  border: 1px solid var(--accent);
+.input-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--text-secondary);
   cursor: pointer;
-  white-space: nowrap;
-  &:disabled { opacity: 0.45; cursor: not-allowed; }
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+
+  .iconfont {
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 }
-.stop-btn { background: var(--error); border-color: var(--error); }
+.send-icon-btn:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-invert);
+
+  &:hover {
+    background: var(--accent-hover, var(--accent));
+    border-color: var(--accent-hover, var(--accent));
+    color: var(--text-invert);
+  }
+}
+.stop-btn {
+  background: var(--error);
+  border-color: var(--error);
+  color: var(--text-invert);
+
+  &:hover {
+    background: var(--error-hover);
+    border-color: var(--error-hover);
+    color: var(--text-invert);
+  }
+}
 </style>

@@ -1,8 +1,8 @@
 @font-face {
   font-family: "iconfont"; /* Project id 4020260 */
-  src: url('iconfont.woff2?t=1782628338147') format('woff2'),
-       url('iconfont.woff?t=1782628338147') format('woff'),
-       url('iconfont.ttf?t=1782628338147') format('truetype');
+  src: url('iconfont.woff2?t=1782634301132') format('woff2'),
+       url('iconfont.woff?t=1782634301132') format('woff'),
+       url('iconfont.ttf?t=1782634301132') format('truetype');
 }
 
 .iconfont {
@@ -147,5 +147,17 @@
 
 .icon-Attention:before {
   content: "\ebf8";
+}
+
+.icon-Areality-Send:before {
+  content: "\ec1b";
+}
+
+.icon-Areality-Stop:before {
+  content: "\ec1c";
+}
+
+.icon-Areality-Feedback:before {
+  content: "\ec1d";
 }
 

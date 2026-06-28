@@ -1,11 +1,15 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { getUniquePresets, COLOR_GROUPS } from '../../data/presetColors';
 import { copyToClipboard, showToast } from '../../utils/colorUtils';
+import { downloadPaletteCard } from '../../utils/paletteCard';
 import FavoriteButton from '../../components/FavoriteButton.vue';
 import Input from '../../components/Input.vue';
 import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
 import Banner from '../../components/Banner.vue';
+
+const setHeaderActions = inject('setHeaderActions');
+const clearHeaderActions = inject('clearHeaderActions');
 
 const presetColors = getUniquePresets();
 const colorGroups = COLOR_GROUPS;
@@ -13,6 +17,7 @@ const searchText = ref('');
 const activeGroup = ref(null);
 const modalVisible = ref(false);
 const modalColor = ref({ name: '', hex: '', group: '' });
+const selectedKeys = ref(new Set());
 
 const filteredColors = computed(() => {
   const search = searchText.value.trim().toLowerCase();
@@ -23,6 +28,73 @@ const filteredColors = computed(() => {
   });
 });
 
+const selectedCount = computed(() => selectedKeys.value.size);
+
+const multiSelectVisible = computed(() => selectedCount.value > 0);
+
+const isAllFilteredSelected = computed(() => {
+  const list = filteredColors.value;
+  return list.length > 0 && list.every((color) => selectedKeys.value.has(color.name));
+});
+
+const isAllFilteredIndeterminate = computed(() => {
+  const list = filteredColors.value;
+  if (!list.length) return false;
+  const selectedInView = list.filter((color) => selectedKeys.value.has(color.name)).length;
+  return selectedInView > 0 && selectedInView < list.length;
+});
+
+function updateHeaderActions() {
+  setHeaderActions([
+    {
+      label: '下载色卡',
+      icon: 'icon-Palette',
+      iconOnly: true,
+      onClick: handleDownloadColorCard
+    }
+  ]);
+}
+
+function isSelected(name) {
+  return selectedKeys.value.has(name);
+}
+
+function toggleSelect(name) {
+  const next = new Set(selectedKeys.value);
+  if (next.has(name)) next.delete(name);
+  else next.add(name);
+  selectedKeys.value = next;
+}
+
+function toggleSelectAllFiltered() {
+  if (isAllFilteredSelected.value) {
+    const next = new Set(selectedKeys.value);
+    filteredColors.value.forEach((color) => next.delete(color.name));
+    selectedKeys.value = next;
+    return;
+  }
+  const next = new Set(selectedKeys.value);
+  filteredColors.value.forEach((color) => next.add(color.name));
+  selectedKeys.value = next;
+}
+
+function handleCancelMultiSelect() {
+  selectedKeys.value = new Set();
+}
+
+function handleDownloadColorCard() {
+  const selected = presetColors.filter((color) => selectedKeys.value.has(color.name));
+  if (!selected.length) {
+    showToast(null, '请先选择要下载的颜色', 'warning');
+    return;
+  }
+  downloadPaletteCard(selected, {
+    title: '预置颜色色卡',
+    subtitle: `共 ${selected.length} 种颜色`,
+    filenamePrefix: 'preset-colors-palette'
+  });
+}
+
 function openColorModal(color) {
   modalColor.value = { ...color };
   modalVisible.value = true;
@@ -32,10 +104,27 @@ function copyValue(value, label) {
   copyToClipboard(value);
   showToast(null, '已复制 ' + label + ': ' + value, 'success');
 }
+
+watch(filteredColors, (list) => {
+  const visibleNames = new Set(list.map((color) => color.name));
+  const next = new Set([...selectedKeys.value].filter((name) => visibleNames.has(name)));
+  if (next.size !== selectedKeys.value.size) {
+    selectedKeys.value = next;
+  }
+});
+
+onMounted(() => {
+  updateHeaderActions();
+});
+
+onUnmounted(() => {
+  clearHeaderActions();
+});
 </script>
 
 <template>
-  <div class="module-preset">
+  <div class="module-preset" :class="{ 'has-multi-bar': multiSelectVisible }">
+    <div class="preset-main">
     <Banner
       title="按色系浏览，一键获取颜色值"
       description="覆盖红橙黄绿蓝紫黑白灰等常用色系，支持名称与 HEX 搜索快速定位"
@@ -76,7 +165,16 @@ function copyValue(value, label) {
         v-for="color in filteredColors"
         :key="color.name"
         class="preset-card"
+        :class="{ 'is-selected': isSelected(color.name) }"
       >
+        <button
+          class="card-select-btn"
+          :class="{ checked: isSelected(color.name) }"
+          :title="isSelected(color.name) ? '取消选择' : '选择'"
+          @click.stop="toggleSelect(color.name)"
+        >
+          <span v-if="isSelected(color.name)" class="iconfont icon-Success"></span>
+        </button>
         <div class="group-tag">{{ color.group }}</div>
         <div class="swatch-row">
           <div class="color-swatch" :style="{ background: color.hex }"></div>
@@ -109,6 +207,30 @@ function copyValue(value, label) {
     <div v-else class="empty-state">
       没有找到匹配的颜色，请尝试其他搜索词。
     </div>
+    </div>
+
+    <!-- 多选功能区 -->
+    <div v-if="multiSelectVisible" class="preset-multi-bar">
+      <button
+        class="preset-multi-all"
+        @click="toggleSelectAllFiltered"
+      >
+        <span
+          class="preset-check-box"
+          :class="{
+            checked: isAllFilteredSelected,
+            indeterminate: isAllFilteredIndeterminate
+          }"
+        >
+          <span v-if="isAllFilteredSelected" class="iconfont icon-Success"></span>
+          <span v-else-if="isAllFilteredIndeterminate" class="preset-check-indeterminate"></span>
+        </span>
+        全选
+      </button>
+      <button class="preset-multi-cancel" @click="handleCancelMultiSelect">
+        取消
+      </button>
+    </div>
 
     <ColorFormatDialog
       v-model:visible="modalVisible"
@@ -120,6 +242,25 @@ function copyValue(value, label) {
 <style lang="scss" scoped>
 .module-preset {
   width: 100%;
+
+  &.has-multi-bar {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    margin-bottom: -20px;
+
+    .preset-main {
+      flex: 1 1 auto;
+    }
+
+    .preset-multi-bar {
+      margin-top: auto;
+    }
+  }
+}
+
+.preset-main {
+  min-width: 0;
 }
 
 /* ============ 筛选与搜索 ============ */
@@ -190,11 +331,49 @@ function copyValue(value, label) {
     box-shadow: var(--shadow-md);
   }
 
+  &.is-selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
   .swatch-row {
     display: flex;
     gap: 10px;
     align-items: flex-start;
     margin-bottom: 10px;
+  }
+}
+
+.card-select-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--border-primary);
+  border-radius: 3px;
+  background: var(--bg-card);
+  color: var(--text-invert);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+
+  .iconfont {
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  &:hover {
+    border-color: var(--accent);
+  }
+
+  &.checked {
+    background: var(--accent);
+    border-color: var(--accent);
   }
 }
 
@@ -309,6 +488,87 @@ function copyValue(value, label) {
   border-radius: var(--radius-sm);
 }
 
+/* ============ 多选功能区（贴底全宽条） ============ */
+.preset-multi-bar {
+  position: sticky;
+  bottom: -20px;
+  z-index: 20;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-left: -20px;
+  margin-right: -20px;
+  margin-bottom: -20px;
+  padding: 10px 20px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-top);
+}
+
+.preset-multi-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.preset-check-box {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-primary);
+  border-radius: 3px;
+  background: var(--bg-card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+
+  .iconfont {
+    font-size: 10px;
+    line-height: 1;
+    color: var(--text-invert);
+  }
+
+  &.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  &.indeterminate {
+    border-color: var(--accent);
+  }
+}
+
+.preset-check-indeterminate {
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+.preset-multi-cancel {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: var(--accent);
+  }
+}
+
 /* ============ 空状态 ============ */
 .empty-state {
   text-align: center;
@@ -343,6 +603,18 @@ function copyValue(value, label) {
   .preset-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
+  }
+
+  .module-preset.has-multi-bar {
+    margin-bottom: -14px;
+  }
+
+  .preset-multi-bar {
+    bottom: -14px;
+    margin-left: -14px;
+    margin-right: -14px;
+    margin-bottom: -14px;
+    padding: 10px 14px;
   }
 }
 </style>

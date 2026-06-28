@@ -1,13 +1,15 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import Drawer from '../../components/Drawer.vue';
 import Dialog from '../../components/Dialog.vue';
 import {
   getAllChatSessions,
   removeChatSession,
+  removeAllChatSessions,
   formatSessionTime
 } from './chatHistoryStorage';
 import { truncateSessionTitle } from './intelligentColorMatchingUtils';
+import { showToast } from '../../utils/colorUtils';
 
 const props = defineProps({
   visible: { type: Boolean, default: false }
@@ -16,16 +18,44 @@ const props = defineProps({
 const emit = defineEmits(['update:visible', 'select']);
 
 const sessions = ref([]);
+const multiSelectMode = ref(false);
+const selectedIds = ref(new Set());
 const deleteDialogVisible = ref(false);
+const deleteDialogType = ref('single');
 const deleteTarget = ref(null);
 
 const deleteTargetPreview = computed(() => deleteTarget.value?.preview || '');
+
+const selectedCount = computed(() => selectedIds.value.size);
+
+const primaryDeleteLabel = computed(() => {
+  if (multiSelectMode.value) {
+    return selectedCount.value > 0 ? `删除(${selectedCount.value})` : '删除';
+  }
+  return '多选删除';
+});
+
+const confirmText = computed(() => {
+  if (deleteDialogType.value === 'all') {
+    return '确定删除全部历史会话吗？删除后不可恢复。';
+  }
+  if (deleteDialogType.value === 'batch') {
+    return `确定删除选中的 ${selectedCount.value} 条历史会话吗？删除后不可恢复。`;
+  }
+  return `确定删除「${deleteTargetPreview.value}」吗？删除后不可恢复。`;
+});
 
 function refreshSessions() {
   sessions.value = getAllChatSessions();
 }
 
+function exitMultiSelectMode() {
+  multiSelectMode.value = false;
+  selectedIds.value = new Set();
+}
+
 function handleClose() {
+  exitMultiSelectMode();
   emit('update:visible', false);
 }
 
@@ -34,8 +64,46 @@ function handleSelect(session) {
   handleClose();
 }
 
+function isSelected(id) {
+  return selectedIds.value.has(id);
+}
+
+function toggleSelect(id) {
+  const next = new Set(selectedIds.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  selectedIds.value = next;
+}
+
+function handleItemClick(session) {
+  if (multiSelectMode.value) {
+    toggleSelect(session.id);
+    return;
+  }
+  handleSelect(session);
+}
+
+function handlePrimaryDeleteClick() {
+  if (!multiSelectMode.value) {
+    multiSelectMode.value = true;
+    return;
+  }
+  if (selectedCount.value === 0) {
+    showToast(null, '请先选择要删除的会话', 'warning');
+    return;
+  }
+  deleteDialogType.value = 'batch';
+  deleteDialogVisible.value = true;
+}
+
+function handleDeleteAllClick() {
+  deleteDialogType.value = 'all';
+  deleteDialogVisible.value = true;
+}
+
 function handleDeleteClick(session, e) {
   e.stopPropagation();
+  deleteDialogType.value = 'single';
   deleteTarget.value = session;
   deleteDialogVisible.value = true;
 }
@@ -43,10 +111,21 @@ function handleDeleteClick(session, e) {
 function handleCancelDelete() {
   deleteDialogVisible.value = false;
   deleteTarget.value = null;
+  deleteDialogType.value = 'single';
 }
 
 function confirmDelete() {
-  if (deleteTarget.value) {
+  if (deleteDialogType.value === 'all') {
+    removeAllChatSessions();
+    refreshSessions();
+    exitMultiSelectMode();
+  } else if (deleteDialogType.value === 'batch') {
+    const targets = sessions.value.filter((s) => selectedIds.value.has(s.id));
+    targets.forEach((session) => removeChatSession(session));
+    refreshSessions();
+    exitMultiSelectMode();
+    showToast(null, `已删除 ${targets.length} 条会话`, 'success');
+  } else if (deleteTarget.value) {
     removeChatSession(deleteTarget.value);
     refreshSessions();
   }
@@ -60,6 +139,11 @@ function getDisplayTitle(preview) {
 function shouldShowTitleTip(preview) {
   return (preview || '').trim().length > 12;
 }
+
+watch(() => props.visible, (val) => {
+  if (val) refreshSessions();
+  else exitMultiSelectMode();
+});
 
 onMounted(() => {
   refreshSessions();
@@ -93,8 +177,23 @@ defineExpose({ refreshSessions });
         v-for="item in sessions"
         :key="item.id"
         class="history-item"
-        @click="handleSelect(item)"
+        :class="{
+          'is-multi-select': multiSelectMode,
+          'is-selected': isSelected(item.id)
+        }"
+        @click="handleItemClick(item)"
       >
+        <label
+          v-if="multiSelectMode"
+          class="history-item-check"
+          @click.stop.prevent="toggleSelect(item.id)"
+        >
+          <input
+            type="checkbox"
+            :checked="isSelected(item.id)"
+            tabindex="-1"
+          />
+        </label>
         <div class="history-item-main">
           <div class="history-item-title-wrap">
             <div class="history-item-title">{{ getDisplayTitle(item.preview) }}</div>
@@ -102,11 +201,38 @@ defineExpose({ refreshSessions });
           </div>
           <div class="history-item-time">{{ formatSessionTime(item.createdAt) }}</div>
         </div>
-        <button class="history-item-delete" title="删除" @click="handleDeleteClick(item, $event)">
+        <button
+          v-if="!multiSelectMode"
+          class="history-item-delete"
+          title="删除"
+          @click="handleDeleteClick(item, $event)"
+        >
           <span class="iconfont icon-Failure"></span>
         </button>
       </li>
     </ul>
+
+    <template #footer>
+      <div v-if="sessions.length" class="history-footer">
+        <button
+          class="footer-btn"
+          :class="{ 'footer-btn-danger': multiSelectMode }"
+          @click="handlePrimaryDeleteClick"
+        >
+          {{ primaryDeleteLabel }}
+        </button>
+        <button
+          v-if="multiSelectMode"
+          class="footer-btn"
+          @click="exitMultiSelectMode"
+        >
+          取消
+        </button>
+        <button class="footer-btn footer-btn-danger" @click="handleDeleteAllClick">
+          删除全部
+        </button>
+      </div>
+    </template>
   </Drawer>
 
   <!-- 删除确认 -->
@@ -120,7 +246,7 @@ defineExpose({ refreshSessions });
   >
     <div class="dialog-confirm">
       <p class="confirm-text">
-        确定删除「{{ deleteTargetPreview }}」吗？删除后不可恢复。
+        {{ confirmText }}
       </p>
       <div class="dialog-footer">
         <button class="secondary-btn" @click="handleCancelDelete">取消</button>
@@ -169,6 +295,23 @@ defineExpose({ refreshSessions });
   &:hover {
     border-color: var(--accent);
     background: var(--accent-soft);
+  }
+  &.is-multi-select.is-selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+}
+.history-item-check {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  input {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
   }
 }
 .history-item-main { flex: 1; min-width: 0; }
@@ -231,6 +374,39 @@ defineExpose({ refreshSessions });
   &:hover {
     color: var(--error);
     border-color: var(--error);
+    background: var(--error-bg);
+  }
+}
+
+.history-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.footer-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+}
+.footer-btn-danger {
+  color: var(--error);
+  &:hover {
+    border-color: var(--error);
+    color: var(--error);
     background: var(--error-bg);
   }
 }
