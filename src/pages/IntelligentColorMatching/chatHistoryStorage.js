@@ -1,0 +1,108 @@
+// 智能配色问答：历史会话持久化（uTools DB 优先，localStorage 降级）
+const SESSION_PREFIX = 'chat-session/';
+const FALLBACK_KEY = 'chat-session-fallback';
+
+function hasUtoolsDb() {
+  return typeof window !== 'undefined' && window.utools && window.utools.db;
+}
+
+function readFallbackSessions() {
+  try {
+    const raw = localStorage.getItem(FALLBACK_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeFallbackSessions(list) {
+  try {
+    localStorage.setItem(FALLBACK_KEY, JSON.stringify(list));
+  } catch {}
+}
+
+function docToSession(doc) {
+  const id = doc._id.replace(SESSION_PREFIX, '');
+  return {
+    id,
+    _id: doc._id,
+    _rev: doc._rev,
+    question: doc.question || '',
+    reply: doc.reply || '',
+    preview: doc.preview || doc.question || '',
+    createdAt: doc.createdAt || 0
+  };
+}
+
+export function notifyChatHistoryChanged() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('chat-history-changed'));
+  }
+}
+
+export function getAllChatSessions() {
+  if (hasUtoolsDb()) {
+    return window.utools.db
+      .allDocs(SESSION_PREFIX)
+      .filter((doc) => doc.question || doc.reply)
+      .map(docToSession)
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+  return readFallbackSessions().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+}
+
+export function saveChatSession({ question, reply }) {
+  const q = (question || '').trim();
+  const r = (reply || '').trim();
+  if (!q && !r) return null;
+
+  const id = String(Date.now());
+  const doc = {
+    _id: `${SESSION_PREFIX}${id}`,
+    question: q,
+    reply: r,
+    preview: q.slice(0, 48) || r.slice(0, 48),
+    createdAt: Date.now()
+  };
+
+  if (hasUtoolsDb()) {
+    const result = window.utools.db.put(doc);
+    if (result.ok) {
+      notifyChatHistoryChanged();
+      return docToSession({ ...doc, _rev: result.rev });
+    }
+    return null;
+  }
+
+  const list = readFallbackSessions();
+  list.unshift(docToSession(doc));
+  writeFallbackSessions(list.slice(0, 50));
+  notifyChatHistoryChanged();
+  return docToSession(doc);
+}
+
+export function removeChatSession(session) {
+  if (!session) return false;
+
+  if (hasUtoolsDb()) {
+    const doc = session._rev
+      ? session
+      : window.utools.db.get(`${SESSION_PREFIX}${session.id}`);
+    if (!doc) return false;
+    const result = window.utools.db.remove(doc);
+    if (result.ok) notifyChatHistoryChanged();
+    return !!result.ok;
+  }
+
+  const list = readFallbackSessions().filter((s) => s.id !== session.id);
+  writeFallbackSessions(list);
+  notifyChatHistoryChanged();
+  return true;
+}
+
+export function formatSessionTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

@@ -13,6 +13,7 @@ import { NAV_MENU_ITEMS } from './data/navMenu.js';
 import { TAB_BY_ROUTE, translate } from './config/i18n.js';
 import { getDetailModuleDescription as getPrintDetailModuleDescription } from './pages/PrintTools/printToolsUtils.js';
 import { getDetailModuleDescription as getColorDetailModuleDescription } from './pages/ColorTools/colorToolsUtils.js';
+import { getDetailModuleDescription as getAccessDetailModuleDescription } from './pages/AccessibilityCheck/accessibilityCheckUtils.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -80,6 +81,10 @@ const pageTitle = computed(() => {
   if (route.path === '/ColorTools/AdjustDetail') return '色阶微调';
   if (route.path === '/ColorTools/GradientDetail') return '渐变编辑';
   if (route.path === '/ColorTools/DifferenceDetail') return '色差比对';
+  if (route.path === '/AccessibilityCheck/WcagDetail') return 'WCAG 对比度';
+  if (route.path === '/AccessibilityCheck/SimDetail') return '色弱色盲模拟';
+  if (route.path === '/AccessibilityCheck/GovDetail') return '政企合规';
+  if (route.path === '/AccessibilityCheck/TextDetail') return '文字叠色推荐';
   return currentTabLabel.value;
 });
 
@@ -90,6 +95,9 @@ const pageSubtitle = computed(() => {
   if (route.path.startsWith('/ColorTools/')) {
     return getColorDetailModuleDescription(route.path);
   }
+  if (route.path.startsWith('/AccessibilityCheck/')) {
+    return getAccessDetailModuleDescription(route.path);
+  }
   return '';
 });
 
@@ -97,7 +105,8 @@ const isDetailRoute = computed(() => {
   return route.path === '/ImageColorSampling/detailPage'
     || route.path === '/PaletteManager/viewGroupingDetail'
     || route.path.startsWith('/PrintTools/')
-    || route.path.startsWith('/ColorTools/');
+    || route.path.startsWith('/ColorTools/')
+    || route.path.startsWith('/AccessibilityCheck/');
 });
 
 provide('setHeaderActions', (buttons) => {
@@ -137,6 +146,10 @@ function handleBackFromDetail() {
   }
   if (route.path.startsWith('/ColorTools/')) {
     router.push('/ColorTools');
+    return;
+  }
+  if (route.path.startsWith('/AccessibilityCheck/')) {
+    router.push('/AccessibilityCheck');
     return;
   }
   router.push('/ImageColorSampling');
@@ -246,6 +259,8 @@ onMounted(() => {
         <template #extra>
           <div id="print-tools-header-slot" class="print-tools-header-slot"></div>
           <div id="color-tools-header-slot" class="color-tools-header-slot"></div>
+          <div id="accessibility-check-header-slot" class="accessibility-check-header-slot"></div>
+          <div id="intelligent-color-matching-header-slot" class="intelligent-color-matching-header-slot"></div>
         </template>
         <template #actions>
           <template v-for="(btn, idx) in headerActionButtons" :key="btn.label || idx">
@@ -381,7 +396,9 @@ onMounted(() => {
 }
 
 .print-tools-header-slot,
-.color-tools-header-slot {
+.color-tools-header-slot,
+.accessibility-check-header-slot,
+.intelligent-color-matching-header-slot {
   display: flex;
   align-items: center;
 

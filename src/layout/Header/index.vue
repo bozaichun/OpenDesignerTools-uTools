@@ -24,6 +24,7 @@ defineEmits(['toggle-mode', 'show-setting', 'back']);
     <!-- 页头左侧：标题与返回 -->
     <div class="header-left">
       <SectionTitle :title="title" mode="primary" />
+      <div id="page-header-leading-slot" class="page-header-leading-slot"></div>
       <template v-if="isDetail">
         <span class="detail-back" @click="$emit('back')" title="返回">
           <span class="iconfont icon-Back"></span>
@@ -72,6 +73,12 @@ defineEmits(['toggle-mode', 'show-setting', 'back']);
   gap: 14px;
   min-width: 0;
   flex: 1;
+}
+
+.page-header-leading-slot {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .header-subtitle {

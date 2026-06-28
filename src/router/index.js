@@ -55,6 +55,30 @@ const routes = [
     meta: { title: '色彩对比' }
   },
   {
+    path: '/AccessibilityCheck/WcagDetail',
+    name: 'AccessibilityCheckWcagDetail',
+    component: () => import('../pages/AccessibilityCheck/WcagDetail.vue'),
+    meta: { title: 'WCAG 对比度' }
+  },
+  {
+    path: '/AccessibilityCheck/SimDetail',
+    name: 'AccessibilityCheckSimDetail',
+    component: () => import('../pages/AccessibilityCheck/SimDetail.vue'),
+    meta: { title: '色弱色盲模拟' }
+  },
+  {
+    path: '/AccessibilityCheck/GovDetail',
+    name: 'AccessibilityCheckGovDetail',
+    component: () => import('../pages/AccessibilityCheck/GovDetail.vue'),
+    meta: { title: '政企合规' }
+  },
+  {
+    path: '/AccessibilityCheck/TextDetail',
+    name: 'AccessibilityCheckTextDetail',
+    component: () => import('../pages/AccessibilityCheck/TextDetail.vue'),
+    meta: { title: '文字叠色推荐' }
+  },
+  {
     path: '/IntelligentColorMatching',
     name: 'IntelligentColorMatching',
     component: () => import('../pages/IntelligentColorMatching/index.vue'),
