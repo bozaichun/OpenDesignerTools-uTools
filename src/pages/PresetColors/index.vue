@@ -46,12 +46,7 @@ const isAllFilteredIndeterminate = computed(() => {
 
 function updateHeaderActions() {
   setHeaderActions([
-    {
-      label: '下载色卡',
-      icon: 'icon-Palette',
-      iconOnly: true,
-      onClick: handleDownloadColorCard
-    }
+    { label: '下载色卡', onClick: handleDownloadColorCard }
   ]);
 }
 
@@ -166,15 +161,15 @@ onUnmounted(() => {
         :key="color.name"
         class="preset-card"
         :class="{ 'is-selected': isSelected(color.name) }"
+        @click="toggleSelect(color.name)"
       >
-        <button
+        <span
           class="card-select-btn"
           :class="{ checked: isSelected(color.name) }"
-          :title="isSelected(color.name) ? '取消选择' : '选择'"
-          @click.stop="toggleSelect(color.name)"
+          aria-hidden="true"
         >
           <span v-if="isSelected(color.name)" class="iconfont icon-Success"></span>
-        </button>
+        </span>
         <div class="group-tag">{{ color.group }}</div>
         <div class="swatch-row">
           <div class="color-swatch" :style="{ background: color.hex }"></div>
@@ -184,7 +179,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="card-action-bar">
+        <div class="card-action-bar" @click.stop>
           <button
             class="view-color-btn"
             @click="openColorModal(color)"
@@ -194,7 +189,7 @@ onUnmounted(() => {
           <button
             class="card-icon-btn"
             :title="'复制颜色名: ' + color.name"
-            @click.stop="copyValue(color.name, color.name)"
+            @click="copyValue(color.name, color.name)"
           >
             <span class="iconfont icon-Copy"></span>
           </button>
@@ -211,22 +206,26 @@ onUnmounted(() => {
 
     <!-- 多选功能区 -->
     <div v-if="multiSelectVisible" class="preset-multi-bar">
-      <button
-        class="preset-multi-all"
-        @click="toggleSelectAllFiltered"
-      >
-        <span
-          class="preset-check-box"
-          :class="{
-            checked: isAllFilteredSelected,
-            indeterminate: isAllFilteredIndeterminate
-          }"
+      <div class="preset-multi-left">
+        <button
+          class="preset-multi-all"
+          @click="toggleSelectAllFiltered"
         >
-          <span v-if="isAllFilteredSelected" class="iconfont icon-Success"></span>
-          <span v-else-if="isAllFilteredIndeterminate" class="preset-check-indeterminate"></span>
-        </span>
-        全选
-      </button>
+          <span
+            class="preset-check-box"
+            :class="{
+              checked: isAllFilteredSelected,
+              indeterminate: isAllFilteredIndeterminate
+            }"
+          >
+            <span v-if="isAllFilteredSelected" class="iconfont icon-Success"></span>
+            <span v-else-if="isAllFilteredIndeterminate" class="preset-check-indeterminate"></span>
+          </span>
+          全选
+        </button>
+        <span class="preset-multi-divider" aria-hidden="true"></span>
+        <span class="preset-multi-count">已选 {{ selectedCount }} 张色卡</span>
+      </div>
       <button class="preset-multi-cancel" @click="handleCancelMultiSelect">
         取消
       </button>
@@ -322,6 +321,7 @@ onUnmounted(() => {
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   padding: 12px;
+  cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
@@ -346,17 +346,16 @@ onUnmounted(() => {
 
 .card-select-btn {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: -6px;
+  left: -6px;
   z-index: 2;
   width: 16px;
   height: 16px;
-  padding: 0;
   border: 1px solid var(--border-primary);
   border-radius: 3px;
   background: var(--bg-card);
   color: var(--text-invert);
-  cursor: pointer;
+  pointer-events: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -365,10 +364,6 @@ onUnmounted(() => {
   .iconfont {
     font-size: 10px;
     line-height: 1;
-  }
-
-  &:hover {
-    border-color: var(--accent);
   }
 
   &.checked {
@@ -431,20 +426,27 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
+  cursor: default;
 }
 
 .view-color-btn {
   flex: 1;
   min-width: 0;
-  padding: 4px 8px;
+  height: 28px;
+  padding: 0 8px;
   font-size: 11px;
+  line-height: 1;
   background: var(--bg-card);
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-sm);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.15s ease;
   font-weight: 500;
+  box-sizing: border-box;
 
   &:hover {
     background: var(--accent);
@@ -501,10 +503,17 @@ onUnmounted(() => {
   margin-left: -20px;
   margin-right: -20px;
   margin-bottom: -20px;
-  padding: 10px 20px;
+  padding: 16px 20px;
   background: var(--bg-card);
   border-top: 1px solid var(--border-primary);
   box-shadow: var(--shadow-top);
+}
+
+.preset-multi-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .preset-multi-all {
@@ -515,9 +524,24 @@ onUnmounted(() => {
   border: none;
   background: transparent;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
+  flex-shrink: 0;
+}
+
+.preset-multi-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--error);
+  flex-shrink: 0;
+}
+
+.preset-multi-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--error);
+  white-space: nowrap;
 }
 
 .preset-check-box {
@@ -559,13 +583,15 @@ onUnmounted(() => {
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--text-secondary);
-  font-size: 14px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  transition: color 0.15s ease;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
 
   &:hover {
-    color: var(--accent);
+    opacity: 0.85;
   }
 }
 

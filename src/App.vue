@@ -402,6 +402,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
 
+  &:empty {
+    display: none;
+  }
+
   :deep(.app-selector) {
     min-width: 148px;
   }

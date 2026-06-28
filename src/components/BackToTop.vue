@@ -123,7 +123,7 @@ onBeforeUnmount(() => {
 .back-to-top-btn {
   position: fixed;
   right: 32px;
-  bottom: 52px;
+  bottom: 88px;
   width: 44px;
   height: 44px;
   padding: 0;
