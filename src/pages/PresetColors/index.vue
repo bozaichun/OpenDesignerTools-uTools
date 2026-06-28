@@ -485,9 +485,39 @@ onUnmounted(() => {
 .card-action-bar :deep(.favorite-btn) {
   width: 28px;
   height: 28px;
+  padding: 0;
+  flex-shrink: 0;
   background: var(--bg-card);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+
+  .favorite-icon {
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  &:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-invert);
+  }
+
+  &.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-invert);
+
+    &:hover {
+      background: var(--accent-hover, var(--accent));
+      border-color: var(--accent-hover, var(--accent));
+      color: var(--text-invert);
+    }
+  }
 }
 
 /* ============ 多选功能区（贴底全宽条） ============ */

@@ -9,7 +9,7 @@ const props = defineProps({
   type: {
     type: String,
     default: 'success',
-    validator: (v) => ['success', 'error', 'info'].includes(v)
+    validator: (v) => ['success', 'error', 'info', 'warning'].includes(v)
   },
   duration: {
     type: Number,
@@ -26,6 +26,7 @@ const emit = defineEmits(['update:visible', 'close']);
 const iconClass = computed(() => {
   if (props.type === 'success') return 'icon-Success';
   if (props.type === 'error') return 'icon-Failure';
+  if (props.type === 'warning') return 'icon-Attention';
   return 'icon-Query';
 });
 
@@ -104,6 +105,17 @@ watch(() => props.visible, (val) => {
 
     .toast-icon {
       color: var(--accent);
+    }
+  }
+
+  &.warning {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    border-left: 4px solid var(--warning);
+    color: var(--warning-active);
+
+    .toast-icon {
+      color: var(--warning);
     }
   }
 }

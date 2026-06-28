@@ -3,14 +3,9 @@ import { ref, computed, onMounted } from 'vue';
 import ColorPicker from '../../components/ColorPicker.vue';
 import Selector from '../../components/Selector.vue';
 import { parseColor, rgbToHex, rgbToHsl, hslToRgb, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
+import { ADVANCED_TABS } from './intelligentColorMatchingUtils.js';
 
 const activeTab = ref('semantic');
-const tabs = [
-  { key: 'semantic', label: '语义 AI 配色' },
-  { key: 'monochrome', label: '单色延展' },
-  { key: 'scenario', label: '场景定向' },
-  { key: 'unique', label: '去同质化' }
-];
 const moodOptions = [
   { key: 'warm', label: '温暖亲切' },
   { key: 'cool', label: '冷静专业' },
@@ -244,22 +239,19 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="advanced-mode">
-    <!-- 功能 Tab -->
-    <div class="tab-row">
-      <div class="tab-scroll">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="tab-btn"
-          :class="{ active: activeTab === tab.key }"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
-    </div>
+  <!-- 页头右侧：专业模式模块切换 -->
+  <Teleport to="#intelligent-color-matching-header-slot">
+    <Selector
+      v-model="activeTab"
+      class="header-module-selector"
+      :block="false"
+      :flex="false"
+    >
+      <option v-for="tab in ADVANCED_TABS" :key="tab.key" :value="tab.key">{{ tab.label }}</option>
+    </Selector>
+  </Teleport>
 
+  <div class="advanced-mode">
     <section v-if="activeTab === 'semantic'" class="panel">
       <div class="panel-header">
         <h3 class="panel-title">语义 AI 配色</h3>
@@ -483,21 +475,10 @@ onMounted(() => {
 </template>
 
 <style lang="scss" scoped>
-.advanced-mode { width: 100%; min-width: 0; }
-
-.tab-row {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
-}
-.tab-scroll {
-  display: flex; gap: 8px; flex-wrap: wrap; flex: 1 1 auto; min-width: 0;
-}
-.tab-btn {
-  padding: 8px 16px; background: var(--bg-muted); color: var(--text-secondary);
-  border: 1px solid var(--border-primary); border-radius: var(--radius-md);
-  cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s ease;
-  flex-shrink: 0;
-  &:hover { background: var(--bg-hover); color: var(--text-primary); }
-  &.active { background: var(--accent); color: var(--text-invert); border-color: var(--accent); }
+.advanced-mode {
+  width: 100%;
+  min-width: 0;
+  padding-top: var(--size-20);
 }
 
 .panel {
