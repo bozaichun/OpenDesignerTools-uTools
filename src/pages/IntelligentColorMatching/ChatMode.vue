@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, nextTick, watch, onUnmounted } from 'vue';
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
 import { showToast } from '../../utils/colorUtils';
 import { buildAiChatMessages } from './intelligentColorMatchingUtils';
 import { saveChatSession } from './chatHistoryStorage';
@@ -14,8 +14,15 @@ const conversationTurns = ref([]);
 const isLoading = ref(false);
 const hasConversation = ref(false);
 const chatBodyRef = ref(null);
+const textareaRef = ref(null);
+const inputFieldRef = ref(null);
+const clearAnchorRef = ref(null);
+const clearTailRef = ref(null);
+const clearBtnStyle = ref({ visibility: 'hidden', top: '0', left: '0' });
 const stickToBottom = ref(true);
 const showScrollBottomBtn = ref(false);
+
+const CLEAR_BTN_GAP = 4;
 
 const INPUT_PLACEHOLDER = '输入你的智能配色问题… · 按 Enter 发送 · Shift+Enter 换行';
 const SCROLL_BOTTOM_THRESHOLD = 48;
@@ -50,6 +57,34 @@ const hasInputContent = computed(() => userInput.value.length > 0);
 
 function handleClearInput() {
   userInput.value = '';
+}
+
+function updateClearBtnPosition() {
+  nextTick(() => {
+    if (!hasInputContent.value || !textareaRef.value || !inputFieldRef.value) {
+      clearBtnStyle.value = { visibility: 'hidden', top: '0', left: '0', transform: 'none' };
+      return;
+    }
+
+    const textarea = textareaRef.value;
+    const field = inputFieldRef.value;
+    const measureEl = clearTailRef.value || clearAnchorRef.value;
+    if (!measureEl) {
+      clearBtnStyle.value = { visibility: 'hidden', top: '0', left: '0', transform: 'none' };
+      return;
+    }
+
+    const fieldRect = field.getBoundingClientRect();
+    const measureRect = measureEl.getBoundingClientRect();
+    const anchorCenterY = measureRect.top - fieldRect.top - textarea.scrollTop + measureRect.height / 2;
+
+    clearBtnStyle.value = {
+      visibility: 'visible',
+      top: `${anchorCenterY}px`,
+      left: `${measureRect.right - fieldRect.left + CLEAR_BTN_GAP}px`,
+      transform: 'translateY(-50%)'
+    };
+  });
 }
 
 function isNearBottom(el) {
@@ -227,7 +262,23 @@ watch(conversationTurns, () => {
   }
 }, { deep: true });
 
+watch(userInput, () => {
+  updateClearBtnPosition();
+});
+
+let inputFieldResizeObserver = null;
+
+onMounted(() => {
+  updateClearBtnPosition();
+  if (inputFieldRef.value && typeof ResizeObserver !== 'undefined') {
+    inputFieldResizeObserver = new ResizeObserver(() => updateClearBtnPosition());
+    inputFieldResizeObserver.observe(inputFieldRef.value);
+  }
+});
+
 onUnmounted(() => {
+  inputFieldResizeObserver?.disconnect();
+  inputFieldResizeObserver = null;
   activeTurnIndex = -1;
   aiRequest?.abort?.();
   emit('session-active', false);
@@ -287,24 +338,38 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
         <span class="iconfont icon-BackTop scroll-bottom-icon"></span>
       </button>
       <div class="input-wrap">
-        <button
-          v-if="hasInputContent && !isLoading"
-          type="button"
-          class="input-clear-btn"
-          title="清空"
-          @click="handleClearInput"
-        >
-          <span class="iconfont icon-Close"></span>
-        </button>
-        <div class="input-field">
+        <div ref="inputFieldRef" class="input-field">
+          <div class="textarea-measure" aria-hidden="true">
+            <span class="textarea-measure-text">
+              <template v-if="userInput.length > 1">
+                {{ userInput.slice(0, -1) }}<span ref="clearTailRef" class="textarea-measure-tail">{{ userInput.slice(-1) }}<span ref="clearAnchorRef" class="textarea-measure-anchor"></span></span>
+              </template>
+              <template v-else>
+                <span ref="clearTailRef" class="textarea-measure-tail">{{ userInput }}<span ref="clearAnchorRef" class="textarea-measure-anchor"></span></span>
+              </template>
+            </span>
+          </div>
           <textarea
+            ref="textareaRef"
             v-model="userInput"
             class="chat-textarea"
             :placeholder="INPUT_PLACEHOLDER"
             rows="2"
             :disabled="isLoading"
             @keydown="handleKeydown"
+            @scroll="updateClearBtnPosition"
           ></textarea>
+          <button
+            v-if="hasInputContent && !isLoading"
+            type="button"
+            class="input-clear-btn"
+            title="清空"
+            :style="clearBtnStyle"
+            @mousedown.prevent
+            @click="handleClearInput"
+          >
+            <span class="iconfont icon-Close"></span>
+          </button>
         </div>
         <div class="input-toolbar">
           <button
@@ -437,14 +502,36 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
   &:focus-within { border-color: var(--accent); }
 }
 .input-field {
+  position: relative;
   flex: 1;
   min-width: 0;
 }
+.textarea-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: inherit;
+}
+.textarea-measure-tail {
+  white-space: nowrap;
+}
+.textarea-measure-anchor {
+  display: inline;
+  width: 0;
+  overflow: hidden;
+}
 .input-clear-btn {
   position: absolute;
-  top: -9px;
-  right: 4px;
   z-index: 2;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
