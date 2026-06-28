@@ -43,7 +43,6 @@ export const PRESET_COLORS = [
   { name: 'forestgreen', hex: '#228B22', group: '绿' },
   { name: 'green', hex: '#008000', group: '绿' },
   { name: 'darkgreen', hex: '#006400', group: '绿' },
-  { name: 'greenyellow', hex: '#ADFF2F', group: '绿' },
   { name: 'darkolivegreen', hex: '#556B2F', group: '绿' },
   { name: 'olivedrab', hex: '#6B8E23', group: '绿' },
   { name: 'cyan', hex: '#00FFFF', group: '蓝' },
@@ -138,8 +137,7 @@ export const PRESET_COLORS = [
   { name: 'sienna', hex: '#A0522D', group: '橙' },
   { name: 'brown', hex: '#A52A2A', group: '橙' },
   { name: 'maroon', hex: '#800000', group: '橙' },
-  { name: 'cornsilk', hex: '#FFF8DC', group: '黄' },
-  { name: 'bisque', hex: '#FFE4C4', group: '橙' }
+  { name: 'cornsilk', hex: '#FFF8DC', group: '黄' }
 ]
 
 // 色系分组列表

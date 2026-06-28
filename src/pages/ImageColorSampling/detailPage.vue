@@ -13,7 +13,7 @@ import {
 import ModuleTitle from '../../components/ModuleTitle.vue';
 import Dialog from '../../components/Dialog.vue';
 import Straw from '../../components/Straw.vue';
-import Loading from '../../components/Loading.vue';
+import { openInUBrowser } from '../../utils/ubrowser.js';
 
 const STORAGE_KEY = 'imageAnalysisData';
 
@@ -84,11 +84,7 @@ function getColorFormat(color, type) {
 function searchOnBaidu(hex) {
   const query = encodeURIComponent(hex + ' 颜色 配色方案 色彩搭配');
   const url = 'https://www.baidu.com/s?wd=' + query;
-  if (window.utools && typeof window.utools.shellOpenExternal === 'function') {
-    window.utools.shellOpenExternal(url);
-  } else {
-    window.open(url, '_blank');
-  }
+  openInUBrowser(url, { width: 1200, height: 800 });
   showToast(null, '正在搜索 ' + hex + ' 的配色方案', 'success');
 }
 function goBack() {
@@ -103,7 +99,7 @@ function updateHeaderActions() {
   const favorited = hex ? isFavorite(hex) : false;
   setHeaderActions([
     {
-      label: favorited ? '★ 已收藏' : '☆ 收藏',
+      label: favorited ? '已收藏' : '收藏',
       onClick: () => handleFavoritePicked(),
       secondary: true
     },
@@ -609,7 +605,6 @@ onUnmounted(() => {
             </div>
             <div class="color-actions">
               <button class="search-btn" @click="searchOnBaidu(color.hex)">
-                <span class="iconfont icon-Query"></span>
                 色彩搭配
               </button>
             </div>

@@ -90,7 +90,14 @@ function colorWheelOption(cfg) {
     },
     polar: { radius: ['18%', '82%'] },
     angleAxis: { type: 'category', data: axisData, axisLine: { show: false }, splitLine: { show: false } },
-    radiusAxis: { type: 'value', max: 100, axisLabel: { show: false }, axisLine: { show: false } },
+    radiusAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      alignTicks: false,
+      axisLabel: { show: false },
+      axisLine: { show: false }
+    },
     series: [{ type: 'bar', data: values, coordinateSystem: 'polar', barWidth: 16 }]
   };
 }
@@ -105,6 +112,7 @@ function radarOption(cfg) {
       splitNumber: 4,
       center: ['50%', '48%'],
       radius: '60%',
+      alignTicks: false,
       splitLine: { lineStyle: { type: 'dashed' } },
       splitArea: { areaStyle: { color: ['transparent'] } }
     },

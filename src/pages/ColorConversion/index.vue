@@ -44,6 +44,13 @@ const textContrast = computed(() => {
   return luminance > 0.5 ? '#000000' : '#ffffff';
 });
 
+const alphaSliderStyle = computed(() => {
+  const { r, g, b } = currentRGB.value;
+  return {
+    background: `linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0), rgb(${r}, ${g}, ${b}))`
+  };
+});
+
 function updateHeaderActions() {
   const hex = normalizeFavoriteHex(inputs.hex);
   const favorited = hex ? isFavorite(hex) : false;
@@ -304,13 +311,17 @@ watch(() => inputs.hex, () => {
 
           <div class="alpha-row">
             <label>Alpha</label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              v-model.number="alphaPercent"
-              @input="handleAlphaChange"
-            />
+            <div class="alpha-slider-wrap">
+              <input
+                type="range"
+                class="alpha-slider"
+                min="0"
+                max="100"
+                v-model.number="alphaPercent"
+                :style="alphaSliderStyle"
+                @input="handleAlphaChange"
+              />
+            </div>
             <span class="alpha-value">{{ alphaPercent }}%</span>
           </div>
 
@@ -460,11 +471,91 @@ watch(() => inputs.hex, () => {
     font-size: 12px;
     color: var(--text-secondary);
     min-width: 80px;
+    flex-shrink: 0;
   }
 
-  input[type="range"] {
+  .alpha-slider-wrap {
     flex: 1;
-    accent-color: var(--accent);
+    min-width: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 2px;
+    overflow: visible;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border-primary);
+      background-color: #fff;
+      background-image:
+        linear-gradient(45deg, #ddd 25%, transparent 25%),
+        linear-gradient(-45deg, #ddd 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ddd 75%),
+        linear-gradient(-45deg, transparent 75%, #ddd 75%);
+      background-size: 8px 8px;
+      background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+      pointer-events: none;
+      z-index: 0;
+    }
+  }
+
+  .alpha-slider {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 10px;
+    margin: 0;
+    -webkit-appearance: none;
+    appearance: none;
+    border: none;
+    border-radius: 999px;
+    outline: none;
+    cursor: pointer;
+    display: block;
+    background: transparent;
+
+    &::-webkit-slider-runnable-track {
+      height: 10px;
+      border-radius: 999px;
+      background: transparent;
+    }
+
+    &::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      margin-top: -3px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      background: var(--accent);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+    }
+
+    &::-moz-range-track {
+      height: 10px;
+      border-radius: 999px;
+      background: transparent;
+      border: none;
+    }
+
+    &::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      background: var(--accent);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+    }
   }
 
   .alpha-value {

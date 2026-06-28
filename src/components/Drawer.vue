@@ -167,8 +167,8 @@ onBeforeUnmount(() => {
 }
 
 .drawer-close-btn {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   background: transparent;
   border: 1px solid var(--border-primary);
@@ -177,12 +177,12 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   transition: all 0.15s ease;
   flex-shrink: 0;
 
   .iconfont {
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1;
   }
 

@@ -65,7 +65,7 @@ function handleNewSession() {
             @click="pageMode = 'chat'"
           >
             <span class="iconfont icon-Areality-AIMode mode-btn-icon"></span>
-            <span>问答模式</span>
+            <span>智能模式</span>
           </button>
           <button
             class="mode-btn"
@@ -73,7 +73,7 @@ function handleNewSession() {
             @click="pageMode = 'advanced'"
           >
             <span class="iconfont icon-Areality-ProfessionalMode mode-btn-icon"></span>
-            <span>高级模式</span>
+            <span>专业模式</span>
           </button>
         </div>
       </div>

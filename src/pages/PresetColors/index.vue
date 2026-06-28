@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
-import { PRESET_COLORS, COLOR_GROUPS } from '../../data/presetColors';
+import { getUniquePresets, COLOR_GROUPS } from '../../data/presetColors';
 import { copyToClipboard, showToast } from '../../utils/colorUtils';
 import FavoriteButton from '../../components/FavoriteButton.vue';
 import Input from '../../components/Input.vue';
 import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
 import Banner from '../../components/Banner.vue';
 
-const presetColors = PRESET_COLORS;
+const presetColors = getUniquePresets();
 const colorGroups = COLOR_GROUPS;
 const searchText = ref('');
 const activeGroup = ref(null);
@@ -257,8 +257,8 @@ function copyValue(value, label) {
 .view-color-btn {
   flex: 1;
   min-width: 0;
-  padding: 6px 10px;
-  font-size: 12px;
+  padding: 4px 8px;
+  font-size: 11px;
   background: var(--bg-card);
   color: var(--text-secondary);
   border: 1px solid var(--border-primary);
