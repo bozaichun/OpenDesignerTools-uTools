@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "version": "0.0.13",
+  "version": "0.0.21",
   "scripts": {
     "dev": "vite",
     "version:update": "node scripts/update-version.js",

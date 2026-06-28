@@ -64,6 +64,10 @@ function normalizeHex(value) {
   const trimmed = value.trim();
   if (/^#[0-9A-Fa-f]{6}$/.test(trimmed)) return trimmed.toUpperCase();
   if (/^[0-9A-Fa-f]{6}$/.test(trimmed)) return `#${trimmed.toUpperCase()}`;
+  if (/^#[0-9A-Fa-f]{3}$/.test(trimmed)) {
+    const h = trimmed.slice(1);
+    return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`.toUpperCase();
+  }
   return '';
 }
 
@@ -119,28 +123,197 @@ export function buildSemanticAiMessages({ mood, industry, keywords }) {
   ];
 }
 
-/** 解析 AI 返回的 JSON 文本为设计规范结构 */
-export function parseSemanticAiResponse(raw) {
-  const text = String(raw || '').trim();
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('AI 返回格式无效');
-
-  const data = JSON.parse(jsonMatch[0]);
+function buildDesignSpecFromData(data, { strict = true } = {}) {
   const name = String(data.name || '').trim();
   const description = String(data.description || '').trim();
-  if (!name) throw new Error('缺少方案名称');
+  if (strict && !name) throw new Error('缺少方案名称');
 
   const parsed = {
     name,
     description,
-    theme: parseColorGroup(data.theme || {}, THEME_COLOR_FIELDS),
-    functional: parseFunctionalColors(data.functional || {}),
-    auxiliary: parseColorGroup(data.auxiliary || {}, AUXILIARY_COLOR_FIELDS),
-    neutral: parseNeutralColors(data.neutral || {}),
-    shadows: parseShadows(data.shadows || {})
+    theme: strict
+      ? parseColorGroup(data.theme || {}, THEME_COLOR_FIELDS)
+      : parsePartialColorGroup(data.theme || {}, THEME_COLOR_FIELDS),
+    functional: strict
+      ? parseFunctionalColors(data.functional || {})
+      : parsePartialFunctionalColors(data.functional || {}),
+    auxiliary: strict
+      ? parseColorGroup(data.auxiliary || {}, AUXILIARY_COLOR_FIELDS)
+      : parsePartialColorGroup(data.auxiliary || {}, AUXILIARY_COLOR_FIELDS),
+    neutral: strict
+      ? parseNeutralColors(data.neutral || {})
+      : parsePartialNeutralColors(data.neutral || {}),
+    shadows: strict
+      ? parseShadows(data.shadows || {})
+      : parsePartialShadows(data.shadows || {})
   };
 
-  return finalizeDesignSpec(parsed);
+  return finalizeDesignSpec(parsed, { streaming: !strict });
+}
+
+function parsePartialColorGroup(source, fields) {
+  const result = {};
+  fields.forEach((f) => {
+    const hex = pickHex(source, f.key);
+    if (hex) result[f.key] = hex;
+  });
+  return result;
+}
+
+function parsePartialFunctionalColors(source) {
+  const result = {};
+  if (!source || typeof source !== 'object' || Array.isArray(source)) return result;
+
+  FUNCTIONAL_COLOR_TYPES.forEach((type) => {
+    const rawGroup = source[type.key];
+    if (!rawGroup || typeof rawGroup !== 'object' || Array.isArray(rawGroup)) return;
+    const group = parsePartialColorGroup(rawGroup, FUNCTIONAL_COLOR_FIELDS);
+    if (Object.keys(group).length) result[type.key] = group;
+  });
+  return result;
+}
+
+function parsePartialNeutralColors(source) {
+  const result = {};
+  ['light', 'dark'].forEach((mode) => {
+    const group = parsePartialColorGroup(source?.[mode] || {}, NEUTRAL_COLOR_FIELDS);
+    if (Object.keys(group).length) result[mode] = group;
+  });
+  return result;
+}
+
+function parsePartialShadows(source) {
+  const result = {};
+  SHADOW_FIELDS.forEach((f) => {
+    const val = String(source?.[f.key] || '').trim();
+    if (val) result[f.key] = val;
+  });
+  return result;
+}
+
+/** 补全流式 JSON 片段以便增量解析 */
+function closePartialJson(raw) {
+  const start = String(raw || '').indexOf('{');
+  if (start === -1) return '';
+
+  let fragment = String(raw).slice(start);
+  if ((fragment.match(/"/g) || []).length % 2 === 1) fragment += '"';
+  fragment = fragment.replace(/,\s*$/, '');
+  fragment = fragment.replace(/:\s*$/, ': null');
+
+  let braceDepth = 0;
+  let bracketDepth = 0;
+  fragment.split('').forEach((ch) => {
+    if (ch === '{') braceDepth += 1;
+    else if (ch === '}') braceDepth -= 1;
+    else if (ch === '[') bracketDepth += 1;
+    else if (ch === ']') bracketDepth -= 1;
+  });
+
+  while (bracketDepth > 0) {
+    fragment += ']';
+    bracketDepth -= 1;
+  }
+  while (braceDepth > 0) {
+    fragment += '}';
+    braceDepth -= 1;
+  }
+
+  return fragment;
+}
+
+/** 从 AI 原始文本中提取 JSON 字符串 */
+function extractJsonText(raw) {
+  let text = String(raw || '').trim();
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) return fenced[1].trim();
+  return text;
+}
+
+function parseJsonPayload(raw) {
+  const text = extractJsonText(raw);
+  const start = text.indexOf('{');
+  if (start === -1) throw new Error('AI 返回格式无效');
+
+  const candidate = text.slice(start);
+  const match = candidate.match(/\{[\s\S]*\}/);
+  if (match) {
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      // 继续尝试补全解析
+    }
+  }
+
+  const closed = closePartialJson(text);
+  if (!closed) throw new Error('AI 返回格式无效');
+  return JSON.parse(closed);
+}
+
+function hasViableColorData(spec) {
+  return Object.keys(spec.theme || {}).length > 0
+    || Object.keys(spec.functional || {}).length > 0
+    || Object.keys(spec.auxiliary || {}).length > 0
+    || Object.keys(spec.neutral?.light || {}).length > 0
+    || Object.keys(spec.neutral?.dark || {}).length > 0;
+}
+
+/** 解析 AI 返回的 JSON 文本为设计规范结构（严格模式） */
+export function parseSemanticAiResponse(raw) {
+  return buildDesignSpecFromData(parseJsonPayload(raw), { strict: true });
+}
+
+/** 最终解析：严格校验失败时降级为宽松解析，避免流式已成功但最终报错 */
+export function finalizeSemanticAiResponse(raw) {
+  const data = parseJsonPayload(raw);
+  try {
+    return buildDesignSpecFromData(data, { strict: true });
+  } catch {
+    const loose = buildDesignSpecFromData(data, { strict: false });
+    if (!loose.name) throw new Error('缺少方案名称');
+    if (!hasViableColorData(loose)) throw new Error('AI 返回配色数据无效');
+
+    return finalizeDesignSpec({
+      name: loose.name,
+      description: loose.description,
+      theme: loose.theme,
+      functional: loose.functional,
+      auxiliary: loose.auxiliary,
+      neutral: loose.neutral,
+      shadows: loose.shadows
+    }, { streaming: false });
+  }
+}
+
+/** 流式增量解析：尽可能从当前文本中提取可展示的设计规范 */
+export function tryParseSemanticAiResponsePartial(raw) {
+  const text = String(raw || '').trim();
+  if (!text.includes('{')) return null;
+
+  try {
+    return { spec: finalizeSemanticAiResponse(raw), isComplete: true };
+  } catch {
+    // 继续尝试增量解析
+  }
+
+  try {
+    const closed = closePartialJson(extractJsonText(text));
+    if (!closed) return null;
+    const data = JSON.parse(closed);
+    const spec = buildDesignSpecFromData(data, { strict: false });
+    const hasContent = spec.name
+      || spec.description
+      || Object.keys(spec.theme || {}).length > 0
+      || Object.keys(spec.functional || {}).length > 0
+      || Object.keys(spec.auxiliary || {}).length > 0
+      || Object.keys(spec.neutral?.light || {}).length > 0
+      || Object.keys(spec.neutral?.dark || {}).length > 0
+      || Object.keys(spec.shadows || {}).length > 0;
+    if (!hasContent) return null;
+    return { spec, isComplete: false };
+  } catch {
+    return null;
+  }
 }
 
 export function isValidSemanticHex(hex) {

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { computed, ref, watch, onUnmounted } from 'vue';
 import {
   THEME_COLOR_FIELDS,
   FUNCTIONAL_COLOR_TYPES,
@@ -7,11 +8,106 @@ import {
   NEUTRAL_COLOR_FIELDS,
   SHADOW_FIELDS
 } from './semanticDesignSpec.js';
+import { buildSpecRevealQueue, SPEC_REVEAL_INTERVAL_MS } from './useSpecStreamingReveal.js';
 import ColorChipActions from './ColorChipActions.vue';
 import { getContrastColor as gcc, parseColor } from '../../utils/colorUtils';
 
 const props = defineProps({
-  spec: { type: Object, required: true }
+  spec: { type: Object, required: true },
+  streaming: { type: Boolean, default: false },
+  /** AI 是否仍在生成；生成结束后才允许触发 reveal-complete */
+  aiPending: { type: Boolean, default: false }
+});
+
+const emit = defineEmits(['reveal-complete', 'reveal-tick']);
+
+const revealedKeys = ref(new Set());
+let revealTimer = null;
+
+function isRevealed(key) {
+  if (!props.streaming) return true;
+  return revealedKeys.value.has(key);
+}
+
+function resetRevealState() {
+  stopRevealTimer();
+  revealedKeys.value = new Set();
+}
+
+function stopRevealTimer() {
+  if (revealTimer) {
+    clearInterval(revealTimer);
+    revealTimer = null;
+  }
+}
+
+function startRevealTimer() {
+  if (revealTimer || !props.streaming) return;
+  revealTimer = setInterval(tickReveal, SPEC_REVEAL_INTERVAL_MS);
+}
+
+function tryEmitRevealComplete() {
+  if (!props.streaming || props.aiPending) return;
+  const queue = buildSpecRevealQueue(props.spec);
+  if (!queue.length) return;
+  if (queue.every((key) => revealedKeys.value.has(key))) {
+    stopRevealTimer();
+    emit('reveal-complete');
+  }
+}
+
+function tickReveal() {
+  if (!props.streaming) return;
+
+  const queue = buildSpecRevealQueue(props.spec);
+  const next = queue.find((key) => !revealedKeys.value.has(key));
+  if (!next) {
+    tryEmitRevealComplete();
+    return;
+  }
+
+  revealedKeys.value = new Set([...revealedKeys.value, next]);
+  emit('reveal-tick');
+  tryEmitRevealComplete();
+}
+
+watch(
+  () => props.streaming,
+  (active) => {
+    if (active) {
+      resetRevealState();
+      startRevealTimer();
+      tickReveal();
+      return;
+    }
+    resetRevealState();
+    revealedKeys.value = new Set(buildSpecRevealQueue(props.spec));
+  },
+  { immediate: true }
+);
+
+watch(
+  () => props.spec,
+  () => {
+    if (!props.streaming) {
+      revealedKeys.value = new Set(buildSpecRevealQueue(props.spec));
+      return;
+    }
+    startRevealTimer();
+    if (revealedKeys.value.size === 0) tickReveal();
+  },
+  { deep: true }
+);
+
+watch(
+  () => props.aiPending,
+  () => {
+    if (props.streaming) tryEmitRevealComplete();
+  }
+);
+
+onUnmounted(() => {
+  stopRevealTimer();
 });
 
 function getContrastColor(hex) {
@@ -21,36 +117,121 @@ function getContrastColor(hex) {
 }
 
 function buildFavoriteName(label) {
-  return `${props.spec.name} · ${label}`;
+  return `${props.spec.name || '配色方案'} · ${label}`;
 }
+
+function themeColor(key) {
+  return props.spec.theme?.[key] || '';
+}
+
+function functionalColor(typeKey, fieldKey) {
+  return props.spec.functional?.[typeKey]?.[fieldKey] || '';
+}
+
+function auxiliaryColor(key) {
+  return props.spec.auxiliary?.[key] || '';
+}
+
+function neutralColor(mode, key) {
+  return props.spec.neutral?.[mode]?.[key] || '';
+}
+
+function shadowValue(key) {
+  return props.spec.shadows?.[key] || '';
+}
+
+const themeFields = computed(() => THEME_COLOR_FIELDS.filter(
+  (field) => themeColor(field.key) && isRevealed(`theme:${field.key}`)
+));
+
+const functionalTypes = computed(() => FUNCTIONAL_COLOR_TYPES.filter(
+  (type) => FUNCTIONAL_COLOR_FIELDS.some(
+    (field) => functionalColor(type.key, field.key) && isRevealed(`functional:${type.key}:${field.key}`)
+  )
+));
+
+const auxiliaryFields = computed(() => AUXILIARY_COLOR_FIELDS.filter(
+  (field) => auxiliaryColor(field.key) && isRevealed(`auxiliary:${field.key}`)
+));
+
+const neutralLightFields = computed(() => NEUTRAL_COLOR_FIELDS.filter(
+  (field) => neutralColor('light', field.key) && isRevealed(`neutral:light:${field.key}`)
+));
+
+const neutralDarkFields = computed(() => NEUTRAL_COLOR_FIELDS.filter(
+  (field) => neutralColor('dark', field.key) && isRevealed(`neutral:dark:${field.key}`)
+));
+
+const shadowFields = computed(() => SHADOW_FIELDS.filter(
+  (field) => shadowValue(field.key) && isRevealed(`shadow:${field.key}`)
+));
+
+const strokeItems = computed(() => (props.spec.strokes || []).filter(
+  (stroke) => isRevealed(`stroke:${stroke.key}`)
+));
+
+const spacingItems = computed(() => (props.spec.spacing || []).filter(
+  (space) => isRevealed(`spacing:${space.key}`)
+));
+
+const radiusItems = computed(() => (props.spec.radius || []).filter(
+  (radius) => isRevealed(`radius:${radius.key}`)
+));
+
+const typographyItems = computed(() => (props.spec.typography || []).filter(
+  (_, idx) => isRevealed(`typography:${idx}`)
+));
+
+function functionalFields(typeKey) {
+  return FUNCTIONAL_COLOR_FIELDS.filter(
+    (field) => functionalColor(typeKey, field.key) && isRevealed(`functional:${typeKey}:${field.key}`)
+  );
+}
+
+const showHeader = computed(() => {
+  if (!props.streaming) return props.spec.name || props.spec.description;
+  return isRevealed('header:name') || isRevealed('header:desc');
+});
+
+const showTheme = computed(() => themeFields.value.length > 0);
+const showFunctional = computed(() => functionalTypes.value.length > 0);
+const showAuxiliary = computed(() => auxiliaryFields.value.length > 0);
+const showNeutralLight = computed(() => neutralLightFields.value.length > 0);
+const showNeutralDark = computed(() => neutralDarkFields.value.length > 0);
+const showShadows = computed(() => shadowFields.value.length > 0);
+const showStrokes = computed(() => strokeItems.value.length > 0);
+const showSpacing = computed(() => spacingItems.value.length > 0);
+const showRadius = computed(() => radiusItems.value.length > 0);
+const showTypography = computed(() => typographyItems.value.length > 0);
 </script>
 
 <template>
-  <div class="design-spec">
+  <div class="design-spec" :class="{ 'design-spec--streaming': streaming }">
     <!-- 方案标题 -->
-    <div class="design-spec-header">
+    <div v-if="showHeader" class="design-spec-header">
       <div class="design-spec-header-text">
-        <div class="design-spec-name">{{ spec.name }}</div>
-        <div v-if="spec.description" class="design-spec-desc">{{ spec.description }}</div>
+        <div v-if="spec.name && isRevealed('header:name')" class="design-spec-name">{{ spec.name }}</div>
+        <div v-if="spec.description && isRevealed('header:desc')" class="design-spec-desc">{{ spec.description }}</div>
       </div>
     </div>
 
     <!-- 主题色 -->
-    <section class="spec-section">
+    <section v-if="showTheme" class="spec-section">
       <h4 class="spec-section-title">主题色</h4>
       <div class="color-chip-grid">
         <div
-          v-for="field in THEME_COLOR_FIELDS"
+          v-for="field in themeFields"
           :key="field.key"
           class="color-chip"
-          :style="{ background: spec.theme[field.key] }"
+          :style="{ background: themeColor(field.key) }"
         >
-          <div class="color-chip-text" :style="{ color: getContrastColor(spec.theme[field.key]) }">
+          <div class="color-chip-text" :style="{ color: getContrastColor(themeColor(field.key)) }">
             <span class="color-chip-label">{{ field.label }}</span>
-            <span class="color-chip-hex">{{ spec.theme[field.key] }}</span>
+            <span class="color-chip-hex">{{ themeColor(field.key) }}</span>
           </div>
           <ColorChipActions
-            :value="spec.theme[field.key]"
+            v-if="!streaming"
+            :value="themeColor(field.key)"
             :label="field.label"
             :favorite-name="buildFavoriteName(field.label)"
           />
@@ -59,30 +240,31 @@ function buildFavoriteName(label) {
     </section>
 
     <!-- 功能色 -->
-    <section class="spec-section">
+    <section v-if="showFunctional" class="spec-section">
       <h4 class="spec-section-title">功能色</h4>
       <div
-        v-for="type in FUNCTIONAL_COLOR_TYPES"
+        v-for="type in functionalTypes"
         :key="type.key"
         class="spec-subsection"
       >
         <h5 class="spec-subsection-title">{{ type.label }}</h5>
         <div class="color-chip-grid">
           <div
-            v-for="field in FUNCTIONAL_COLOR_FIELDS"
+            v-for="field in functionalFields(type.key)"
             :key="`${type.key}-${field.key}`"
             class="color-chip"
-            :style="{ background: spec.functional[type.key][field.key] }"
+            :style="{ background: functionalColor(type.key, field.key) }"
           >
             <div
               class="color-chip-text"
-              :style="{ color: getContrastColor(spec.functional[type.key][field.key]) }"
+              :style="{ color: getContrastColor(functionalColor(type.key, field.key)) }"
             >
               <span class="color-chip-label">{{ field.label }}</span>
-              <span class="color-chip-hex">{{ spec.functional[type.key][field.key] }}</span>
+              <span class="color-chip-hex">{{ functionalColor(type.key, field.key) }}</span>
             </div>
             <ColorChipActions
-              :value="spec.functional[type.key][field.key]"
+              v-if="!streaming"
+              :value="functionalColor(type.key, field.key)"
               :label="`${type.label}·${field.label}`"
               :favorite-name="buildFavoriteName(`${type.label}·${field.label}`)"
             />
@@ -92,21 +274,22 @@ function buildFavoriteName(label) {
     </section>
 
     <!-- 辅助色 -->
-    <section class="spec-section">
+    <section v-if="showAuxiliary" class="spec-section">
       <h4 class="spec-section-title">辅助色</h4>
       <div class="color-chip-grid color-chip-grid--6">
         <div
-          v-for="field in AUXILIARY_COLOR_FIELDS"
+          v-for="field in auxiliaryFields"
           :key="field.key"
           class="color-chip"
-          :style="{ background: spec.auxiliary[field.key] }"
+          :style="{ background: auxiliaryColor(field.key) }"
         >
-          <div class="color-chip-text" :style="{ color: getContrastColor(spec.auxiliary[field.key]) }">
+          <div class="color-chip-text" :style="{ color: getContrastColor(auxiliaryColor(field.key)) }">
             <span class="color-chip-label">{{ field.label }}</span>
-            <span class="color-chip-hex">{{ spec.auxiliary[field.key] }}</span>
+            <span class="color-chip-hex">{{ auxiliaryColor(field.key) }}</span>
           </div>
           <ColorChipActions
-            :value="spec.auxiliary[field.key]"
+            v-if="!streaming"
+            :value="auxiliaryColor(field.key)"
             :label="field.label"
             :favorite-name="buildFavoriteName(field.label)"
           />
@@ -115,20 +298,21 @@ function buildFavoriteName(label) {
     </section>
 
     <!-- 中性色 -->
-    <section class="spec-section">
+    <section v-if="showNeutralLight || showNeutralDark" class="spec-section">
       <h4 class="spec-section-title">中性色</h4>
-      <div class="spec-subsection">
+      <div v-if="showNeutralLight" class="spec-subsection">
         <h5 class="spec-subsection-title">浅色模式</h5>
         <div class="neutral-row neutral-row--light">
           <div
-            v-for="field in NEUTRAL_COLOR_FIELDS"
+            v-for="field in neutralLightFields"
             :key="`light-${field.key}`"
             class="neutral-item"
           >
-            <span class="neutral-sample" :style="{ color: spec.neutral.light[field.key] }">{{ field.label }}</span>
-            <span class="neutral-hex">{{ spec.neutral.light[field.key] }}</span>
+            <span class="neutral-sample" :style="{ color: neutralColor('light', field.key) }">{{ field.label }}</span>
+            <span class="neutral-hex">{{ neutralColor('light', field.key) }}</span>
             <ColorChipActions
-              :value="spec.neutral.light[field.key]"
+              v-if="!streaming"
+              :value="neutralColor('light', field.key)"
               :label="`浅色·${field.label}`"
               :favorite-name="buildFavoriteName(`浅色·${field.label}`)"
               :on-color="false"
@@ -136,18 +320,19 @@ function buildFavoriteName(label) {
           </div>
         </div>
       </div>
-      <div class="spec-subsection">
+      <div v-if="showNeutralDark" class="spec-subsection">
         <h5 class="spec-subsection-title">深色模式</h5>
         <div class="neutral-row neutral-row--dark">
           <div
-            v-for="field in NEUTRAL_COLOR_FIELDS"
+            v-for="field in neutralDarkFields"
             :key="`dark-${field.key}`"
             class="neutral-item"
           >
-            <span class="neutral-sample" :style="{ color: spec.neutral.dark[field.key] }">{{ field.label }}</span>
-            <span class="neutral-hex">{{ spec.neutral.dark[field.key] }}</span>
+            <span class="neutral-sample" :style="{ color: neutralColor('dark', field.key) }">{{ field.label }}</span>
+            <span class="neutral-hex">{{ neutralColor('dark', field.key) }}</span>
             <ColorChipActions
-              :value="spec.neutral.dark[field.key]"
+              v-if="!streaming"
+              :value="neutralColor('dark', field.key)"
               :label="`深色·${field.label}`"
               :favorite-name="buildFavoriteName(`深色·${field.label}`)"
               :on-color="false"
@@ -158,20 +343,21 @@ function buildFavoriteName(label) {
     </section>
 
     <!-- 阴影 -->
-    <section class="spec-section">
+    <section v-if="showShadows" class="spec-section">
       <h4 class="spec-section-title">阴影</h4>
       <div class="shadow-grid">
         <div
-          v-for="field in SHADOW_FIELDS"
+          v-for="field in shadowFields"
           :key="field.key"
           class="shadow-item"
         >
-          <div class="shadow-preview" :style="{ boxShadow: spec.shadows[field.key] }"></div>
+          <div class="shadow-preview" :style="{ boxShadow: shadowValue(field.key) }"></div>
           <div class="shadow-meta">
             <span class="shadow-label">{{ field.label }}</span>
-            <span class="shadow-value">{{ spec.shadows[field.key] }}</span>
+            <span class="shadow-value">{{ shadowValue(field.key) }}</span>
             <ColorChipActions
-              :value="spec.shadows[field.key]"
+              v-if="!streaming"
+              :value="shadowValue(field.key)"
               :label="field.label"
               :on-color="false"
               :show-favorite="false"
@@ -182,10 +368,10 @@ function buildFavoriteName(label) {
     </section>
 
     <!-- 描边 -->
-    <section class="spec-section">
+    <section v-if="showStrokes" class="spec-section">
       <h4 class="spec-section-title">描边</h4>
       <div class="stroke-grid">
-        <div v-for="stroke in spec.strokes" :key="stroke.key" class="stroke-item">
+        <div v-for="stroke in strokeItems" :key="stroke.key" class="stroke-item">
           <div
             class="stroke-preview"
             :style="{ borderWidth: stroke.value, borderStyle: 'solid', borderColor: 'var(--border-primary)' }"
@@ -197,10 +383,10 @@ function buildFavoriteName(label) {
     </section>
 
     <!-- 间距 -->
-    <section class="spec-section">
+    <section v-if="showSpacing" class="spec-section">
       <h4 class="spec-section-title">间距</h4>
       <div class="spacing-grid">
-        <div v-for="space in spec.spacing" :key="space.key" class="spacing-item">
+        <div v-for="space in spacingItems" :key="space.key" class="spacing-item">
           <div class="spacing-bar-wrap">
             <div class="spacing-bar" :style="{ width: `${Math.max(space.value, 2)}px` }"></div>
           </div>
@@ -211,10 +397,10 @@ function buildFavoriteName(label) {
     </section>
 
     <!-- 圆角 -->
-    <section class="spec-section">
+    <section v-if="showRadius" class="spec-section">
       <h4 class="spec-section-title">圆角</h4>
       <div class="radius-grid">
-        <div v-for="radius in spec.radius" :key="radius.key" class="radius-item">
+        <div v-for="radius in radiusItems" :key="radius.key" class="radius-item">
           <div
             class="radius-preview"
             :style="{ borderRadius: `${radius.value}px` }"
@@ -226,12 +412,12 @@ function buildFavoriteName(label) {
     </section>
 
     <!-- 字阶与行高 -->
-    <section class="spec-section">
+    <section v-if="showTypography" class="spec-section">
       <h4 class="spec-section-title">字阶与行高</h4>
       <div class="typography-list">
         <div
-          v-for="(item, idx) in spec.typography"
-          :key="idx"
+          v-for="(item, idx) in typographyItems"
+          :key="`${item.size}-${item.lineHeight}-${idx}`"
           class="typography-item"
         >
           <span
@@ -242,6 +428,10 @@ function buildFavoriteName(label) {
         </div>
       </div>
     </section>
+
+    <div v-if="streaming" class="design-spec-streaming-tail">
+      <span class="design-spec-streaming-cursor">|</span>
+    </div>
   </div>
 </template>
 
@@ -250,6 +440,36 @@ function buildFavoriteName(label) {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.design-spec--streaming .color-chip,
+.design-spec--streaming .neutral-item,
+.design-spec--streaming .shadow-item,
+.design-spec--streaming .stroke-item,
+.design-spec--streaming .spacing-item,
+.design-spec--streaming .radius-item,
+.design-spec--streaming .typography-item {
+  animation: specChunkReveal 0.25s ease both;
+}
+
+@keyframes specChunkReveal {
+  from { opacity: 0.4; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.design-spec-streaming-tail {
+  padding: 4px 0 8px;
+}
+
+.design-spec-streaming-cursor {
+  animation: specCursorBlink 1s step-end infinite;
+  color: var(--accent);
+  font-size: 16px;
+  line-height: 1;
+}
+
+@keyframes specCursorBlink {
+  50% { opacity: 0; }
 }
 
 .design-spec-header-text {

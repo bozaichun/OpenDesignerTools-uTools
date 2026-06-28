@@ -265,10 +265,42 @@ export function buildSemanticDesignSpecCss(spec) {
 }
 
 /** 合并 AI 返回与固定 Token，补全 shadows 默认值 */
-export function finalizeDesignSpec(parsed) {
+function normalizeFunctionalGroups(functional) {
+  if (!functional || typeof functional !== 'object' || Array.isArray(functional)) return {};
+
+  const result = {};
+  FUNCTIONAL_COLOR_TYPES.forEach(({ key }) => {
+    const group = functional[key];
+    if (group && typeof group === 'object' && !Array.isArray(group)) {
+      result[key] = { ...group };
+    }
+  });
+  return result;
+}
+
+export function finalizeDesignSpec(parsed, { streaming = false } = {}) {
+  const theme = parsed.theme && typeof parsed.theme === 'object' ? parsed.theme : {};
+  const auxiliary = parsed.auxiliary && typeof parsed.auxiliary === 'object' ? parsed.auxiliary : {};
+  const neutralLight = parsed.neutral?.light && typeof parsed.neutral.light === 'object'
+    ? parsed.neutral.light
+    : {};
+  const neutralDark = parsed.neutral?.dark && typeof parsed.neutral.dark === 'object'
+    ? parsed.neutral.dark
+    : {};
+
   return {
-    ...parsed,
-    shadows: { ...DEFAULT_SHADOWS, ...(parsed.shadows || {}) },
+    name: parsed.name || '',
+    description: parsed.description || '',
+    theme: { ...theme },
+    functional: normalizeFunctionalGroups(parsed.functional),
+    auxiliary: { ...auxiliary },
+    neutral: {
+      light: { ...neutralLight },
+      dark: { ...neutralDark }
+    },
+    shadows: streaming
+      ? { ...(parsed.shadows || {}) }
+      : { ...DEFAULT_SHADOWS, ...(parsed.shadows || {}) },
     strokes: DESIGN_SPEC_STROKES,
     spacing: DESIGN_SPEC_SPACING,
     radius: DESIGN_SPEC_RADIUS,

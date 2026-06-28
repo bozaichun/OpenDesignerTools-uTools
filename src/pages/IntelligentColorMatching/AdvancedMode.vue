@@ -1,17 +1,18 @@
 <script lang="ts" setup>
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, toRaw } from 'vue';
 import html2canvas from 'html2canvas';
 import ColorPicker from '../../components/ColorPicker.vue';
 import Selector from '../../components/Selector.vue';
 import Input from '../../components/Input.vue';
 import Textarea from '../../components/Textarea.vue';
-import Loading from '../../components/Loading.vue';
 import SemanticDesignSpecPreview from './SemanticDesignSpecPreview.vue';
+import SemanticHistoryDrawer from './SemanticHistoryDrawer.vue';
 import { parseColor, rgbToHex, rgbToHsl, hslToRgb, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 import { sanitizeFileName } from '../../utils/codeGenerator';
 import { ADVANCED_TABS } from './intelligentColorMatchingUtils.js';
-import { buildSemanticAiMessages, parseSemanticAiResponse } from './semanticColorAi.js';
+import { buildSemanticAiMessages, finalizeSemanticAiResponse, tryParseSemanticAiResponsePartial } from './semanticColorAi.js';
 import { buildSemanticDesignSpecMarkdown } from './semanticDesignSpec.js';
+import { saveSemanticHistorySession } from './semanticHistoryStorage.js';
 
 const activeTab = ref('semantic');
 const moodOptions = [
@@ -41,10 +42,19 @@ const customIndustryText = ref('');
 const semanticKeywords = ref('');
 const semanticResult = ref(null);
 const isGenerating = ref(false);
+const isPreviewRevealing = ref(false);
+const semanticPreviewRef = ref(null);
 const semanticPreviewContentRef = ref(null);
 
 const SEMANTIC_HEADER_DESC = '输入关键词、行业风格或情绪调性，一键生成整套配色方案';
+const SEMANTIC_PREVIEW_TIP = '温馨提示：可保存截图导出预览长图，或下载 Markdown 文档留存完整设计规范';
+const SCROLL_BOTTOM_THRESHOLD = 48;
+
+const stickToBottom = ref(true);
+const showScrollBottomBtn = ref(false);
+const historyDrawerVisible = ref(false);
 let semanticAiRequest = null;
+let semanticStreamFrame = null;
 
 const monoColor = ref('#1677FF');
 const monochromeShades = ref([]);
@@ -141,10 +151,60 @@ function getContrastColor(hex) {
   if (!rgb) return '#000000';
   return gcc(rgb);
 }
-const showPreviewActions = computed(() => !!semanticResult.value && !isGenerating.value);
+const showPreviewActions = computed(() => !!semanticResult.value && !isGenerating.value && !isPreviewRevealing.value);
+const isPreviewStreaming = computed(() => isGenerating.value || isPreviewRevealing.value);
+const showPreviewScrollBtn = computed(() => showScrollBottomBtn.value && (isPreviewStreaming.value || !!semanticResult.value));
+const semanticInSession = computed(() => !!semanticResult.value && !isGenerating.value);
+const isSceneInputDisabled = computed(() => isGenerating.value || semanticInSession.value);
+
+function isNearPreviewBottom(el) {
+  if (!el) return true;
+  return el.scrollHeight - el.scrollTop - el.clientHeight <= SCROLL_BOTTOM_THRESHOLD;
+}
+
+function scrollPreviewToBottom(instant = true) {
+  const el = semanticPreviewRef.value;
+  if (!el) return;
+  el.scrollTo({ top: el.scrollHeight, behavior: instant ? 'auto' : 'smooth' });
+}
+
+function syncPreviewScrollState() {
+  const el = semanticPreviewRef.value;
+  if (!el || (!isPreviewStreaming.value && !semanticResult.value)) {
+    showScrollBottomBtn.value = false;
+    return;
+  }
+  const nearBottom = isNearPreviewBottom(el);
+  stickToBottom.value = nearBottom;
+  showScrollBottomBtn.value = !nearBottom;
+}
+
+function handlePreviewScroll() {
+  syncPreviewScrollState();
+}
+
+function handlePreviewScrollToBottom() {
+  stickToBottom.value = true;
+  showScrollBottomBtn.value = false;
+  scrollPreviewToBottom(true);
+}
+
+function schedulePreviewScrollToBottom() {
+  if (!stickToBottom.value) return;
+  nextTick(() => scrollPreviewToBottom(true));
+}
 
 function getSpecBaseName() {
   return sanitizeFileName(semanticResult.value?.name?.slice(0, 24) || 'UI设计规范');
+}
+
+function formatDownloadTimestamp(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+}
+
+function getSpecDownloadFileName() {
+  return `${getSpecBaseName()}${formatDownloadTimestamp()}.md`;
 }
 
 function isDarkTheme() {
@@ -206,7 +266,7 @@ async function handleDownloadDesignSpec() {
   const content = buildSemanticDesignSpecMarkdown(semanticResult.value);
   await saveTextFile({
     content,
-    fileName: `${getSpecBaseName()}.md`,
+    fileName: getSpecDownloadFileName(),
     dialogTitle: '保存 Markdown 文档',
     filterName: 'Markdown 文档',
     extensions: ['md'],
@@ -332,8 +392,153 @@ watch(selectedIndustry, (val) => {
   if (val === CUSTOM_OPTION) industryIsCustom.value = true;
 });
 
+watch([semanticResult, isPreviewStreaming], () => {
+  if (stickToBottom.value && (isPreviewStreaming.value || semanticResult.value)) {
+    schedulePreviewScrollToBottom();
+  }
+}, { deep: true });
+
+function flushSemanticStreamPreview(accumulated) {
+  semanticStreamFrame = null;
+  const parsed = tryParseSemanticAiResponsePartial(accumulated);
+  if (parsed?.spec) semanticResult.value = parsed.spec;
+  schedulePreviewScrollToBottom();
+}
+
+function scheduleSemanticStreamPreview(accumulated) {
+  if (semanticStreamFrame) return;
+  semanticStreamFrame = requestAnimationFrame(() => flushSemanticStreamPreview(accumulated));
+}
+
+function handleStopSemantic() {
+  semanticAiRequest?.abort?.();
+  isPreviewRevealing.value = false;
+}
+
+function handlePreviewRevealComplete() {
+  isPreviewRevealing.value = false;
+}
+
+function handlePreviewRevealTick() {
+  if (stickToBottom.value) schedulePreviewScrollToBottom();
+}
+
+function openHistoryDrawer() {
+  historyDrawerVisible.value = true;
+}
+
+function applySemanticFormState({
+  moodKey,
+  moodIsCustom: isCustomMood,
+  customMoodText: moodText,
+  industryKey,
+  industryIsCustom: isCustomIndustry,
+  customIndustryText: industryText,
+  keywords
+}) {
+  if (isCustomMood) {
+    moodIsCustom.value = true;
+    selectedMood.value = CUSTOM_OPTION;
+    customMoodText.value = moodText || '';
+  } else {
+    moodIsCustom.value = false;
+    selectedMood.value = moodKey || 'cool';
+    customMoodText.value = '';
+  }
+
+  if (isCustomIndustry) {
+    industryIsCustom.value = true;
+    selectedIndustry.value = CUSTOM_OPTION;
+    customIndustryText.value = industryText || '';
+  } else {
+    industryIsCustom.value = false;
+    selectedIndustry.value = industryKey || 'tech';
+    customIndustryText.value = '';
+  }
+
+  semanticKeywords.value = keywords || '';
+}
+
+function handleLoadSemanticHistory(session) {
+  if (!session?.spec) return;
+
+  if (isGenerating.value) {
+    handleStopSemantic();
+    isGenerating.value = false;
+  }
+
+  activeTab.value = 'semantic';
+  applySemanticFormState(session);
+  semanticResult.value = session.spec;
+  stickToBottom.value = false;
+  showScrollBottomBtn.value = false;
+
+  nextTick(() => {
+    semanticPreviewRef.value?.scrollTo({ top: 0, behavior: 'auto' });
+  });
+}
+
+function handleNewSemanticSession() {
+  if (isGenerating.value) {
+    handleStopSemantic();
+    isGenerating.value = false;
+  }
+
+  semanticResult.value = null;
+  isPreviewRevealing.value = false;
+  applySemanticFormState({
+    moodKey: 'cool',
+    moodIsCustom: false,
+    customMoodText: '',
+    industryKey: 'tech',
+    industryIsCustom: false,
+    customIndustryText: '',
+    keywords: ''
+  });
+  stickToBottom.value = true;
+  showScrollBottomBtn.value = false;
+
+  nextTick(() => {
+    semanticPreviewRef.value?.scrollTo({ top: 0, behavior: 'auto' });
+  });
+}
+
+function resolveSemanticGenerationResult(accumulated) {
+  if (!accumulated?.trim()) {
+    if (semanticResult.value?.name) return semanticResult.value;
+    throw new Error('AI 返回内容为空');
+  }
+  return finalizeSemanticAiResponse(accumulated);
+}
+
+function completeSemanticGeneration(accumulated) {
+  semanticResult.value = resolveSemanticGenerationResult(accumulated);
+  isGenerating.value = false;
+  persistSemanticHistory();
+  schedulePreviewScrollToBottom();
+}
+
+function persistSemanticHistory() {
+  const spec = toRaw(semanticResult.value);
+  if (!spec?.name) return;
+
+  saveSemanticHistorySession({
+    moodKey: selectedMood.value,
+    moodIsCustom: moodIsCustom.value,
+    customMoodText: customMoodText.value,
+    industryKey: selectedIndustry.value,
+    industryIsCustom: industryIsCustom.value,
+    customIndustryText: customIndustryText.value,
+    keywords: semanticKeywords.value.trim(),
+    spec
+  });
+}
+
 async function handleGenerateSemantic() {
-  if (isGenerating.value) return;
+  if (isGenerating.value) {
+    handleStopSemantic();
+    return;
+  }
 
   if (!window.utools?.ai) {
     showToast(null, '请在 uTools 环境中使用 AI 配色功能', 'warning');
@@ -353,7 +558,11 @@ async function handleGenerateSemantic() {
 
   semanticAiRequest?.abort?.();
   isGenerating.value = true;
+  isPreviewRevealing.value = true;
   semanticResult.value = null;
+  stickToBottom.value = true;
+  showScrollBottomBtn.value = false;
+  nextTick(() => scrollPreviewToBottom(true));
 
   let accumulated = '';
   try {
@@ -364,15 +573,39 @@ async function handleGenerateSemantic() {
     });
 
     semanticAiRequest = window.utools.ai({ messages }, (chunk) => {
-      if (chunk?.content) accumulated += chunk.content;
+      if (!chunk?.content) return;
+      accumulated += chunk.content;
+      scheduleSemanticStreamPreview(accumulated);
     });
     await semanticAiRequest;
 
-    semanticResult.value = parseSemanticAiResponse(accumulated);
-    isGenerating.value = false;
+    if (semanticStreamFrame) {
+      cancelAnimationFrame(semanticStreamFrame);
+      semanticStreamFrame = null;
+    }
+    completeSemanticGeneration(accumulated);
   } catch (err) {
+    if (semanticStreamFrame) {
+      cancelAnimationFrame(semanticStreamFrame);
+      semanticStreamFrame = null;
+    }
     if (err?.name !== 'AbortError') {
-      showToast(null, 'AI 配色生成失败，请重试', 'error');
+      try {
+        completeSemanticGeneration(accumulated);
+        return;
+      } catch {
+        if (semanticResult.value?.name) {
+          isGenerating.value = false;
+          isPreviewRevealing.value = true;
+          persistSemanticHistory();
+          schedulePreviewScrollToBottom();
+          return;
+        }
+        isPreviewRevealing.value = false;
+        showToast(null, 'AI 配色生成失败，请重试', 'error');
+      }
+    } else {
+      isPreviewRevealing.value = false;
     }
     isGenerating.value = false;
   } finally {
@@ -464,6 +697,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (semanticStreamFrame) cancelAnimationFrame(semanticStreamFrame);
   semanticAiRequest?.abort?.();
 });
 </script>
@@ -474,17 +708,39 @@ onUnmounted(() => {
     <span class="semantic-header-desc">{{ SEMANTIC_HEADER_DESC }}</span>
   </Teleport>
 
-  <!-- 页头右侧：专业模式模块切换 -->
+  <!-- 页头右侧：新会话 / 历史记录 / 专业模式模块切换 -->
   <Teleport to="#intelligent-color-matching-header-slot">
-    <Selector
-      v-model="activeTab"
-      class="header-module-selector"
-      :block="false"
-      :flex="false"
-    >
-      <option v-for="tab in ADVANCED_TABS" :key="tab.key" :value="tab.key">{{ tab.label }}</option>
-    </Selector>
+    <div class="icm-header-tools">
+      <button
+        v-if="activeTab === 'semantic' && semanticInSession"
+        class="icm-new-session-btn"
+        title="新会话"
+        @click="handleNewSemanticSession"
+      >
+        新会话
+      </button>
+      <button
+        class="icm-history-btn"
+        title="历史记录"
+        @click="openHistoryDrawer"
+      >
+        <span class="iconfont icon-Areality-HistoricalRecord"></span>
+      </button>
+      <Selector
+        v-model="activeTab"
+        class="header-module-selector"
+        :block="false"
+        :flex="false"
+      >
+        <option v-for="tab in ADVANCED_TABS" :key="tab.key" :value="tab.key">{{ tab.label }}</option>
+      </Selector>
+    </div>
   </Teleport>
+
+  <SemanticHistoryDrawer
+    v-model:visible="historyDrawerVisible"
+    @select="handleLoadSemanticHistory"
+  />
 
   <div class="advanced-mode">
     <section v-if="activeTab === 'semantic'" class="semantic-panel">
@@ -499,16 +755,16 @@ onUnmounted(() => {
                 <Input
                   v-model="customMoodText"
                   placeholder="请输入自定义情绪调性"
-                  :disabled="isGenerating"
+                  :disabled="isSceneInputDisabled"
                 />
                 <button
                   type="button"
                   class="custom-back-link"
-                  :disabled="isGenerating"
+                  :disabled="isSceneInputDisabled"
                   @click="handleMoodBackToPreset"
                 >选择预设</button>
               </template>
-              <Selector v-else v-model="selectedMood" :block="true" :disabled="isGenerating">
+              <Selector v-else v-model="selectedMood" :block="true" :disabled="isSceneInputDisabled">
                 <option value="">请选择情绪调性</option>
                 <option v-for="m in moodOptions" :key="m.key" :value="m.key">{{ m.label }}</option>
                 <option :value="CUSTOM_OPTION">自定义</option>
@@ -520,16 +776,16 @@ onUnmounted(() => {
                 <Input
                   v-model="customIndustryText"
                   placeholder="请输入自定义行业场景"
-                  :disabled="isGenerating"
+                  :disabled="isSceneInputDisabled"
                 />
                 <button
                   type="button"
                   class="custom-back-link"
-                  :disabled="isGenerating"
+                  :disabled="isSceneInputDisabled"
                   @click="handleIndustryBackToPreset"
                 >选择预设</button>
               </template>
-              <Selector v-else v-model="selectedIndustry" :block="true" :disabled="isGenerating">
+              <Selector v-else v-model="selectedIndustry" :block="true" :disabled="isSceneInputDisabled">
                 <option value="">请选择行业场景</option>
                 <option v-for="i in industryOptions" :key="i.key" :value="i.key">{{ i.label }}</option>
                 <option :value="CUSTOM_OPTION">自定义</option>
@@ -542,17 +798,18 @@ onUnmounted(() => {
                 placeholder="如：B 端后台、简约、高对比度…"
                 :rows="3"
                 resize="vertical"
-                :disabled="isGenerating"
+                :disabled="isSceneInputDisabled"
               />
             </div>
             <!-- 操作区 -->
             <div class="semantic-action-row">
               <button
                 class="primary-btn semantic-generate-btn"
-                :disabled="isGenerating"
+                :class="{ 'semantic-generate-btn--stop': isGenerating }"
+                :disabled="semanticInSession && !isGenerating"
                 @click="handleGenerateSemantic"
               >
-                {{ isGenerating ? '生成中…' : '生成配色' }}
+                {{ isGenerating ? '停止生成' : '生成配色' }}
               </button>
             </div>
           </div>
@@ -563,40 +820,64 @@ onUnmounted(() => {
           <div class="semantic-column-head">
             <h3 class="semantic-column-title">预览</h3>
             <div v-if="showPreviewActions" class="semantic-preview-toolbar">
-              <button
-                type="button"
-                class="semantic-preview-action"
-                @click="handleSaveScreenshot"
-              >保存截图</button>
-              <button
-                type="button"
-                class="semantic-preview-action"
-                @click="handleDownloadDesignSpec"
-              >下载文档</button>
+              <p class="semantic-preview-tip">{{ SEMANTIC_PREVIEW_TIP }}</p>
+              <div class="semantic-preview-actions">
+                <button
+                  type="button"
+                  class="semantic-preview-action"
+                  @click="handleSaveScreenshot"
+                >保存截图</button>
+                <button
+                  type="button"
+                  class="semantic-preview-action"
+                  @click="handleDownloadDesignSpec"
+                >下载文档</button>
+              </div>
             </div>
           </div>
-          <div class="semantic-preview">
-            <div v-if="!semanticResult" class="semantic-preview-empty">
-              <span class="iconfont icon-Areality-AIMode semantic-preview-empty-icon"></span>
-              <p class="semantic-preview-empty-title">配色预览区</p>
-              <p class="semantic-preview-empty-desc">在左侧填写配色需求并点击「生成配色」，UI 设计规范将在此展示</p>
-            </div>
-
+          <div class="semantic-preview-wrap">
             <div
-              v-else
-              ref="semanticPreviewContentRef"
-              class="semantic-preview-content"
+              ref="semanticPreviewRef"
+              class="semantic-preview"
+              @scroll="handlePreviewScroll"
             >
-              <SemanticDesignSpecPreview
-                class="semantic-spec-preview"
-                :spec="semanticResult"
-              />
+              <div v-if="!semanticResult && !isGenerating" class="semantic-preview-empty">
+                <span class="iconfont icon-Areality-AIMode semantic-preview-empty-icon"></span>
+                <p class="semantic-preview-empty-title">配色预览区</p>
+                <p class="semantic-preview-empty-desc">在左侧填写配色需求并点击「生成配色」，UI 设计规范将在此展示</p>
+              </div>
+
+              <div
+                v-else
+                ref="semanticPreviewContentRef"
+                class="semantic-preview-content"
+              >
+                <SemanticDesignSpecPreview
+                  v-if="semanticResult"
+                  class="semantic-spec-preview"
+                  :spec="semanticResult"
+                  :streaming="isPreviewStreaming"
+                  :ai-pending="isGenerating"
+                  @reveal-complete="handlePreviewRevealComplete"
+                  @reveal-tick="handlePreviewRevealTick"
+                />
+                <div v-else class="semantic-streaming-wait">
+                  <span class="semantic-streaming-cursor">|</span>
+                </div>
+              </div>
             </div>
+            <button
+              v-if="showPreviewScrollBtn"
+              type="button"
+              class="semantic-scroll-bottom-btn"
+              title="回到底部"
+              @click="handlePreviewScrollToBottom"
+            >
+              <span class="iconfont icon-BackTop semantic-scroll-bottom-icon"></span>
+            </button>
           </div>
         </div>
       </div>
-
-      <Loading :visible="isGenerating" text="AI 正在生成配色方案…" />
     </section>
 
     <section v-if="activeTab === 'monochrome'" class="panel">
@@ -839,6 +1120,13 @@ onUnmounted(() => {
   line-height: 1.4;
   flex-shrink: 0;
 }
+.semantic-preview-wrap {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
 .semantic-preview {
   position: relative;
   min-width: 0;
@@ -857,8 +1145,52 @@ onUnmounted(() => {
   justify-content: flex-end;
   align-items: center;
   gap: 16px;
-  flex-shrink: 0;
+  flex: 1;
+  flex-shrink: 1;
   min-width: 0;
+}
+.semantic-preview-tip {
+  margin: 0 auto 0 0;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+  min-width: 0;
+}
+.semantic-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.semantic-scroll-bottom-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 50%;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+}
+.semantic-scroll-bottom-icon {
+  display: inline-block;
+  transform: rotate(180deg);
+  font-size: 16px;
+  line-height: 1;
 }
 .semantic-preview-action {
   padding: 0;
@@ -885,8 +1217,16 @@ onUnmounted(() => {
     gap: 8px;
   }
   .semantic-preview-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+  .semantic-preview-tip {
+    margin: 0;
+  }
+  .semantic-preview-actions {
     flex-wrap: wrap;
-    justify-content: flex-start;
     gap: 12px;
   }
 }
@@ -966,6 +1306,30 @@ onUnmounted(() => {
 .semantic-generate-btn {
   width: 100%;
   padding: 10px 18px;
+}
+.semantic-generate-btn--stop {
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+  &:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+  }
+}
+.semantic-streaming-wait {
+  display: flex;
+  align-items: flex-start;
+  min-height: 120px;
+  padding: 8px 4px;
+}
+.semantic-streaming-cursor {
+  animation: semanticCursorBlink 1s step-end infinite;
+  color: var(--accent);
+  font-size: 16px;
+  line-height: 1.5;
+}
+@keyframes semanticCursorBlink {
+  50% { opacity: 0; }
 }
 
 .semantic-input-row, .mono-input-row, .unique-input-row {
