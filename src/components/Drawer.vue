@@ -85,7 +85,7 @@ onBeforeUnmount(() => {
           @click="handleClose"
           title="关闭"
         >
-          <span class="iconfont icon-Failure"></span>
+          <span class="iconfont icon-Close"></span>
         </button>
       </div>
       <div class="drawer-body">

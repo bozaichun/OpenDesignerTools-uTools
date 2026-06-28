@@ -3,16 +3,25 @@ import { useRouter } from 'vue-router';
 import {
   QUICK_START_STEPS,
   FEATURE_GROUPS,
-  USAGE_TIPS
+  USAGE_TIPS,
+  ICM_CHAT_FEATURE
 } from '../../data/functionOverview.js';
 
 const router = useRouter();
 const quickStartSteps = QUICK_START_STEPS;
 const featureGroups = FEATURE_GROUPS;
 const usageTips = USAGE_TIPS;
+const icmChatFeature = ICM_CHAT_FEATURE;
 
 function goToFeature(routeId) {
   router.push('/' + routeId);
+}
+
+function goToIcmChat() {
+  router.push({
+    path: '/' + icmChatFeature.routeId,
+    query: icmChatFeature.query
+  });
 }
 </script>
 
@@ -35,6 +44,24 @@ function goToFeature(routeId) {
       </div>
     </section>
 
+    <!-- 智能配色问答：醒目快捷入口 -->
+    <section class="featured-icm-section">
+      <div class="featured-icm-card" @click="goToIcmChat">
+        <div class="featured-icm-left">
+          <span class="featured-icm-badge">{{ icmChatFeature.badge }}</span>
+          <div class="featured-icm-head">
+            <span :class="['iconfont', icmChatFeature.icon, 'featured-icm-icon']"></span>
+            <h3 class="featured-icm-title">{{ icmChatFeature.title }}</h3>
+          </div>
+          <p class="featured-icm-desc">{{ icmChatFeature.desc }}</p>
+        </div>
+        <button class="featured-icm-btn" @click.stop="goToIcmChat">
+          立即体验
+          <span class="iconfont icon-UseImmediately featured-icm-btn-icon"></span>
+        </button>
+      </div>
+    </section>
+
     <!-- 快速开始 -->
     <section class="quick-section">
       <h3 class="section-title">快速开始</h3>
@@ -51,7 +78,7 @@ function goToFeature(routeId) {
           <div class="quick-desc">{{ item.desc }}</div>
           <button class="quick-btn" @click.stop="goToFeature(item.routeId)">
             立即使用
-            <span class="iconfont icon-Expand quick-btn-icon"></span>
+            <span class="iconfont icon-UseImmediately quick-btn-icon"></span>
           </button>
         </div>
       </div>
@@ -77,7 +104,7 @@ function goToFeature(routeId) {
           <p class="feature-desc">{{ item.desc }}</p>
           <span class="feature-link">
             进入功能
-            <span class="iconfont icon-Expand feature-link-icon"></span>
+            <span class="iconfont icon-UseImmediately feature-link-icon"></span>
           </span>
         </div>
       </div>
@@ -138,6 +165,103 @@ function goToFeature(routeId) {
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-pill);
   font-weight: 500;
+}
+
+.featured-icm-section {
+  margin-bottom: 28px;
+}
+
+.featured-icm-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--bg-card) 55%);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-md);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-bottom);
+    border-color: var(--accent-hover);
+
+    .featured-icm-btn {
+      background: var(--accent);
+      color: var(--text-invert);
+    }
+  }
+}
+
+.featured-icm-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.featured-icm-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-invert);
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.5px;
+}
+
+.featured-icm-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.featured-icm-icon {
+  font-size: 28px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.featured-icm-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.featured-icm-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 560px;
+}
+
+.featured-icm-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.featured-icm-btn-icon {
+  font-size: 14px;
+  line-height: 1;
 }
 
 .section-title {
@@ -229,8 +353,8 @@ function goToFeature(routeId) {
 }
 
 .quick-btn-icon {
-  font-size: 10px;
-  transform: rotate(-90deg);
+  font-size: 12px;
+  line-height: 1;
 }
 
 .feature-section {
@@ -298,8 +422,8 @@ function goToFeature(routeId) {
 }
 
 .feature-link-icon {
-  font-size: 10px;
-  transform: rotate(-90deg);
+  font-size: 12px;
+  line-height: 1;
 }
 
 .tips-section {
@@ -324,6 +448,16 @@ function goToFeature(routeId) {
 
   .feature-grid {
     grid-template-columns: 1fr;
+  }
+
+  .featured-icm-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .featured-icm-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 

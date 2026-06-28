@@ -1,8 +1,8 @@
 @font-face {
   font-family: "iconfont"; /* Project id 4020260 */
-  src: url('iconfont.woff2?t=1782564806790') format('woff2'),
-       url('iconfont.woff?t=1782564806790') format('woff'),
-       url('iconfont.ttf?t=1782564806790') format('truetype');
+  src: url('iconfont.woff2?t=1782628338147') format('woff2'),
+       url('iconfont.woff?t=1782628338147') format('woff'),
+       url('iconfont.ttf?t=1782628338147') format('truetype');
 }
 
 .iconfont {
@@ -39,6 +39,10 @@
 
 .icon-Areality-ModeSwitching:before {
   content: "\ec09";
+}
+
+.icon-UseImmediately:before {
+  content: "\ec16";
 }
 
 .icon-Areality-ColorMixing:before {
@@ -109,8 +113,20 @@
   content: "\ec0b";
 }
 
+.icon-Close:before {
+  content: "\ec18";
+}
+
+.icon-Areality-AIMode:before {
+  content: "\ec19";
+}
+
 .icon-Areality-MyCollection:before {
   content: "\ec12";
+}
+
+.icon-Areality-ProfessionalMode:before {
+  content: "\ec1a";
 }
 
 .icon-Collection:before {
@@ -123,6 +139,10 @@
 
 .icon-Areality-Collection:before {
   content: "\ec15";
+}
+
+.icon-Areality-HistoricalRecord:before {
+  content: "\ec17";
 }
 
 .icon-Attention:before {

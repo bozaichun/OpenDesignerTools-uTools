@@ -106,6 +106,15 @@ export const FEATURE_GROUPS = [
   }
 ];
 
+export const ICM_CHAT_FEATURE = {
+  routeId: 'IntelligentColorMatching',
+  query: { mode: 'chat' },
+  icon: 'icon-Areality-ColorMatching',
+  title: '智能配色 · 问答模式',
+  desc: '向波仔提问语义配色、单色延展、场景定向等问题，AI 即时生成可执行配色方案',
+  badge: 'AI 问答'
+};
+
 export const USAGE_TIPS = [
   '在 uTools 中搜索「颜色转换」「取色」等关键词可快速唤起对应功能',
   '预置颜色与取色结果均支持 ★ 收藏，数据保存在本地并可云端同步',

@@ -148,12 +148,16 @@ onUnmounted(() => {
   emit('session-active', false);
 });
 
-defineExpose({ loadSession });
+defineExpose({ loadSession, resetToHome: handleBackToHome });
 </script>
 
 <template>
   <div class="chat-mode">
-    <ChatSessionShell v-if="hasConversation" @back="handleBackToHome" />
+    <ChatSessionShell
+      v-if="hasConversation"
+      :session-title="userQuestion"
+      @back="handleBackToHome"
+    />
 
     <div
       ref="chatBodyRef"

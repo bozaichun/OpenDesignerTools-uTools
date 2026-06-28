@@ -82,19 +82,28 @@ export function saveChatSession({ question, reply }) {
 }
 
 export function removeChatSession(session) {
-  if (!session) return false;
+  if (!session?.id) return false;
+
+  const sessionId = String(session.id);
 
   if (hasUtoolsDb()) {
-    const doc = session._rev
-      ? session
-      : window.utools.db.get(`${SESSION_PREFIX}${session.id}`);
-    if (!doc) return false;
-    const result = window.utools.db.remove(doc);
+    let docId = session._id;
+    let docRev = session._rev;
+
+    if (!docId || !docRev) {
+      const fetched = window.utools.db.get(`${SESSION_PREFIX}${sessionId}`);
+      if (!fetched) return false;
+      docId = fetched._id;
+      docRev = fetched._rev;
+    }
+
+    // uTools DB 经 IPC 同步，必须传入可结构化克隆的纯对象
+    const result = window.utools.db.remove({ _id: docId, _rev: docRev });
     if (result.ok) notifyChatHistoryChanged();
     return !!result.ok;
   }
 
-  const list = readFallbackSessions().filter((s) => s.id !== session.id);
+  const list = readFallbackSessions().filter((s) => s.id !== sessionId);
   writeFallbackSessions(list);
   notifyChatHistoryChanged();
   return true;

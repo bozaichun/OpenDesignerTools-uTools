@@ -19,3 +19,11 @@ export const ADVANCED_TABS = [
   { key: 'scenario', label: '场景定向' },
   { key: 'unique', label: '去同质化' }
 ];
+
+/** 会话标题截断：超过 maxLen 字以省略号显示 */
+export function truncateSessionTitle(text, maxLen = 12) {
+  if (!text) return '';
+  const trimmed = text.trim();
+  if (trimmed.length <= maxLen) return trimmed;
+  return `${trimmed.slice(0, maxLen)}...`;
+}

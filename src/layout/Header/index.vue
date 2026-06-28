@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import SectionTitle from '../../components/SectionTitle.vue';
+import { openFeedbackForm } from '../../utils/feedback.js';
 
 defineProps({
   title: {
@@ -38,11 +39,16 @@ defineEmits(['toggle-mode', 'show-setting', 'back']);
         </span>
       </span>
     </div>
+    <!-- 页头中部：会话标题等动态内容 -->
+    <div id="page-header-center-slot" class="page-header-center-slot"></div>
     <!-- 页头操作区 -->
     <div class="header-actions">
       <slot name="actions"></slot>
       <slot name="extra"></slot>
       <slot name="mobile-expand"></slot>
+      <button class="icon-btn feedback-btn" title="需求反馈" @click="openFeedbackForm">
+        <span class="iconfont icon-Prompt"></span>
+      </button>
       <button class="icon-btn" @click="$emit('toggle-mode')" title="切换模式">
         <span class="iconfont icon-Areality-ModeSwitching"></span>
       </button>
@@ -62,6 +68,7 @@ defineEmits(['toggle-mode', 'show-setting', 'back']);
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  position: relative;
   background: var(--bg-card);
   border-top: 1px solid var(--border-primary);
   border-bottom: 1px solid var(--border-primary);
@@ -79,6 +86,24 @@ defineEmits(['toggle-mode', 'show-setting', 'back']);
   display: flex;
   align-items: center;
   flex-shrink: 0;
+}
+
+.page-header-center-slot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: min(360px, 42vw);
+  min-width: 0;
+  z-index: 1;
+  pointer-events: none;
+
+  :deep(*) {
+    pointer-events: auto;
+  }
 }
 
 .header-subtitle {
@@ -189,8 +214,10 @@ defineEmits(['toggle-mode', 'show-setting', 'back']);
 .header-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .icon-btn {

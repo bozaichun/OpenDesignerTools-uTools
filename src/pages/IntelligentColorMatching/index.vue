@@ -1,13 +1,24 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import ChatMode from './ChatMode.vue';
 import AdvancedMode from './AdvancedMode.vue';
 import ChatHistoryDrawer from './ChatHistoryDrawer.vue';
+
+const route = useRoute();
+const router = useRouter();
 
 const pageMode = ref('chat');
 const chatInSession = ref(false);
 const historyDrawerVisible = ref(false);
 const chatModeRef = ref(null);
+
+onMounted(() => {
+  if (route.query.mode === 'chat') {
+    pageMode.value = 'chat';
+    router.replace({ path: route.path });
+  }
+});
 
 function handleSessionActive(active) {
   chatInSession.value = active;
@@ -20,6 +31,10 @@ function handleLoadHistory(session) {
 function openHistoryDrawer() {
   historyDrawerVisible.value = true;
 }
+
+function handleNewSession() {
+  chatModeRef.value?.resetToHome?.();
+}
 </script>
 
 <template>
@@ -28,12 +43,20 @@ function openHistoryDrawer() {
     <Teleport to="#intelligent-color-matching-header-slot">
       <div class="icm-header-tools">
         <button
-          v-if="pageMode === 'chat'"
+          v-if="pageMode === 'chat' && chatInSession"
+          class="icm-new-session-btn"
+          title="新会话"
+          @click="handleNewSession"
+        >
+          新会话
+        </button>
+        <button
+          v-if="pageMode === 'chat' && !chatInSession"
           class="icm-history-btn"
           title="历史会话"
           @click="openHistoryDrawer"
         >
-          <span class="iconfont icon-Areality-Collection"></span>
+          <span class="iconfont icon-Areality-HistoricalRecord"></span>
         </button>
         <div v-if="!(pageMode === 'chat' && chatInSession)" class="mode-row">
           <button
@@ -41,14 +64,16 @@ function openHistoryDrawer() {
             :class="{ active: pageMode === 'chat' }"
             @click="pageMode = 'chat'"
           >
-            问答模式
+            <span class="iconfont icon-Areality-AIMode mode-btn-icon"></span>
+            <span>问答模式</span>
           </button>
           <button
             class="mode-btn"
             :class="{ active: pageMode === 'advanced' }"
             @click="pageMode = 'advanced'"
           >
-            高级模式
+            <span class="iconfont icon-Areality-ProfessionalMode mode-btn-icon"></span>
+            <span>高级模式</span>
           </button>
         </div>
       </div>
@@ -88,6 +113,28 @@ function openHistoryDrawer() {
   align-items: center;
   gap: 8px;
 }
+.intelligent-color-matching-header-slot .icm-new-session-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+}
 .intelligent-color-matching-header-slot .icm-history-btn {
   display: inline-flex;
   align-items: center;
@@ -118,7 +165,10 @@ function openHistoryDrawer() {
   border: 1px solid var(--border-primary);
 }
 .intelligent-color-matching-header-slot .mode-btn {
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
   border: none;
   background: transparent;
   font-size: 12px;
@@ -128,6 +178,10 @@ function openHistoryDrawer() {
   border-radius: var(--radius-sm);
   transition: all 0.15s ease;
   white-space: nowrap;
+  .mode-btn-icon {
+    font-size: 14px;
+    line-height: 1;
+  }
   &:hover { color: var(--text-primary); }
   &.active {
     background: var(--accent);

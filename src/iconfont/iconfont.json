@@ -55,6 +55,13 @@
       "unicode_decimal": 60425
     },
     {
+      "icon_id": "47949378",
+      "name": "立即使用",
+      "font_class": "UseImmediately",
+      "unicode": "ec16",
+      "unicode_decimal": 60438
+    },
+    {
       "icon_id": "47888662",
       "name": "调色桶",
       "font_class": "Areality-ColorMixing",
@@ -174,11 +181,32 @@
       "unicode_decimal": 60427
     },
     {
+      "icon_id": "47949428",
+      "name": "关闭",
+      "font_class": "Close",
+      "unicode": "ec18",
+      "unicode_decimal": 60440
+    },
+    {
+      "icon_id": "47949429",
+      "name": "AI模式",
+      "font_class": "Areality-AIMode",
+      "unicode": "ec19",
+      "unicode_decimal": 60441
+    },
+    {
       "icon_id": "47948726",
       "name": "我的收藏",
       "font_class": "Areality-MyCollection",
       "unicode": "ec12",
       "unicode_decimal": 60434
+    },
+    {
+      "icon_id": "47949430",
+      "name": "专业模式",
+      "font_class": "Areality-ProfessionalMode",
+      "unicode": "ec1a",
+      "unicode_decimal": 60442
     },
     {
       "icon_id": "47948727",
@@ -200,6 +228,13 @@
       "font_class": "Areality-Collection",
       "unicode": "ec15",
       "unicode_decimal": 60437
+    },
+    {
+      "icon_id": "47949384",
+      "name": "历史记录",
+      "font_class": "Areality-HistoricalRecord",
+      "unicode": "ec17",
+      "unicode_decimal": 60439
     },
     {
       "icon_id": "16401954",

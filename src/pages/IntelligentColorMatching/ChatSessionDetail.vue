@@ -157,6 +157,8 @@ async function handleScreenshotReply() {
 }
 
 .reply-markdown {
+  padding: 24px;
+  border-radius: var(--radius-md);
   :deep(h1), :deep(h2), :deep(h3), :deep(h4) {
     font-weight: 600;
     color: var(--text-primary);
