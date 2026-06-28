@@ -82,7 +82,22 @@ const routes = [
     path: '/IntelligentColorMatching',
     name: 'IntelligentColorMatching',
     component: () => import('../pages/IntelligentColorMatching/index.vue'),
-    meta: { title: '智能配色' }
+    redirect: '/IntelligentColorMatching/BozaiChat',
+    meta: { title: '智能配色' },
+    children: [
+      {
+        path: 'BozaiChat',
+        name: 'BozaiChat',
+        component: () => import('../pages/IntelligentColorMatching/BozaiChat.vue'),
+        meta: { title: '智能配色' }
+      },
+      {
+        path: 'Profession',
+        name: 'Profession',
+        component: () => import('../pages/IntelligentColorMatching/Profession.vue'),
+        meta: { title: '智能配色' }
+      }
+    ]
   },
   {
     path: '/PaletteManager',

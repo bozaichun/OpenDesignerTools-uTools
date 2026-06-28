@@ -107,8 +107,7 @@ export const FEATURE_GROUPS = [
 ];
 
 export const ICM_CHAT_FEATURE = {
-  routeId: 'IntelligentColorMatching',
-  query: { mode: 'chat' },
+  routeName: 'BozaiChat',
   icon: 'icon-Areality-ColorMatching',
   title: '智能配色 · 问答模式',
   desc: '向波仔提问语义配色、单色延展、场景定向等问题，AI 即时生成可执行配色方案',

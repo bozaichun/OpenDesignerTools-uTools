@@ -86,6 +86,8 @@ defineEmits(['toggle-mode', 'show-setting', 'back']);
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  gap: 10px;
+  min-width: 0;
 }
 
 .page-header-center-slot {

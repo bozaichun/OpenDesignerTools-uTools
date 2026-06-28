@@ -18,10 +18,7 @@ function goToFeature(routeId) {
 }
 
 function goToIcmChat() {
-  router.push({
-    path: '/' + icmChatFeature.routeId,
-    query: icmChatFeature.query
-  });
+  router.push({ name: icmChatFeature.routeName });
 }
 </script>
 

@@ -1,9 +1,17 @@
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import html2canvas from 'html2canvas';
 import ColorPicker from '../../components/ColorPicker.vue';
 import Selector from '../../components/Selector.vue';
+import Input from '../../components/Input.vue';
+import Textarea from '../../components/Textarea.vue';
+import Loading from '../../components/Loading.vue';
+import SemanticDesignSpecPreview from './SemanticDesignSpecPreview.vue';
 import { parseColor, rgbToHex, rgbToHsl, hslToRgb, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
+import { sanitizeFileName } from '../../utils/codeGenerator';
 import { ADVANCED_TABS } from './intelligentColorMatchingUtils.js';
+import { buildSemanticAiMessages, parseSemanticAiResponse } from './semanticColorAi.js';
+import { buildSemanticDesignSpecMarkdown } from './semanticDesignSpec.js';
 
 const activeTab = ref('semantic');
 const moodOptions = [
@@ -23,9 +31,20 @@ const industryOptions = [
   { key: 'restaurant', label: '餐饮美食' },
   { key: 'beauty', label: '美妆时尚' }
 ];
+const CUSTOM_OPTION = 'custom';
 const selectedMood = ref('cool');
 const selectedIndustry = ref('tech');
+const moodIsCustom = ref(false);
+const industryIsCustom = ref(false);
+const customMoodText = ref('');
+const customIndustryText = ref('');
+const semanticKeywords = ref('');
 const semanticResult = ref(null);
+const isGenerating = ref(false);
+const semanticPreviewContentRef = ref(null);
+
+const SEMANTIC_HEADER_DESC = '输入关键词、行业风格或情绪调性，一键生成整套配色方案';
+let semanticAiRequest = null;
 
 const monoColor = ref('#1677FF');
 const monochromeShades = ref([]);
@@ -122,35 +141,243 @@ function getContrastColor(hex) {
   if (!rgb) return '#000000';
   return gcc(rgb);
 }
-function generateSemantic() {
-  const presets = {
-    'warm-tech': { name: '温暖科技风', description: '暖色调与科技感结合，打破冷硬印象', colors: [
-      { name: '主色', color: '#FF6B6B' }, { name: '辅色', color: '#FFA07A' }, { name: '点缀', color: '#FFD93D' },
-      { name: '文字', color: '#2C3E50' }, { name: '背景', color: '#FFF8F0' }
-    ]},
-    'cool-tech': { name: '冷静科技风', description: '蓝紫渐变，专业稳重，适合 B 端产品', colors: [
-      { name: '主色', color: '#1677FF' }, { name: '辅色', color: '#6366F1' }, { name: '点缀', color: '#06B6D4' },
-      { name: '文字', color: '#1F2937' }, { name: '背景', color: '#F8FAFC' }
-    ]},
-    'energetic-tech': { name: '活力科技风', description: '高饱和度配色，充满能量与创新感', colors: [
-      { name: '主色', color: '#7C3AED' }, { name: '辅色', color: '#EC4899' }, { name: '点缀', color: '#22D3EE' },
-      { name: '文字', color: '#1F2937' }, { name: '背景', color: '#FAF5FF' }
-    ]},
-    'elegant-tech': { name: '优雅科技风', description: '低饱和度，柔和优雅，高端品牌首选', colors: [
-      { name: '主色', color: '#4A5568' }, { name: '辅色', color: '#718096' }, { name: '点缀', color: '#D69E2E' },
-      { name: '文字', color: '#1A202C' }, { name: '背景', color: '#F7FAFC' }
-    ]},
-    'fresh-tech': { name: '清新科技风', description: '绿青色调，自然清新，环保友好品牌', colors: [
-      { name: '主色', color: '#10B981' }, { name: '辅色', color: '#06B6D4' }, { name: '点缀', color: '#84CC16' },
-      { name: '文字', color: '#1F2937' }, { name: '背景', color: '#F0FDF4' }
-    ]},
-    'tech-tech': { name: '未来科技风', description: '深蓝紫黑，赛博朋克感，游戏/AI产品', colors: [
-      { name: '主色', color: '#6366F1' }, { name: '辅色', color: '#8B5CF6' }, { name: '点缀', color: '#06B6D4' },
-      { name: '文字', color: '#E2E8F0' }, { name: '背景', color: '#0F172A' }
-    ]}
-  };
-  const key = (selectedMood.value || 'warm') + '-' + (selectedIndustry.value || 'tech');
-  semanticResult.value = presets[key] || presets['cool-tech'];
+const showPreviewActions = computed(() => !!semanticResult.value && !isGenerating.value);
+
+function getSpecBaseName() {
+  return sanitizeFileName(semanticResult.value?.name?.slice(0, 24) || 'UI设计规范');
+}
+
+function isDarkTheme() {
+  return document.documentElement.getAttribute('data-theme') === 'dark'
+    || (document.documentElement.getAttribute('data-theme') !== 'light'
+      && window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
+
+async function saveTextFile({ content, fileName, dialogTitle, filterName, extensions, mimeType = 'text/plain;charset=utf-8' }) {
+  if (!content.trim()) return false;
+
+  if (window.utools?.showSaveDialog && window.services?.writeTextToPath) {
+    const defaultPath = window.services.getDefaultSavePath?.(fileName) || fileName;
+    const savePath = window.utools.showSaveDialog({
+      title: dialogTitle,
+      defaultPath,
+      buttonLabel: '保存',
+      filters: [{ name: filterName, extensions }]
+    });
+    if (!savePath) return false;
+    try {
+      window.services.writeTextToPath(content, savePath);
+      showToast(null, '文件已保存', 'success');
+      return true;
+    } catch {
+      showToast(null, '文件保存失败，请重试', 'error');
+      return false;
+    }
+  }
+
+  if (typeof window.showSaveFilePicker === 'function') {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fileName,
+        types: [{ description: filterName, accept: { [mimeType.split(';')[0]]: extensions.map((ext) => `.${ext}`) } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      showToast(null, '文件已保存', 'success');
+      return true;
+    } catch (err) {
+      if (err?.name === 'AbortError') return false;
+    }
+  }
+
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+  showToast(null, '文件已下载', 'success');
+  return true;
+}
+
+async function handleDownloadDesignSpec() {
+  const content = buildSemanticDesignSpecMarkdown(semanticResult.value);
+  await saveTextFile({
+    content,
+    fileName: `${getSpecBaseName()}.md`,
+    dialogTitle: '保存 Markdown 文档',
+    filterName: 'Markdown 文档',
+    extensions: ['md'],
+    mimeType: 'text/markdown;charset=utf-8'
+  });
+}
+
+const SCREENSHOT_OUTER_PADDING = 24;
+
+function getScreenshotScale(contentWidth, contentHeight) {
+  const MAX_CANVAS_SIDE = 8192;
+  const paddedWidth = contentWidth + SCREENSHOT_OUTER_PADDING * 2;
+  const paddedHeight = contentHeight + SCREENSHOT_OUTER_PADDING * 2;
+  const preferred = Math.min(Math.max(window.devicePixelRatio, 2), 3);
+  const limitByWidth = MAX_CANVAS_SIDE / Math.max(paddedWidth, 1);
+  const limitByHeight = MAX_CANVAS_SIDE / Math.max(paddedHeight, 1);
+  return Math.max(1, Math.min(preferred, limitByWidth, limitByHeight));
+}
+
+function composeScreenshotWithPadding(sourceCanvas, backgroundColor, scale) {
+  const pad = SCREENSHOT_OUTER_PADDING * scale;
+  const output = document.createElement('canvas');
+  output.width = sourceCanvas.width + pad * 2;
+  output.height = sourceCanvas.height + pad * 2;
+
+  const ctx = output.getContext('2d');
+  if (!ctx) return sourceCanvas;
+
+  ctx.fillStyle = backgroundColor;
+  ctx.fillRect(0, 0, output.width, output.height);
+  ctx.drawImage(sourceCanvas, pad, pad);
+  return output;
+}
+
+function prepareScreenshotClone(_doc, clonedEl) {
+  const nodes = [clonedEl];
+  let node = clonedEl.parentElement;
+  while (node && node !== _doc.body) {
+    nodes.push(node);
+    node = node.parentElement;
+  }
+  nodes.forEach((item) => {
+    item.style.overflow = 'visible';
+    item.style.maxHeight = 'none';
+    item.style.height = 'auto';
+    item.style.transform = 'none';
+    item.style.animation = 'none';
+    item.style.opacity = '1';
+  });
+}
+
+async function handleSaveScreenshot() {
+  await nextTick();
+
+  const root = semanticPreviewContentRef.value;
+  const el = root?.querySelector('.design-spec') || root;
+  if (!el) return;
+
+  const contentWidth = Math.ceil(el.scrollWidth || el.clientWidth);
+  const contentHeight = Math.ceil(el.scrollHeight || el.clientHeight);
+  if (!contentWidth || !contentHeight) {
+    showToast(null, '截图失败，预览内容为空', 'warning');
+    return;
+  }
+
+  const scale = getScreenshotScale(contentWidth, contentHeight);
+  const backgroundColor = isDarkTheme() ? '#383838' : '#F9F9F9';
+
+  try {
+    const canvas = await html2canvas(el, {
+      backgroundColor,
+      scale,
+      useCORS: true,
+      logging: false,
+      onclone: prepareScreenshotClone
+    });
+
+    if (!canvas.width || !canvas.height) {
+      showToast(null, '截图失败，请重试', 'warning');
+      return;
+    }
+
+    const outputCanvas = composeScreenshotWithPadding(canvas, backgroundColor, scale);
+
+    outputCanvas.toBlob((blob) => {
+      if (!blob) {
+        showToast(null, '截图失败，请重试', 'warning');
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `${getSpecBaseName()}-${Date.now()}.png`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast(null, '预览截图已保存', 'success');
+    }, 'image/png', 1);
+  } catch {
+    showToast(null, '截图失败，请重试', 'warning');
+  }
+}
+function getMoodValue() {
+  if (moodIsCustom.value) return customMoodText.value.trim();
+  return moodOptions.find((item) => item.key === selectedMood.value)?.label || '';
+}
+function getIndustryValue() {
+  if (industryIsCustom.value) return customIndustryText.value.trim();
+  return industryOptions.find((item) => item.key === selectedIndustry.value)?.label || '';
+}
+function handleMoodBackToPreset() {
+  moodIsCustom.value = false;
+  if (selectedMood.value === CUSTOM_OPTION) selectedMood.value = 'cool';
+}
+function handleIndustryBackToPreset() {
+  industryIsCustom.value = false;
+  if (selectedIndustry.value === CUSTOM_OPTION) selectedIndustry.value = 'tech';
+}
+
+watch(selectedMood, (val) => {
+  if (val === CUSTOM_OPTION) moodIsCustom.value = true;
+});
+watch(selectedIndustry, (val) => {
+  if (val === CUSTOM_OPTION) industryIsCustom.value = true;
+});
+
+async function handleGenerateSemantic() {
+  if (isGenerating.value) return;
+
+  if (!window.utools?.ai) {
+    showToast(null, '请在 uTools 环境中使用 AI 配色功能', 'warning');
+    return;
+  }
+
+  const mood = getMoodValue();
+  const industry = getIndustryValue();
+  if (!mood) {
+    showToast(null, moodIsCustom.value ? '请输入自定义情绪调性' : '请选择情绪调性', 'warning');
+    return;
+  }
+  if (!industry) {
+    showToast(null, industryIsCustom.value ? '请输入自定义行业场景' : '请选择行业场景', 'warning');
+    return;
+  }
+
+  semanticAiRequest?.abort?.();
+  isGenerating.value = true;
+  semanticResult.value = null;
+
+  let accumulated = '';
+  try {
+    const messages = buildSemanticAiMessages({
+      mood,
+      industry,
+      keywords: semanticKeywords.value.trim()
+    });
+
+    semanticAiRequest = window.utools.ai({ messages }, (chunk) => {
+      if (chunk?.content) accumulated += chunk.content;
+    });
+    await semanticAiRequest;
+
+    semanticResult.value = parseSemanticAiResponse(accumulated);
+    isGenerating.value = false;
+  } catch (err) {
+    if (err?.name !== 'AbortError') {
+      showToast(null, 'AI 配色生成失败，请重试', 'error');
+    }
+    isGenerating.value = false;
+  } finally {
+    semanticAiRequest = null;
+  }
 }
 function generateMonochrome() {
   const rgb = parseColor(monoColor.value);
@@ -232,13 +459,21 @@ function copyValue(value, label) {
 }
 
 onMounted(() => {
-  generateSemantic();
   generateMonochrome();
   generateUnique();
+});
+
+onUnmounted(() => {
+  semanticAiRequest?.abort?.();
 });
 </script>
 
 <template>
+  <!-- 页头左侧： AI 配色说明 -->
+  <Teleport v-if="activeTab === 'semantic'" to="#page-header-leading-slot">
+    <span class="semantic-header-desc">{{ SEMANTIC_HEADER_DESC }}</span>
+  </Teleport>
+
   <!-- 页头右侧：专业模式模块切换 -->
   <Teleport to="#intelligent-color-matching-header-slot">
     <Selector
@@ -252,42 +487,116 @@ onMounted(() => {
   </Teleport>
 
   <div class="advanced-mode">
-    <section v-if="activeTab === 'semantic'" class="panel">
-      <div class="panel-header">
-        <h3 class="panel-title">语义 AI 配色</h3>
-        <span class="panel-sub">输入关键词、行业风格或情绪调性，一键生成整套配色方案</span>
-      </div>
-
-      <div class="semantic-input-row">
-        <Selector v-model="selectedMood" :block="false" :flex="true">
-          <option value="">请选择情绪调性</option>
-          <option v-for="m in moodOptions" :key="m.key" :value="m.key">{{ m.label }}</option>
-        </Selector>
-        <Selector v-model="selectedIndustry" :block="false" :flex="true">
-          <option value="">请选择行业场景</option>
-          <option v-for="i in industryOptions" :key="i.key" :value="i.key">{{ i.label }}</option>
-        </Selector>
-        <button class="primary-btn" @click="generateSemantic">生成配色</button>
-      </div>
-
-      <div v-if="semanticResult" class="semantic-result">
-        <div class="result-title">{{ semanticResult.name }}</div>
-        <div class="result-desc">{{ semanticResult.description }}</div>
-        <div class="color-grid-5">
-          <div
-            v-for="(c, idx) in semanticResult.colors"
-            :key="c.name"
-            class="color-card"
-            :style="{ background: c.color }"
-          >
-            <div class="color-card-text" :style="{ color: getContrastColor(c.color) }">
-              <div class="color-card-name">{{ c.name }}</div>
-              <div class="color-card-hex">{{ c.color }}</div>
+    <section v-if="activeTab === 'semantic'" class="semantic-panel">
+      <div class="semantic-layout">
+        <!-- 场景区（左侧） -->
+        <div class="semantic-column semantic-column--scene">
+          <h3 class="semantic-column-title">场景</h3>
+          <div class="semantic-input">
+            <div class="semantic-input-block">
+              <label class="semantic-input-label">情绪调性</label>
+              <template v-if="moodIsCustom">
+                <Input
+                  v-model="customMoodText"
+                  placeholder="请输入自定义情绪调性"
+                  :disabled="isGenerating"
+                />
+                <button
+                  type="button"
+                  class="custom-back-link"
+                  :disabled="isGenerating"
+                  @click="handleMoodBackToPreset"
+                >选择预设</button>
+              </template>
+              <Selector v-else v-model="selectedMood" :block="true" :disabled="isGenerating">
+                <option value="">请选择情绪调性</option>
+                <option v-for="m in moodOptions" :key="m.key" :value="m.key">{{ m.label }}</option>
+                <option :value="CUSTOM_OPTION">自定义</option>
+              </Selector>
             </div>
-            <button class="copy-btn-sm" @click="copyValue(c.color, c.name)">复制</button>
+            <div class="semantic-input-block">
+              <label class="semantic-input-label">行业场景</label>
+              <template v-if="industryIsCustom">
+                <Input
+                  v-model="customIndustryText"
+                  placeholder="请输入自定义行业场景"
+                  :disabled="isGenerating"
+                />
+                <button
+                  type="button"
+                  class="custom-back-link"
+                  :disabled="isGenerating"
+                  @click="handleIndustryBackToPreset"
+                >选择预设</button>
+              </template>
+              <Selector v-else v-model="selectedIndustry" :block="true" :disabled="isGenerating">
+                <option value="">请选择行业场景</option>
+                <option v-for="i in industryOptions" :key="i.key" :value="i.key">{{ i.label }}</option>
+                <option :value="CUSTOM_OPTION">自定义</option>
+              </Selector>
+            </div>
+            <div class="semantic-input-block">
+              <label class="semantic-input-label">补充关键词</label>
+              <Textarea
+                v-model="semanticKeywords"
+                placeholder="如：B 端后台、简约、高对比度…"
+                :rows="3"
+                resize="vertical"
+                :disabled="isGenerating"
+              />
+            </div>
+            <!-- 操作区 -->
+            <div class="semantic-action-row">
+              <button
+                class="primary-btn semantic-generate-btn"
+                :disabled="isGenerating"
+                @click="handleGenerateSemantic"
+              >
+                {{ isGenerating ? '生成中…' : '生成配色' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 预览区（右侧） -->
+        <div class="semantic-column semantic-column--preview">
+          <div class="semantic-column-head">
+            <h3 class="semantic-column-title">预览</h3>
+            <div v-if="showPreviewActions" class="semantic-preview-toolbar">
+              <button
+                type="button"
+                class="semantic-preview-action"
+                @click="handleSaveScreenshot"
+              >保存截图</button>
+              <button
+                type="button"
+                class="semantic-preview-action"
+                @click="handleDownloadDesignSpec"
+              >下载文档</button>
+            </div>
+          </div>
+          <div class="semantic-preview">
+            <div v-if="!semanticResult" class="semantic-preview-empty">
+              <span class="iconfont icon-Areality-AIMode semantic-preview-empty-icon"></span>
+              <p class="semantic-preview-empty-title">配色预览区</p>
+              <p class="semantic-preview-empty-desc">在左侧填写配色需求并点击「生成配色」，UI 设计规范将在此展示</p>
+            </div>
+
+            <div
+              v-else
+              ref="semanticPreviewContentRef"
+              class="semantic-preview-content"
+            >
+              <SemanticDesignSpecPreview
+                class="semantic-spec-preview"
+                :spec="semanticResult"
+              />
+            </div>
           </div>
         </div>
       </div>
+
+      <Loading :visible="isGenerating" text="AI 正在生成配色方案…" />
     </section>
 
     <section v-if="activeTab === 'monochrome'" class="panel">
@@ -494,7 +803,169 @@ onMounted(() => {
   border: 1px solid var(--accent); border-radius: var(--radius-md);
   font-size: 13px; font-weight: 600; cursor: pointer;
   transition: all 0.15s ease;
-  &:hover { opacity: 0.9; }
+  &:hover:not(:disabled) { opacity: 0.9; }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+}
+
+.semantic-panel {
+  position: relative;
+  min-width: 0;
+}
+.semantic-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  min-height: 360px;
+}
+.semantic-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.semantic-column-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 28px;
+}
+.semantic-column-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+.semantic-preview {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  max-height: calc(100vh - 56px - 36px - 80px);
+  overflow-y: auto;
+}
+.semantic-preview-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+.semantic-preview-action {
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--accent);
+  cursor: pointer;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+  &:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+  }
+}
+.semantic-preview-content {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .semantic-column-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .semantic-preview-toolbar {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 12px;
+  }
+}
+
+.semantic-spec-preview {
+  animation: semanticSpecReveal 0.35s ease both;
+}
+@keyframes semanticSpecReveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.semantic-preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  text-align: center;
+  padding: 24px;
+}
+.semantic-preview-empty-icon {
+  font-size: 36px;
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+}
+.semantic-preview-empty-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.semantic-preview-empty-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  max-width: 280px;
+  line-height: 1.6;
+}
+.semantic-input {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+}
+.semantic-action-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+}
+.semantic-input-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.semantic-input-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.custom-back-link {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+  &:hover:not(:disabled) { text-decoration: underline; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+.semantic-generate-btn {
+  width: 100%;
+  padding: 10px 18px;
 }
 
 .semantic-input-row, .mono-input-row, .unique-input-row {
@@ -593,6 +1064,7 @@ onMounted(() => {
 .avoid-section { margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--border-primary); }
 
 @media (max-width: 1024px) {
+  .semantic-layout { grid-template-columns: 1fr; }
   .color-grid-5, .color-grid-4, .color-grid-3, .scenario-grid { grid-template-columns: repeat(2, 1fr); }
   .color-grid-9 { grid-template-columns: repeat(5, 1fr); }
 }

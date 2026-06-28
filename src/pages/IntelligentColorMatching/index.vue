@@ -1,99 +1,42 @@
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import ChatMode from './ChatMode.vue';
-import AdvancedMode from './AdvancedMode.vue';
-import ChatHistoryDrawer from './ChatHistoryDrawer.vue';
+import { ref, provide } from 'vue';
+import { useRoute } from 'vue-router';
 
 const route = useRoute();
-const router = useRouter();
-
-const pageMode = ref('chat');
 const chatInSession = ref(false);
-const historyDrawerVisible = ref(false);
-const chatModeRef = ref(null);
 
-onMounted(() => {
-  if (route.query.mode === 'chat') {
-    pageMode.value = 'chat';
-    router.replace({ path: route.path });
-  }
+provide('setIcmChatInSession', (active) => {
+  chatInSession.value = !!active;
 });
-
-function handleSessionActive(active) {
-  chatInSession.value = active;
-}
-
-function handleLoadHistory(session) {
-  chatModeRef.value?.loadSession(session);
-}
-
-function openHistoryDrawer() {
-  historyDrawerVisible.value = true;
-}
-
-function handleNewSession() {
-  chatModeRef.value?.resetToHome?.();
-}
 </script>
 
 <template>
   <div class="module-intelligent">
     <!-- 页头左侧：模式切换 -->
     <Teleport to="#page-header-leading-slot">
-      <div v-if="!(pageMode === 'chat' && chatInSession)" class="mode-row">
-        <button
+      <div v-if="!chatInSession" class="mode-row">
+        <router-link
+          :to="{ name: 'BozaiChat' }"
           class="mode-btn"
-          :class="{ active: pageMode === 'chat' }"
+          :class="{ active: route.name === 'BozaiChat' }"
           title="智能模式"
-          @click="pageMode = 'chat'"
         >
           <span class="iconfont icon-Areality-AIMode mode-btn-icon"></span>
-        </button>
-        <button
+        </router-link>
+        <router-link
+          :to="{ name: 'Profession' }"
           class="mode-btn"
-          :class="{ active: pageMode === 'advanced' }"
+          :class="{ active: route.name === 'Profession' }"
           title="专业模式"
-          @click="pageMode = 'advanced'"
         >
           <span class="iconfont icon-Areality-ProfessionalMode mode-btn-icon"></span>
-        </button>
+        </router-link>
       </div>
     </Teleport>
 
-    <!-- 页头右侧：历史会话 / 新会话 -->
-    <Teleport to="#intelligent-color-matching-header-slot">
-      <div class="icm-header-tools">
-        <button
-          v-if="pageMode === 'chat' && chatInSession"
-          class="icm-new-session-btn"
-          title="新会话"
-          @click="handleNewSession"
-        >
-          新会话
-        </button>
-        <button
-          v-if="pageMode === 'chat' && !chatInSession"
-          class="icm-history-btn"
-          title="历史会话"
-          @click="openHistoryDrawer"
-        >
-          <span class="iconfont icon-Areality-HistoricalRecord"></span>
-        </button>
-      </div>
-    </Teleport>
-
-    <ChatMode
-      v-if="pageMode === 'chat'"
-      ref="chatModeRef"
-      @session-active="handleSessionActive"
-    />
-    <AdvancedMode v-else />
-
-    <ChatHistoryDrawer
-      v-model:visible="historyDrawerVisible"
-      @select="handleLoadHistory"
-    />
+    <div class="module-intelligent-body">
+      <router-view />
+    </div>
   </div>
 </template>
 
@@ -108,6 +51,12 @@ function handleNewSession() {
   margin: -20px;
   padding: 0 20px;
   box-sizing: border-box;
+}
+.module-intelligent-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 </style>
 
@@ -167,6 +116,17 @@ function handleNewSession() {
   padding: 2px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-primary);
+  flex-shrink: 0;
+}
+.page-header-leading-slot .semantic-header-desc {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: min(480px, 38vw);
+  min-width: 0;
 }
 .page-header-leading-slot .mode-btn {
   display: inline-flex;
@@ -182,6 +142,7 @@ function handleNewSession() {
   border-radius: var(--radius-sm);
   transition: all 0.15s ease;
   flex-shrink: 0;
+  text-decoration: none;
   .mode-btn-icon {
     font-size: 13px;
     line-height: 1;

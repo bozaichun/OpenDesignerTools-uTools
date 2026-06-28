@@ -186,6 +186,8 @@ export const TAB_BY_ROUTE = {
   '/AccessibilityCheck/GovDetail': 'AccessibilityCheck',
   '/AccessibilityCheck/TextDetail': 'AccessibilityCheck',
   '/IntelligentColorMatching': 'IntelligentColorMatching',
+  '/IntelligentColorMatching/BozaiChat': 'IntelligentColorMatching',
+  '/IntelligentColorMatching/Profession': 'IntelligentColorMatching',
   '/PaletteManager': 'PaletteManager',
   '/PaletteManager/viewGroupingDetail': 'PaletteManager',
   '/PrintTools': 'PrintTools',

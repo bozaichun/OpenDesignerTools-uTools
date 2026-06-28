@@ -309,7 +309,7 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
         </p>
         <div class="welcome-examples">
           <button class="example-chip" @click="userInput = '帮我设计一套科技互联网、冷静专业风格的完整配色方案'">
-            语义 AI 配色
+            AI配色
           </button>
           <button class="example-chip" @click="userInput = '主色 #1677FF 如何延展出 9 阶色卡和邻近色？'">
             单色延展建议
