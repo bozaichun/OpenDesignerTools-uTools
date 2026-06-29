@@ -1,8 +1,8 @@
 @font-face {
   font-family: "iconfont"; /* Project id 4020260 */
-  src: url('iconfont.woff2?t=1782733490647') format('woff2'),
-       url('iconfont.woff?t=1782733490647') format('woff'),
-       url('iconfont.ttf?t=1782733490647') format('truetype');
+  src: url('iconfont.woff2?t=1782740846001') format('woff2'),
+       url('iconfont.woff?t=1782740846001') format('woff'),
+       url('iconfont.ttf?t=1782740846001') format('truetype');
 }
 
 .iconfont {
@@ -19,6 +19,14 @@
 
 .icon-Areality-PrintingTool:before {
   content: "\ec0c";
+}
+
+.icon-Color:before {
+  content: "\ec21";
+}
+
+.icon-AddColorSwatch:before {
+  content: "\ec22";
 }
 
 .icon-Areality-Color:before {
@@ -45,6 +53,14 @@
   content: "\ec09";
 }
 
+.icon-Areality-Success:before {
+  content: "\ec27";
+}
+
+.icon-Areality-Warning:before {
+  content: "\ec28";
+}
+
 .icon-ViewDetails:before {
   content: "\ec1e";
 }
@@ -55,6 +71,10 @@
 
 .icon-UseImmediately:before {
   content: "\ec16";
+}
+
+.icon-Areality-NoContentAvailable:before {
+  content: "\ec23";
 }
 
 .icon-Areality-ColorMixing:before {
@@ -81,12 +101,24 @@
   content: "\ebfa";
 }
 
+.icon-Areality-Project:before {
+  content: "\ec24";
+}
+
 .icon-Copy:before {
   content: "\ebfb";
 }
 
+.icon-Areality-Brand:before {
+  content: "\ec25";
+}
+
 .icon-Fold:before {
   content: "\ebfc";
+}
+
+.icon-Areality-Individual:before {
+  content: "\ec26";
 }
 
 .icon-Expand:before {

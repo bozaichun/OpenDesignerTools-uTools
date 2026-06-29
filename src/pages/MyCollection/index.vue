@@ -5,16 +5,16 @@ import Dialog from '../../components/Dialog.vue';
 import Input from '../../components/Input.vue';
 import Selector from '../../components/Selector.vue';
 import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import Banner from '../../components/Banner.vue';
 import LayoutContainer from '../../components/LayoutContainer.vue';
 import GridLayout from '../../components/GridLayout.vue';
 import { COLOR_GROUPS, inferColorGroup } from '../../data/presetColors';
 import {
-  getAllFavorites,
-  removeFavorite
+  getAllFavorites
 } from '../../utils/favoriteStorage';
 import { loadPalettes, savePalettes } from '../PaletteManager/paletteStorage.js';
-import { copyToClipboard, showToast, parseColor, getContrastColor as gcc } from '../../utils/colorUtils';
+import { showToast, parseColor, getContrastColor as gcc } from '../../utils/colorUtils';
 import { downloadPaletteCard } from '../../utils/paletteCard';
 
 const router = useRouter();
@@ -195,25 +195,10 @@ function openColorModal(item) {
   modalVisible.value = true;
 }
 
-function copyHex(hex) {
-  copyToClipboard(hex);
-  showToast(null, '已复制 ' + hex, 'success');
-}
-
 function getContrastColor(hex) {
   const rgb = parseColor(hex);
   if (!rgb) return '#000000';
   return gcc(rgb);
-}
-
-function handleUnfavorite(item) {
-  const result = removeFavorite(item.hex);
-  if (!result.ok) {
-    showToast(null, result.message || '取消收藏失败', 'error');
-    return;
-  }
-  showToast(null, '已取消收藏', 'success');
-  loadFavorites();
 }
 
 function openAddToPaletteDialog(item) {
@@ -362,16 +347,11 @@ onUnmounted(() => {
               <button class="action-btn" @click="openAddToPaletteDialog(item)">
                 添加到色板
               </button>
-              <button
-                class="card-copy-btn"
-                :title="'复制 ' + item.hex"
-                @click="copyHex(item.hex)"
-              >
-                <span class="iconfont icon-Copy"></span>
-              </button>
-              <button class="action-btn danger" @click="handleUnfavorite(item)">
-                取消收藏
-              </button>
+              <ColorActionGroup
+                :value="item.hex"
+                :copy-label="item.name || item.hex"
+                :favorite-name="item.name || item.hex"
+              />
             </div>
 
             <button class="view-color-btn" @click.stop="openColorModal(item)">
@@ -628,32 +608,46 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 8px;
-}
 
-.card-copy-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  flex-shrink: 0;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-
-  .iconfont {
-    font-size: 12px;
-    line-height: 1;
+  :deep(.color-action-group) {
+    flex-shrink: 0;
   }
 
-  &:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--text-invert);
+  :deep(.copy-icon-btn),
+  :deep(.color-action-group__favorite.favorite-btn) {
+    width: 28px;
+    height: 28px;
+  }
+
+  :deep(.color-action-group__favorite.favorite-btn) {
+    padding: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+
+    .favorite-icon {
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    &:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--text-invert);
+    }
+
+    &.active {
+      color: #faad14;
+      background: var(--bg-card);
+      border-color: var(--border-primary);
+    }
+
+    &.active:hover {
+      color: #d48806;
+      background: var(--bg-card);
+      border-color: var(--border-primary);
+    }
   }
 }
 
@@ -672,12 +666,6 @@ onUnmounted(() => {
   &:hover {
     background: var(--accent);
     border-color: var(--accent);
-    color: var(--text-invert);
-  }
-
-  &.danger:hover {
-    background: var(--error);
-    border-color: var(--error);
     color: var(--text-invert);
   }
 }
@@ -785,7 +773,7 @@ onUnmounted(() => {
 .favorites-multi-count {
   font-size: 12px;
   font-weight: 500;
-  color: var(--error);
+  color: var(--primary);
   white-space: nowrap;
 }
 

@@ -125,7 +125,7 @@ function openNewGroupDialog() {
 function openEditGroupDialog(row) {
   editingGroupId.value = row.id;
   newGroupName.value = row.name;
-  newGroupType.value = row.type === 'personal' ? 'project' : row.type;
+  newGroupType.value = row.type || 'project';
   dialogNewGroup.value = true;
 }
 function closeGroupDialog() {
@@ -313,7 +313,7 @@ onUnmounted(() => {
   <div class="module-palette">
     <Banner
       title="统一管理品牌色与项目色板"
-      description="支持项目 / 品牌两类分组，自动查重合并、一键生成代码并与团队共享色板"
+      description="支持个人 / 项目 / 品牌三类分组，自动查重合并、一键生成代码并与团队共享色板"
       mode="url"
       image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/ColorPaletteManagement.png"
     />
@@ -386,6 +386,7 @@ onUnmounted(() => {
         <div class="form-field">
           <label class="form-label">分组类型</label>
           <Selector v-model="newGroupType">
+            <option value="personal">个人</option>
             <option value="project">项目</option>
             <option value="brand">品牌</option>
           </Selector>
@@ -696,7 +697,54 @@ onUnmounted(() => {
 }
 
 .dedup-slider-label { font-size: 13px; color: var(--text-primary); }
-.dedup-slider { width: 100%; }
+
+.dedup-slider {
+  width: 100%;
+  height: 6px;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 999px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-muted);
+  outline: none;
+  cursor: pointer;
+
+  &::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: transparent;
+  }
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -6px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    background: var(--accent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+  }
+
+  &::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--bg-muted);
+    border: none;
+  }
+
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    background: var(--accent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+  }
+}
 
 .result-summary {
   padding: 12px 16px;

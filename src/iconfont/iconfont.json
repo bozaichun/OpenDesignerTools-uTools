@@ -20,6 +20,20 @@
       "unicode_decimal": 60428
     },
     {
+      "icon_id": "47959476",
+      "name": "颜色",
+      "font_class": "Color",
+      "unicode": "ec21",
+      "unicode_decimal": 60449
+    },
+    {
+      "icon_id": "47959478",
+      "name": "添加色板",
+      "font_class": "AddColorSwatch",
+      "unicode": "ec22",
+      "unicode_decimal": 60450
+    },
+    {
       "icon_id": "47879867",
       "name": "色彩",
       "font_class": "Areality-Color",
@@ -62,6 +76,20 @@
       "unicode_decimal": 60425
     },
     {
+      "icon_id": "47959532",
+      "name": "成功",
+      "font_class": "Areality-Success",
+      "unicode": "ec27",
+      "unicode_decimal": 60455
+    },
+    {
+      "icon_id": "47959535",
+      "name": "警告",
+      "font_class": "Areality-Warning",
+      "unicode": "ec28",
+      "unicode_decimal": 60456
+    },
+    {
       "icon_id": "47959268",
       "name": "查看详情",
       "font_class": "ViewDetails",
@@ -81,6 +109,13 @@
       "font_class": "UseImmediately",
       "unicode": "ec16",
       "unicode_decimal": 60438
+    },
+    {
+      "icon_id": "47959502",
+      "name": "暂无内容",
+      "font_class": "Areality-NoContentAvailable",
+      "unicode": "ec23",
+      "unicode_decimal": 60451
     },
     {
       "icon_id": "47888662",
@@ -125,6 +160,13 @@
       "unicode_decimal": 60410
     },
     {
+      "icon_id": "47959506",
+      "name": "项目",
+      "font_class": "Areality-Project",
+      "unicode": "ec24",
+      "unicode_decimal": 60452
+    },
+    {
       "icon_id": "47879822",
       "name": "复制",
       "font_class": "Copy",
@@ -132,11 +174,25 @@
       "unicode_decimal": 60411
     },
     {
+      "icon_id": "47959507",
+      "name": "品牌",
+      "font_class": "Areality-Brand",
+      "unicode": "ec25",
+      "unicode_decimal": 60453
+    },
+    {
       "icon_id": "47879823",
       "name": "收起",
       "font_class": "Fold",
       "unicode": "ebfc",
       "unicode_decimal": 60412
+    },
+    {
+      "icon_id": "47959508",
+      "name": "个人",
+      "font_class": "Areality-Individual",
+      "unicode": "ec26",
+      "unicode_decimal": 60454
     },
     {
       "icon_id": "47879824",

@@ -6,8 +6,7 @@ import Input from '../../components/Input.vue';
 import Banner from '../../components/Banner.vue';
 import {
   detectColorFormat, parseColor, formatRGBA, formatHSLA,
-  formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
-  copyToClipboard, showToast
+  formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV
 } from '../../utils/colorUtils';
 
 const clearHeaderActions = inject('clearHeaderActions');
@@ -173,8 +172,7 @@ onUnmounted(() => {
               :value="inputs.hex"
               copy-label="HEX"
               :favorite-name="inputs.hex"
-              variant="default"
-              class="input-action-group"
+              variant="input"
             />
           </div>
 
@@ -193,8 +191,7 @@ onUnmounted(() => {
               :value="inputs.rgb"
               copy-label="RGB"
               :show-favorite="false"
-              variant="default"
-              class="input-action-group"
+              variant="input"
             />
           </div>
 
@@ -213,8 +210,7 @@ onUnmounted(() => {
               :value="inputs.hsl"
               copy-label="HSL"
               :show-favorite="false"
-              variant="default"
-              class="input-action-group"
+              variant="input"
             />
           </div>
 
@@ -233,8 +229,7 @@ onUnmounted(() => {
               :value="inputs.cmyk"
               copy-label="CMYK"
               :show-favorite="false"
-              variant="default"
-              class="input-action-group"
+              variant="input"
             />
           </div>
 
@@ -253,8 +248,7 @@ onUnmounted(() => {
               :value="inputs.hsv"
               copy-label="HSV"
               :show-favorite="false"
-              variant="default"
-              class="input-action-group"
+              variant="input"
             />
           </div>
 
@@ -365,22 +359,6 @@ onUnmounted(() => {
   :deep(.color-picker) {
     flex: 1;
     min-width: 0;
-  }
-}
-
-.input-action-group {
-  flex-shrink: 0;
-
-  :deep(.copy-icon-btn),
-  :deep(.color-action-group__favorite.favorite-btn) {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-sm);
-
-    .iconfont,
-    .favorite-icon {
-      font-size: 16px;
-    }
   }
 }
 
@@ -513,21 +491,6 @@ onUnmounted(() => {
   .col-preview .color-preview {
     aspect-ratio: 3 / 1;
     width: 100%;
-  }
-}
-
-@media (max-width: 640px) {
-  .input-action-group {
-    :deep(.copy-icon-btn),
-    :deep(.color-action-group__favorite.favorite-btn) {
-      width: 36px;
-      height: 36px;
-
-      .iconfont,
-      .favorite-icon {
-        font-size: 14px;
-      }
-    }
   }
 }
 </style>

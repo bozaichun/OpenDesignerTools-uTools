@@ -55,7 +55,7 @@ onUnmounted(() => {
   >
     <span
       class="iconfont"
-      :class="copied ? 'icon-Success' : 'icon-Copy'"
+      :class="copied ? 'icon-Check' : 'icon-Copy'"
     ></span>
   </button>
 </template>

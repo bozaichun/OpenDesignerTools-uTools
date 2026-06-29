@@ -17,11 +17,11 @@ const props = defineProps({
     type: String,
     default: ''
   },
-  /** default：卡片/表格；on-color：色块背景上 */
+  /** default：卡片/表格；on-color：色块背景上；input：表单输入行；compact：紧凑 */
   variant: {
     type: String,
     default: 'default',
-    validator: (value) => ['default', 'on-color', 'compact'].includes(value)
+    validator: (value) => ['default', 'on-color', 'compact', 'input'].includes(value)
   },
   showFavorite: {
     type: Boolean,
@@ -155,6 +155,56 @@ function resolvedFavoriteName() {
     color: #d48806;
     background: var(--bg-card);
     border-color: var(--border-primary);
+  }
+}
+
+.color-action-group--input {
+  :deep(.copy-icon-btn),
+  :deep(.color-action-group__favorite.favorite-btn) {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-sm);
+
+    .iconfont,
+    .favorite-icon {
+      font-size: 12px;
+    }
+  }
+
+  :deep(.color-action-group__favorite.favorite-btn) {
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+  }
+
+  :deep(.color-action-group__favorite.favorite-btn:hover) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-invert);
+  }
+
+  :deep(.color-action-group__favorite.favorite-btn.active) {
+    color: #faad14;
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+  }
+
+  :deep(.color-action-group__favorite.favorite-btn.active:hover) {
+    color: #d48806;
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+  }
+
+  @media (max-width: 640px) {
+    :deep(.copy-icon-btn),
+    :deep(.color-action-group__favorite.favorite-btn) {
+      width: 30px;
+      height: 30px;
+
+      .iconfont,
+      .favorite-icon {
+        font-size: 11px;
+      }
+    }
   }
 }
 </style>

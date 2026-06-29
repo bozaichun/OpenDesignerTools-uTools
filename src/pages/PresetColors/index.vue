@@ -665,7 +665,7 @@ onUnmounted(() => {
 .preset-multi-count {
   font-size: 12px;
   font-weight: 500;
-  color: var(--error);
+  color: var(--primary);
   white-space: nowrap;
 }
 
