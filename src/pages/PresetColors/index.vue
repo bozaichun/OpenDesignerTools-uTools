@@ -248,7 +248,7 @@ onUnmounted(() => {
           :class="{ checked: isSelected(color.name) }"
           aria-hidden="true"
         >
-          <span v-if="isSelected(color.name)" class="iconfont icon-Success"></span>
+          <span v-if="isSelected(color.name)" class="iconfont icon-Check"></span>
         </span>
         <div class="group-tag">{{ color.group }}</div>
         <div class="swatch-row">
@@ -295,7 +295,7 @@ onUnmounted(() => {
               indeterminate: isAllFilteredIndeterminate
             }"
           >
-            <span v-if="isAllFilteredSelected" class="iconfont icon-Success"></span>
+            <span v-if="isAllFilteredSelected" class="iconfont icon-Check"></span>
             <span v-else-if="isAllFilteredIndeterminate" class="preset-check-indeterminate"></span>
           </span>
           全选

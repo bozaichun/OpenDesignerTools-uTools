@@ -1,6 +1,8 @@
 // W3C 标准预设颜色库（140+ 颜色）
 // 按色系分组：红、橙、黄、绿、蓝、紫、黑白灰
 
+import { parseColor, rgbToHsl } from '../utils/colorUtils';
+
 export const PRESET_COLORS = [
   { name: 'indianred', hex: '#CD5C5C', group: '红' },
   { name: 'lightcoral', hex: '#F08080', group: '红' },
@@ -142,6 +144,20 @@ export const PRESET_COLORS = [
 
 // 色系分组列表
 export const COLOR_GROUPS = ['红', '橙', '黄', '绿', '蓝', '紫', '黑白灰']
+
+/** 根据 HEX 推断所属色系（用于收藏筛选等） */
+export function inferColorGroup(hex) {
+  const rgb = parseColor(hex);
+  if (!rgb) return null;
+  const { h, s } = rgbToHsl(rgb);
+  if (s < 12) return '黑白灰';
+  if (h < 15 || h >= 345) return '红';
+  if (h < 45) return '橙';
+  if (h < 75) return '黄';
+  if (h < 165) return '绿';
+  if (h < 260) return '蓝';
+  return '紫';
+}
 
 // 去重（按 name 去重，保留第一次出现）
 export function getUniquePresets() {

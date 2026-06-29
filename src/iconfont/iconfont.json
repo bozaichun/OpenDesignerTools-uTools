@@ -6,6 +6,13 @@
   "description": "",
   "glyphs": [
     {
+      "icon_id": "47959296",
+      "name": "勾选",
+      "font_class": "Check",
+      "unicode": "ec20",
+      "unicode_decimal": 60448
+    },
+    {
       "icon_id": "47888366",
       "name": "印刷工具",
       "font_class": "Areality-PrintingTool",
@@ -53,6 +60,20 @@
       "font_class": "Areality-ModeSwitching",
       "unicode": "ec09",
       "unicode_decimal": 60425
+    },
+    {
+      "icon_id": "47959268",
+      "name": "查看详情",
+      "font_class": "ViewDetails",
+      "unicode": "ec1e",
+      "unicode_decimal": 60446
+    },
+    {
+      "icon_id": "47959269",
+      "name": "下载",
+      "font_class": "Download",
+      "unicode": "ec1f",
+      "unicode_decimal": 60447
     },
     {
       "icon_id": "47949378",
