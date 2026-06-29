@@ -8,6 +8,7 @@ import {
 import ModuleTitle from '../../components/ModuleTitle.vue';
 import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import Dialog from '../../components/Dialog.vue';
+import DefaultPage from '../../components/DefaultPage.vue';
 import Straw from '../../components/Straw.vue';
 import { openInUBrowser } from '../../utils/ubrowser.js';
 
@@ -508,7 +509,11 @@ onUnmounted(() => {
             title="吸管取色结果"
             subtitle="点击图片任意位置可获取该点颜色值"
           />
-          <div class="picker-result-empty">点击左侧图片开始取色</div>
+          <DefaultPage
+            compact
+            bordered
+            text="点击左侧图片开始取色"
+          />
         </div>
       </div>
 
@@ -668,17 +673,7 @@ onUnmounted(() => {
   margin-top: 0;
 }
 
-.picker-result-empty {
-  padding: 24px;
-  text-align: center;
-  color: var(--text-tertiary);
-  font-size: 14px;
-  background: var(--bg-muted);
-  border: 1px dashed var(--border-primary);
-  border-radius: var(--radius-md);
-}
-
-/* ============ 鍥剧墖棰勮鍖?============ */
+/* ============ 图片预览区 ============ */
 .image-preview-section {
   margin-bottom: 24px;
 }

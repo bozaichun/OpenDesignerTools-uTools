@@ -112,7 +112,12 @@ const isAllFilteredIndeterminate = computed(() => {
 
 function updateHeaderActions() {
   setHeaderActions([
-    { label: '下载色卡', onClick: handleDownloadColorCard }
+    {
+      label: '下载色卡',
+      icon: 'icon-Download',
+      iconOnly: true,
+      onClick: handleDownloadColorCard
+    }
   ]);
 }
 
@@ -243,13 +248,6 @@ onUnmounted(() => {
         :class="{ 'is-selected': isSelected(color.name) }"
         @click="toggleSelect(color.name)"
       >
-        <span
-          class="card-select-btn"
-          :class="{ checked: isSelected(color.name) }"
-          aria-hidden="true"
-        >
-          <span v-if="isSelected(color.name)" class="iconfont icon-Check"></span>
-        </span>
         <div class="group-tag">{{ color.group }}</div>
         <div class="swatch-row">
           <div class="color-swatch" :style="{ background: color.hex }"></div>
@@ -261,16 +259,31 @@ onUnmounted(() => {
 
         <div class="card-action-bar" @click.stop>
           <button
-            class="view-color-btn"
-            @click="openColorModal(color)"
+            type="button"
+            class="card-select-btn"
+            :class="{ checked: isSelected(color.name) }"
+            title="多选"
+            @click="toggleSelect(color.name)"
           >
-            查看颜色值
+            <span v-if="isSelected(color.name)" class="iconfont icon-Check"></span>
           </button>
           <ColorActionGroup
+            variant="card"
             :value="color.hex"
             :copy-label="color.name"
             :favorite-name="color.name"
-          />
+          >
+            <template #prefix>
+              <button
+                type="button"
+                class="color-action-group__extra-btn"
+                title="查看颜色值"
+                @click="openColorModal(color)"
+              >
+                <span class="iconfont icon-ViewDetails"></span>
+              </button>
+            </template>
+          </ColorActionGroup>
         </div>
       </div>
     </GridLayout>
@@ -436,17 +449,15 @@ onUnmounted(() => {
 }
 
 .card-select-btn {
-  position: absolute;
-  top: -6px;
-  left: -6px;
-  z-index: 2;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  flex-shrink: 0;
   border: 1px solid var(--border-primary);
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--bg-card);
   color: var(--text-invert);
-  pointer-events: none;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -455,6 +466,10 @@ onUnmounted(() => {
   .iconfont {
     font-size: 10px;
     line-height: 1;
+  }
+
+  &:hover {
+    border-color: var(--accent);
   }
 
   &.checked {
@@ -516,102 +531,12 @@ onUnmounted(() => {
 .card-action-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
   cursor: default;
 
   :deep(.color-action-group) {
     flex-shrink: 0;
-  }
-}
-
-.view-color-btn {
-  flex: 1;
-  min-width: 0;
-  height: 28px;
-  padding: 0 8px;
-  font-size: 11px;
-  line-height: 1;
-  background: var(--bg-card);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-  font-weight: 500;
-  box-sizing: border-box;
-
-  &:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--text-invert);
-  }
-}
-
-.card-icon-btn {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  flex-shrink: 0;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-
-  .iconfont {
-    font-size: 12px;
-    line-height: 1;
-  }
-
-  &:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--text-invert);
-  }
-}
-
-.card-action-bar :deep(.favorite-btn) {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  flex-shrink: 0;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-
-  .favorite-icon {
-    font-size: 12px;
-    line-height: 1;
-  }
-
-  &:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--text-invert);
-  }
-
-  &.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--text-invert);
-
-    &:hover {
-      background: var(--accent-hover, var(--accent));
-      border-color: var(--accent-hover, var(--accent));
-      color: var(--text-invert);
-    }
   }
 }
 

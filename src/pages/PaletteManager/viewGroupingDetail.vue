@@ -6,6 +6,7 @@ import Input from '../../components/Input.vue';
 import Textarea from '../../components/Textarea.vue';
 import Selector from '../../components/Selector.vue';
 import ColorPicker from '../../components/ColorPicker.vue';
+import DefaultPage from '../../components/DefaultPage.vue';
 import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 import { loadPalettes, savePalettes } from './paletteStorage.js';
 import {
@@ -263,7 +264,12 @@ onUnmounted(() => {
         </div>
         <div v-else class="filter-empty">没有匹配的色值，请调整筛选条件</div>
       </div>
-      <div v-else class="expand-empty">该分组暂无色值，点击右上角「添加色值」开始创建</div>
+      <div v-else class="expand-empty">
+        <DefaultPage
+          compact
+          text="该分组暂无色值，点击右上角「添加色值」开始创建"
+        />
+      </div>
     </template>
 
     <!-- 添加 / 修改色值 -->
@@ -363,8 +369,7 @@ onUnmounted(() => {
 }
 
 .expand-empty {
-  font-size: 13px;
-  color: var(--text-secondary);
+  padding: 20px 12px;
 }
 
 .empty-text {

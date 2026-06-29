@@ -17,11 +17,11 @@ const props = defineProps({
     type: String,
     default: ''
   },
-  /** default：卡片/表格；on-color：色块背景上；input：表单输入行；compact：紧凑 */
+  /** default：卡片/表格；on-color：色块背景上；input：表单输入行；compact：紧凑；card：色卡底部操作栏 */
   variant: {
     type: String,
     default: 'default',
-    validator: (value) => ['default', 'on-color', 'compact', 'input'].includes(value)
+    validator: (value) => ['default', 'on-color', 'compact', 'input', 'card'].includes(value)
   },
   showFavorite: {
     type: Boolean,
@@ -54,6 +54,7 @@ function resolvedFavoriteName() {
       { 'color-action-group--favorite-only': !canFavorite() }
     ]"
   >
+    <slot name="prefix" />
     <FavoriteButton
       v-if="canFavorite()"
       :hex="value"
@@ -143,6 +144,71 @@ function resolvedFavoriteName() {
     background: var(--accent);
     border-color: var(--accent);
     color: var(--text-invert);
+  }
+
+  :deep(.color-action-group__favorite.favorite-btn.active) {
+    color: #faad14;
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+  }
+
+  :deep(.color-action-group__favorite.favorite-btn.active:hover) {
+    color: #d48806;
+    background: var(--bg-card);
+    border-color: var(--border-primary);
+  }
+}
+
+.color-action-group--card {
+  :deep(.copy-icon-btn),
+  :deep(.color-action-group__favorite.favorite-btn),
+  :deep(.color-action-group__extra-btn) {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-primary);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+    .iconfont,
+    .favorite-icon {
+      font-size: 14px;
+      line-height: 1;
+    }
+  }
+
+  :deep(.color-action-group__extra-btn) {
+    &:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--text-invert);
+    }
+  }
+
+  :deep(.copy-icon-btn:hover),
+  :deep(.color-action-group__favorite.favorite-btn:hover) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-invert);
+  }
+
+  :deep(.copy-icon-btn--copied) {
+    background: var(--success-bg);
+    border-color: var(--success);
+    color: var(--success);
+  }
+
+  :deep(.copy-icon-btn--copied:hover) {
+    background: var(--success-bg);
+    border-color: var(--success);
+    color: var(--success);
   }
 
   :deep(.color-action-group__favorite.favorite-btn.active) {

@@ -8,6 +8,7 @@ import Selector from '../../components/Selector.vue';
 import Pagination from '../../components/Pagination.vue';
 import CodeExportPanel from '../../components/CodeExportPanel.vue';
 import Banner from '../../components/Banner.vue';
+import DefaultPage from '../../components/DefaultPage.vue';
 import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 import { loadPalettes, savePalettes as persistPalettes } from './paletteStorage.js';
 
@@ -17,9 +18,11 @@ const clearHeaderActions = inject('clearHeaderActions');
 
 const groups = ref([]);
 const activeGroup = ref(null);
+const selectedGroupIds = ref(new Set());
 const currentPage = ref(1);
 const pageSize = ref(10);
 const tableColumns = [
+  { prop: '_select', label: '', slot: 'select', width: '48px', align: 'center' },
   { prop: 'name', label: '分组名称', slot: 'name', width: '180px' },
   { prop: 'type', label: '分组类型', slot: 'type', width: '100px' },
   { prop: 'swatches', label: '色值预览', slot: 'swatches' },
@@ -31,6 +34,7 @@ const dialogShare = ref(false);
 const shareGroupId = ref(null);
 const dialogDedup = ref(false);
 const dialogDeleteConfirm = ref(false);
+const dialogBatchDeleteConfirm = ref(false);
 const dialogCodeExport = ref(false);
 const codeExportGroupId = ref(null);
 const newGroupName = ref('');
@@ -77,6 +81,18 @@ const paginatedGroups = computed(() => {
   return groups.value.slice(start, start + pageSize.value);
 });
 const maxPage = computed(() => Math.max(1, Math.ceil(groups.value.length / pageSize.value)));
+const selectedCount = computed(() => selectedGroupIds.value.size);
+const multiSelectVisible = computed(() => selectedCount.value > 0);
+const isAllPageSelected = computed(() => {
+  const list = paginatedGroups.value;
+  return list.length > 0 && list.every((group) => selectedGroupIds.value.has(group.id));
+});
+const isAllPageIndeterminate = computed(() => {
+  const list = paginatedGroups.value;
+  if (!list.length) return false;
+  const selectedInPage = list.filter((group) => selectedGroupIds.value.has(group.id)).length;
+  return selectedInPage > 0 && selectedInPage < list.length;
+});
 
 watch(groups, () => {
   if (currentPage.value > maxPage.value) {
@@ -108,9 +124,59 @@ function getContrastColor(hex) {
   if (!rgb) return '#000000';
   return gcc(rgb);
 }
-function getGroupIcon(type) {
-  const icons = { personal: '👤', project: '📁', brand: '🏢' };
-  return icons[type] || '📋';
+function getGroupIconClass(type) {
+  const icons = {
+    personal: 'icon-Areality-Individual',
+    project: 'icon-Areality-Project',
+    brand: 'icon-Areality-Brand'
+  };
+  return icons[type] || 'icon-Areality-Palette';
+}
+function getGroupIconColorClass(type) {
+  const colors = {
+    personal: 'group-icon--personal',
+    project: 'group-icon--project',
+    brand: 'group-icon--brand'
+  };
+  return colors[type] || '';
+}
+function isGroupSelected(id) {
+  return selectedGroupIds.value.has(id);
+}
+function toggleSelectGroup(id) {
+  const next = new Set(selectedGroupIds.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  selectedGroupIds.value = next;
+}
+function toggleSelectAllPage() {
+  if (isAllPageSelected.value) {
+    const next = new Set(selectedGroupIds.value);
+    paginatedGroups.value.forEach((group) => next.delete(group.id));
+    selectedGroupIds.value = next;
+    return;
+  }
+  const next = new Set(selectedGroupIds.value);
+  paginatedGroups.value.forEach((group) => next.add(group.id));
+  selectedGroupIds.value = next;
+}
+function handleCancelMultiSelect() {
+  selectedGroupIds.value = new Set();
+}
+function openBatchDeleteConfirm() {
+  dialogBatchDeleteConfirm.value = true;
+}
+function confirmBatchDeleteGroups() {
+  const ids = new Set(selectedGroupIds.value);
+  if (!ids.size) return;
+  groups.value = groups.value.filter((group) => !ids.has(group.id));
+  if (activeGroup.value && ids.has(activeGroup.value)) {
+    activeGroup.value = groups.value.length > 0 ? groups.value[0].id : null;
+  }
+  selectedGroupIds.value = new Set();
+  dialogBatchDeleteConfirm.value = false;
+  savePalettes();
+  showToast(null, `已删除 ${ids.size} 个分组`, 'success');
 }
 function getGroupTypeLabel(type) {
   const labels = { personal: '个人', project: '项目', brand: '品牌' };
@@ -310,7 +376,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="module-palette">
+  <div class="module-palette" :class="{ 'has-multi-bar': multiSelectVisible }">
+    <div class="palette-main">
     <Banner
       title="统一管理品牌色与项目色板"
       description="支持个人 / 项目 / 品牌三类分组，自动查重合并、一键生成代码并与团队共享色板"
@@ -324,11 +391,30 @@ onUnmounted(() => {
         row-key="id"
         action-label="操作"
         action-width="420px"
-        empty-text="暂无分组，点击右上角「新建分组」创建"
+        empty-text="暂无分组，点击右上角「新增分组」创建"
       >
+        <template #empty>
+          <DefaultPage text="暂无分组，点击右上角「新增分组」创建" />
+        </template>
+
+        <template #select="{ row }">
+          <button
+            type="button"
+            class="row-select-btn"
+            :class="{ checked: isGroupSelected(row.id) }"
+            title="多选"
+            @click.stop="toggleSelectGroup(row.id)"
+          >
+            <span v-if="isGroupSelected(row.id)" class="iconfont icon-Check"></span>
+          </button>
+        </template>
+
         <template #name="{ row }">
           <div class="cell-group-name">
-            <span class="group-icon">{{ getGroupIcon(row.type) }}</span>
+            <span
+              class="iconfont group-icon"
+              :class="[getGroupIconClass(row.type), getGroupIconColorClass(row.type)]"
+            ></span>
             <span>{{ row.name }}</span>
           </div>
         </template>
@@ -375,6 +461,36 @@ onUnmounted(() => {
       :total="groups.length"
       mode="full"
     />
+    </div>
+
+    <!-- 多选功能区 -->
+    <div v-if="multiSelectVisible" class="palette-multi-bar">
+      <div class="palette-multi-left">
+        <button type="button" class="palette-multi-all" @click="toggleSelectAllPage">
+          <span
+            class="palette-check-box"
+            :class="{
+              checked: isAllPageSelected,
+              indeterminate: isAllPageIndeterminate
+            }"
+          >
+            <span v-if="isAllPageSelected" class="iconfont icon-Check"></span>
+            <span v-else-if="isAllPageIndeterminate" class="palette-check-indeterminate"></span>
+          </span>
+          全选
+        </button>
+        <span class="palette-multi-divider" aria-hidden="true"></span>
+        <span class="palette-multi-count">已选 {{ selectedCount }} 个分组</span>
+      </div>
+      <div class="palette-multi-right">
+        <button type="button" class="palette-multi-action danger" @click="openBatchDeleteConfirm">
+          批量删除
+        </button>
+        <button type="button" class="palette-multi-action" @click="handleCancelMultiSelect">
+          取消
+        </button>
+      </div>
+    </div>
 
     <!-- 新建 / 修改分组 -->
     <Dialog
@@ -542,6 +658,25 @@ onUnmounted(() => {
       </div>
     </Dialog>
 
+    <!-- 批量删除确认 -->
+    <Dialog
+      v-model:visible="dialogBatchDeleteConfirm"
+      title="批量删除分组"
+      max-width="420px"
+      :confirm-on-enter="true"
+      @confirm="confirmBatchDeleteGroups"
+    >
+      <div class="dialog-confirm">
+        <p class="confirm-text">
+          您是否删除已选的 {{ selectedCount }} 个分组，此过程不可撤销！
+        </p>
+        <div class="dialog-footer">
+          <button class="secondary-btn" @click="dialogBatchDeleteConfirm = false">取消</button>
+          <button class="primary-btn danger-btn" @click="confirmBatchDeleteGroups">确认删除</button>
+        </div>
+      </div>
+    </Dialog>
+
     <!-- 生成代码 -->
     <Dialog
       v-model:visible="dialogCodeExport"
@@ -563,7 +698,29 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
-.module-palette { width: 100%; min-width: 0; }
+.module-palette {
+  width: 100%;
+  min-width: 0;
+
+  &.has-multi-bar {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    margin-bottom: -20px;
+
+    .palette-main {
+      flex: 1 1 auto;
+    }
+
+    .palette-multi-bar {
+      margin-top: auto;
+    }
+  }
+}
+
+.palette-main {
+  min-width: 0;
+}
 
 .cell-group-name {
   display: flex;
@@ -572,7 +729,53 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-.group-icon { font-size: 16px; }
+.group-icon {
+  font-size: var(--wh-16);
+  flex-shrink: 0;
+  color: var(--accent);
+
+  &.group-icon--project {
+    color: var(--warning);
+  }
+
+  &.group-icon--personal {
+    color: var(--secondary-text);
+  }
+
+  &.group-icon--brand {
+    color: var(--accent);
+  }
+}
+
+.row-select-btn {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  flex-shrink: 0;
+  border: 1px solid var(--border-primary);
+  border-radius: 3px;
+  background: var(--bg-card);
+  color: var(--text-invert);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+
+  .iconfont {
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  &:hover {
+    border-color: var(--accent);
+  }
+
+  &.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+}
 
 .group-colors {
   display: flex;
@@ -867,7 +1070,135 @@ onUnmounted(() => {
 .empty-icon { font-size: 36px; margin-bottom: 8px; }
 .empty-text { font-size: 14px; color: var(--text-secondary); }
 
+/* ============ 多选功能区 ============ */
+.palette-multi-bar {
+  position: sticky;
+  bottom: -20px;
+  z-index: 20;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-left: -20px;
+  margin-right: -20px;
+  margin-bottom: -20px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-top);
+}
+
+.palette-multi-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.palette-multi-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.palette-multi-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--error);
+  flex-shrink: 0;
+}
+
+.palette-multi-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.palette-multi-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.palette-multi-action {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.85;
+  }
+
+  &.danger {
+    color: var(--text-error);
+  }
+}
+
+.palette-check-box {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-primary);
+  border-radius: 3px;
+  background: var(--bg-card);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+
+  .iconfont {
+    font-size: 10px;
+    line-height: 1;
+    color: var(--text-invert);
+  }
+
+  &.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  &.indeterminate {
+    border-color: var(--accent);
+  }
+}
+
+.palette-check-indeterminate {
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
 @media (max-width: 640px) {
+  .module-palette.has-multi-bar {
+    margin-bottom: -14px;
+  }
+
+  .palette-multi-bar {
+    bottom: -14px;
+    margin-left: -14px;
+    margin-right: -14px;
+    margin-bottom: -14px;
+    padding: 10px 14px;
+  }
+
   .table-actions { flex-direction: column; align-items: flex-start; }
 }
 </style>

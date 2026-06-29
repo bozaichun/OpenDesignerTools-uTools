@@ -837,8 +837,8 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="mono-palette-module">
-        <div class="mono-palette-col mono-palette-col--shades">
+      <div class="mono-palette-row">
+        <div class="mono-palette-module">
           <div class="palette-section palette-section--plain">
             <h4 class="palette-section__title">同色系深浅色阶</h4>
             <GridLayout class="palette-grid" gap="sm" v-bind="getStripGridProps(3)">
@@ -853,7 +853,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="mono-palette-col mono-palette-col--analogous">
+        <div class="mono-palette-module">
           <div class="palette-section palette-section--plain">
             <h4 class="palette-section__title">邻近色（左右各 30°）</h4>
             <GridLayout class="palette-grid" gap="sm" v-bind="getStripGridProps(1)">
@@ -869,7 +869,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="mono-palette-col mono-palette-col--complementary">
+        <div class="mono-palette-module">
           <div class="palette-section palette-section--plain">
             <h4 class="palette-section__title">互补色 / 三等分色 / 分裂互补色</h4>
             <GridLayout class="palette-grid" gap="sm" v-bind="getStripGridProps(2)">
@@ -960,8 +960,8 @@ onUnmounted(() => {
         </Selector>
       </div>
 
-      <div v-if="uniqueResult.colors.length" class="unique-palette-module">
-        <div class="unique-palette-col unique-palette-col--diff">
+      <div v-if="uniqueResult.colors.length" class="unique-palette-row">
+        <div class="unique-palette-module">
           <div class="palette-section palette-section--plain">
             <h4 class="palette-section__title">差异化配色</h4>
             <GridLayout class="palette-grid" gap="sm" v-bind="getStripGridProps(3)">
@@ -977,7 +977,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="unique-palette-col unique-palette-col--avoid">
+        <div class="unique-palette-module">
           <div class="palette-section palette-section--plain">
             <h4 class="palette-section__title">需要规避的典型配色</h4>
             <GridLayout class="palette-grid" gap="sm" v-bind="getStripGridProps(2)">
@@ -1324,18 +1324,27 @@ onUnmounted(() => {
   font-size: 16px; font-weight: 600;
 }
 
-.mono-palette-module {
+.mono-palette-row {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) minmax(0, 1fr);
   gap: var(--size-20);
-  padding: var(--size-20);
-  background: var(--bg-muted);
-  border-radius: var(--radius-lg);
 }
-.mono-palette-col {
+.mono-palette-module {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  padding: var(--size-20);
+  background: var(--bg-muted);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+}
+.mono-palette-module :deep(.palette-section) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.mono-palette-module :deep(.palette-grid) {
+  flex: 1;
 }
 .palette-section {
   min-width: 0;
@@ -1356,46 +1365,32 @@ onUnmounted(() => {
   min-width: 0;
 }
 
-.mono-palette-col--shades :deep(.palette-section),
-.mono-palette-col--analogous :deep(.palette-section),
-.mono-palette-col--complementary :deep(.palette-section) {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-.mono-palette-col--shades :deep(.palette-grid),
-.mono-palette-col--analogous :deep(.palette-grid),
-.mono-palette-col--complementary :deep(.palette-grid) {
-  flex: 1;
-}
-
 .color-card--compact {
   min-height: 96px;
   padding: 12px;
   justify-content: flex-end;
 }
 
-.unique-palette-module {
+.unique-palette-row {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
   gap: var(--size-20);
-  padding: var(--size-20);
-  background: var(--bg-muted);
-  border-radius: var(--radius-lg);
 }
-.unique-palette-col {
+.unique-palette-module {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  padding: var(--size-20);
+  background: var(--bg-muted);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
 }
-.unique-palette-col--diff :deep(.palette-section),
-.unique-palette-col--avoid :deep(.palette-section) {
+.unique-palette-module :deep(.palette-section) {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
-.unique-palette-col--diff :deep(.palette-grid),
-.unique-palette-col--avoid :deep(.palette-grid) {
+.unique-palette-module :deep(.palette-grid) {
   flex: 1;
 }
 
@@ -1441,8 +1436,8 @@ onUnmounted(() => {
 
 @media (max-width: 1024px) {
   .semantic-layout { grid-template-columns: 1fr; }
-  .mono-palette-module,
-  .unique-palette-module {
+  .mono-palette-row,
+  .unique-palette-row {
     grid-template-columns: 1fr;
   }
   .color-grid-5, .color-grid-4, .color-grid-3, .scenario-grid { grid-template-columns: repeat(2, 1fr); }

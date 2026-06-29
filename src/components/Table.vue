@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, useSlots } from 'vue';
+import DefaultPage from './DefaultPage.vue';
 
 const ROW_STATUS_MAP = {
   success: 'row-status--success',
@@ -218,7 +219,9 @@ const isRowExpanded = (row, index) => {
       </tbody>
     </table>
     <div v-if="!data.length" class="data-table__empty">
-      {{ emptyText }}
+      <slot name="empty">
+        <DefaultPage :text="emptyText" />
+      </slot>
     </div>
   </div>
 </template>
@@ -331,9 +334,7 @@ const isRowExpanded = (row, index) => {
 }
 
 .data-table__empty {
-  padding: 32px 16px;
-  text-align: center;
-  color: var(--text-tertiary);
+  padding: 8px 16px 24px;
   border-bottom: 1px solid var(--border-primary);
 }
 

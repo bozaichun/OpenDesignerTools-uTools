@@ -145,20 +145,30 @@ onUnmounted(() => {
       description="在 HEX / RGB / HSL / CMYK / HSV 任一格式框输入颜色，其余四栏自动同步换算结果"
     />
     <div class="convert-layout">
-      <!-- 左：颜色预览 -->
+      <!-- 左：色卡预览 -->
       <div class="col col-preview">
-        <div
-          class="color-preview"
-          :style="{
-            background: previewColor,
-            color: textContrast
-          }"
-        >
-          {{ previewColor }}
+        <div class="color-preview-card">
+          <div
+            class="color-preview-card__swatch"
+            :class="{ 'has-alpha': currentRGB.a < 1 }"
+          >
+            <div
+              class="color-preview-card__fill"
+              :style="{ background: previewColor }"
+            ></div>
+            <span
+              class="color-preview-card__label"
+              :style="{ color: textContrast }"
+            >色卡预览</span>
+            <span
+              class="color-preview-card__value"
+              :style="{ color: textContrast }"
+            >{{ previewColor }}</span>
+          </div>
         </div>
       </div>
 
-      <!-- 中：输入区域 -->
+      <!-- 右：输入区域 -->
       <div class="col col-input">
         <div class="convert-section">
           <div class="input-row">
@@ -252,26 +262,26 @@ onUnmounted(() => {
             />
           </div>
 
-          <div class="alpha-row">
-            <label>Alpha</label>
-            <div class="alpha-slider-wrap">
-              <input
-                type="range"
-                class="alpha-slider"
-                min="0"
-                max="100"
-                v-model.number="alphaPercent"
-                :style="alphaSliderStyle"
-                @input="handleAlphaChange"
-              />
-            </div>
-            <span class="alpha-value">{{ alphaPercent }}%</span>
-          </div>
-
           <div v-if="errorMsg" class="error-message">{{ errorMsg }}</div>
         </div>
       </div>
 
+      <!-- Alpha：与预览 + 输入区同宽 -->
+      <div class="alpha-row">
+        <label class="alpha-row__label">Alpha</label>
+        <div class="alpha-slider-wrap">
+          <input
+            type="range"
+            class="alpha-slider"
+            min="0"
+            max="100"
+            v-model.number="alphaPercent"
+            :style="alphaSliderStyle"
+            @input="handleAlphaChange"
+          />
+        </div>
+        <span class="alpha-value">{{ alphaPercent }}%</span>
+      </div>
     </div>
   </div>
 </template>
@@ -285,36 +295,37 @@ onUnmounted(() => {
 .convert-layout {
   display: grid;
   grid-template-columns: 0.8fr 1.5fr;
+  grid-template-rows: auto auto;
   gap: 20px;
   min-width: 0;
 
   .col {
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
 }
 
 .col-preview {
-  min-width: 0;
-  align-items: center;
+  grid-column: 1;
+  grid-row: 1;
+  align-items: stretch;
 }
 
 .col-input {
-  min-width: 0;
+  grid-column: 2;
+  grid-row: 1;
 }
 
-.color-preview {
+.color-preview-card {
   width: 100%;
-  aspect-ratio: 3 / 1;
-  border-radius: var(--radius-lg);
+  height: 100%;
+  padding: 12px;
+  background: var(--bg-card);
   border: 1px solid var(--border-primary);
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
   transition: box-shadow 0.2s ease;
 
   &:hover {
@@ -322,10 +333,59 @@ onUnmounted(() => {
   }
 }
 
-.col-preview .color-preview {
-  aspect-ratio: 1 / 1;
-  width: 70%;
-  margin-bottom: 0;
+.color-preview-card__swatch {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  &.has-alpha {
+    background-color: #fff;
+    background-image:
+      linear-gradient(45deg, #ddd 25%, transparent 25%),
+      linear-gradient(-45deg, #ddd 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #ddd 75%),
+      linear-gradient(-45deg, transparent 75%, #ddd 75%);
+    background-size: 12px 12px;
+    background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  }
+}
+
+.color-preview-card__fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.color-preview-card__label {
+  position: relative;
+  z-index: 1;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  opacity: 0.72;
+}
+
+.color-preview-card__value {
+  position: relative;
+  z-index: 1;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  line-height: 1.3;
+  word-break: break-all;
+  text-align: center;
 }
 
 .convert-section {
@@ -363,113 +423,117 @@ onUnmounted(() => {
 }
 
 .alpha-row {
+  grid-column: 1 / -1;
+  grid-row: 2;
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 12px;
-  padding: 12px;
+  width: 100%;
+  padding: 12px 16px;
   background: var(--bg-muted);
   border-radius: var(--radius-md);
+  box-sizing: border-box;
+}
 
-  label {
-    font-size: 12px;
-    color: var(--text-secondary);
-    min-width: 80px;
-    flex-shrink: 0;
-  }
+.alpha-row__label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 80px;
+  flex-shrink: 0;
+}
 
-  .alpha-slider-wrap {
-    flex: 1;
-    min-width: 0;
-    position: relative;
-    display: flex;
-    align-items: center;
-    height: 24px;
-    padding: 0 2px;
-    overflow: visible;
+.alpha-slider-wrap {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 2px;
+  overflow: visible;
 
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      height: 10px;
-      border-radius: 999px;
-      border: 1px solid var(--border-primary);
-      background-color: #fff;
-      background-image:
-        linear-gradient(45deg, #ddd 25%, transparent 25%),
-        linear-gradient(-45deg, #ddd 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #ddd 75%),
-        linear-gradient(-45deg, transparent 75%, #ddd 75%);
-      background-size: 8px 8px;
-      background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
-      pointer-events: none;
-      z-index: 0;
-    }
-  }
-
-  .alpha-slider {
-    position: relative;
-    z-index: 1;
-    width: 100%;
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
     height: 10px;
-    margin: 0;
-    -webkit-appearance: none;
-    appearance: none;
-    border: none;
     border-radius: 999px;
-    outline: none;
-    cursor: pointer;
-    display: block;
+    border: 1px solid var(--border-primary);
+    background-color: #fff;
+    background-image:
+      linear-gradient(45deg, #ddd 25%, transparent 25%),
+      linear-gradient(-45deg, #ddd 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #ddd 75%),
+      linear-gradient(-45deg, transparent 75%, #ddd 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+.alpha-slider {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 10px;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  display: block;
+  background: transparent;
+
+  &::-webkit-slider-runnable-track {
+    height: 10px;
+    border-radius: 999px;
     background: transparent;
-
-    &::-webkit-slider-runnable-track {
-      height: 10px;
-      border-radius: 999px;
-      background: transparent;
-    }
-
-    &::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      margin-top: -3px;
-      border-radius: 50%;
-      border: 2px solid #ffffff;
-      background: var(--accent);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-      cursor: pointer;
-    }
-
-    &::-moz-range-track {
-      height: 10px;
-      border-radius: 999px;
-      background: transparent;
-      border: none;
-    }
-
-    &::-moz-range-thumb {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      border: 2px solid #ffffff;
-      background: var(--accent);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-      cursor: pointer;
-    }
   }
 
-  .alpha-value {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-    min-width: 40px;
-    text-align: right;
-    font-family: 'SF Mono', Consolas, Monaco, monospace;
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -3px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    background: var(--accent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
   }
+
+  &::-moz-range-track {
+    height: 10px;
+    border-radius: 999px;
+    background: transparent;
+    border: none;
+  }
+
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    background: var(--accent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+}
+
+.alpha-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 40px;
+  text-align: right;
+  font-family: 'SF Mono', Consolas, Monaco, monospace;
+  flex-shrink: 0;
 }
 
 .error-message {
@@ -488,9 +552,30 @@ onUnmounted(() => {
     gap: 16px;
   }
 
-  .col-preview .color-preview {
-    aspect-ratio: 3 / 1;
-    width: 100%;
+  .col-preview,
+  .col-input {
+    grid-column: 1;
+  }
+
+  .col-preview {
+    grid-row: 1;
+  }
+
+  .col-input {
+    grid-row: 2;
+  }
+
+  .alpha-row {
+    grid-row: 3;
+    flex-wrap: wrap;
+  }
+
+  .alpha-row__label {
+    min-width: 64px;
+  }
+
+  .color-preview-card__swatch {
+    min-height: 160px;
   }
 }
 </style>

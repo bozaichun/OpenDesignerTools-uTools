@@ -7,18 +7,19 @@ import Selector from '../../components/Selector.vue';
 import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
 import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import Banner from '../../components/Banner.vue';
+import DefaultPage from '../../components/DefaultPage.vue';
 import LayoutContainer from '../../components/LayoutContainer.vue';
 import GridLayout from '../../components/GridLayout.vue';
 import { COLOR_GROUPS, inferColorGroup } from '../../data/presetColors';
 import {
-  getAllFavorites
+  getAllFavorites,
+  removeFavorite
 } from '../../utils/favoriteStorage';
 import { loadPalettes, savePalettes } from '../PaletteManager/paletteStorage.js';
 import { showToast, parseColor, getContrastColor as gcc } from '../../utils/colorUtils';
 import { downloadPaletteCard } from '../../utils/paletteCard';
 
 const router = useRouter();
-const setHeaderActions = inject('setHeaderActions');
 const clearHeaderActions = inject('clearHeaderActions');
 
 const favorites = ref([]);
@@ -140,14 +141,7 @@ async function syncFilterBarStick() {
 
 function loadFavorites() {
   favorites.value = getAllFavorites();
-  updateHeaderActions();
   syncFilterBarStick();
-}
-
-function updateHeaderActions() {
-  setHeaderActions([
-    { label: '下载色卡', onClick: handleDownloadColorCard }
-  ]);
 }
 
 function isSelected(hex) {
@@ -179,15 +173,31 @@ function handleCancelMultiSelect() {
 
 function handleDownloadColorCard() {
   const selected = favorites.value.filter((item) => selectedKeys.value.has(item.hex));
-  if (!selected.length) {
-    showToast(null, '请先选择要下载的颜色', 'warning');
-    return;
-  }
+  if (!selected.length) return;
   downloadPaletteCard(selected, {
     title: '我的收藏色卡',
     subtitle: `共 ${selected.length} 种收藏色`,
     filenamePrefix: 'my-favorites-palette'
   });
+}
+
+function handleUnfavoriteSelected() {
+  const selected = favorites.value.filter((item) => selectedKeys.value.has(item.hex));
+  if (!selected.length) return;
+
+  let failCount = 0;
+  selected.forEach((item) => {
+    const result = removeFavorite(item.hex);
+    if (!result.ok) failCount += 1;
+  });
+
+  selectedKeys.value = new Set();
+
+  if (failCount > 0) {
+    showToast(null, `有 ${failCount} 个颜色取消收藏失败`, 'error');
+    return;
+  }
+  showToast(null, `已取消收藏 ${selected.length} 个颜色`, 'success');
 }
 
 function openColorModal(item) {
@@ -248,6 +258,7 @@ watch(filteredFavorites, (list) => {
 let handleFavoritesChanged = null;
 
 onMounted(() => {
+  clearHeaderActions();
   loadFavorites();
   handleFavoritesChanged = () => loadFavorites();
   window.addEventListener('color-favorites-changed', handleFavoritesChanged);
@@ -323,14 +334,6 @@ onUnmounted(() => {
             :class="{ 'is-selected': isSelected(item.hex) }"
             @click="toggleSelect(item.hex)"
           >
-            <span
-              class="card-select-btn"
-              :class="{ checked: isSelected(item.hex) }"
-              aria-hidden="true"
-            >
-              <span v-if="isSelected(item.hex)" class="iconfont icon-Check"></span>
-            </span>
-
             <div class="swatch-row">
               <div
                 class="color-swatch"
@@ -343,20 +346,42 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <div class="card-actions" @click.stop>
-              <button class="action-btn" @click="openAddToPaletteDialog(item)">
-                添加到色板
+            <div class="card-action-bar" @click.stop>
+              <button
+                type="button"
+                class="card-select-btn"
+                :class="{ checked: isSelected(item.hex) }"
+                title="多选"
+                @click="toggleSelect(item.hex)"
+              >
+                <span v-if="isSelected(item.hex)" class="iconfont icon-Check"></span>
               </button>
               <ColorActionGroup
+                variant="card"
                 :value="item.hex"
                 :copy-label="item.name || item.hex"
                 :favorite-name="item.name || item.hex"
-              />
+              >
+                <template #prefix>
+                  <button
+                    type="button"
+                    class="color-action-group__extra-btn"
+                    title="添加到色板"
+                    @click="openAddToPaletteDialog(item)"
+                  >
+                    <span class="iconfont icon-AddColorSwatch"></span>
+                  </button>
+                  <button
+                    type="button"
+                    class="color-action-group__extra-btn"
+                    title="更多格式"
+                    @click="openColorModal(item)"
+                  >
+                    <span class="iconfont icon-Color"></span>
+                  </button>
+                </template>
+              </ColorActionGroup>
             </div>
-
-            <button class="view-color-btn" @click.stop="openColorModal(item)">
-              更多格式
-            </button>
           </div>
         </GridLayout>
 
@@ -365,11 +390,11 @@ onUnmounted(() => {
         </div>
       </template>
 
-      <div v-else class="empty-state">
-        <div class="empty-icon">☆</div>
-        <div class="empty-title">暂无收藏</div>
-        <div class="empty-desc">在预置颜色或其他页面点击收藏图标，将颜色保存到这里</div>
-      </div>
+      <DefaultPage
+        v-else
+        text="暂无收藏"
+        description="在预置颜色或其他页面点击收藏图标，将颜色保存到这里"
+      />
     </div>
 
     <!-- 多选功能区 -->
@@ -391,9 +416,17 @@ onUnmounted(() => {
         <span class="favorites-multi-divider" aria-hidden="true"></span>
         <span class="favorites-multi-count">已选 {{ selectedCount }} 张色卡</span>
       </div>
-      <button class="favorites-multi-cancel" @click="handleCancelMultiSelect">
-        取消
-      </button>
+      <div class="favorites-multi-right">
+        <button type="button" class="favorites-multi-action danger" @click="handleUnfavoriteSelected">
+          取消收藏
+        </button>
+        <button type="button" class="favorites-multi-action" @click="handleDownloadColorCard">
+          下载色卡
+        </button>
+        <button type="button" class="favorites-multi-action" @click="handleCancelMultiSelect">
+          取消
+        </button>
+      </div>
     </div>
 
     <ColorFormatDialog
@@ -550,17 +583,15 @@ onUnmounted(() => {
 }
 
 .card-select-btn {
-  position: absolute;
-  top: -6px;
-  left: -6px;
-  z-index: 2;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  flex-shrink: 0;
   border: 1px solid var(--border-primary);
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--bg-card);
   color: var(--text-invert);
-  pointer-events: none;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -569,6 +600,10 @@ onUnmounted(() => {
   .iconfont {
     font-size: 10px;
     line-height: 1;
+  }
+
+  &:hover {
+    border-color: var(--accent);
   }
 
   &.checked {
@@ -602,90 +637,14 @@ onUnmounted(() => {
   word-break: break-all;
 }
 
-.card-actions {
+.card-action-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
 
   :deep(.color-action-group) {
     flex-shrink: 0;
-  }
-
-  :deep(.copy-icon-btn),
-  :deep(.color-action-group__favorite.favorite-btn) {
-    width: 28px;
-    height: 28px;
-  }
-
-  :deep(.color-action-group__favorite.favorite-btn) {
-    padding: 0;
-    background: var(--bg-card);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-
-    .favorite-icon {
-      font-size: 12px;
-      line-height: 1;
-    }
-
-    &:hover {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: var(--text-invert);
-    }
-
-    &.active {
-      color: #faad14;
-      background: var(--bg-card);
-      border-color: var(--border-primary);
-    }
-
-    &.active:hover {
-      color: #d48806;
-      background: var(--bg-card);
-      border-color: var(--border-primary);
-    }
-  }
-}
-
-.action-btn {
-  flex-shrink: 0;
-  padding: 5px 8px;
-  font-size: 12px;
-  background: var(--bg-card);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-weight: 500;
-
-  &:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--text-invert);
-  }
-}
-
-.view-color-btn {
-  width: 100%;
-  padding: 6px 10px;
-  font-size: 12px;
-  background: var(--bg-card);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-weight: 500;
-
-  &:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--text-invert);
   }
 }
 
@@ -694,33 +653,6 @@ onUnmounted(() => {
   padding: 40px 20px;
   color: var(--text-tertiary);
   font-size: 14px;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--text-tertiary);
-}
-
-.empty-icon {
-  font-size: 48px;
-  color: var(--text-tertiary);
-  margin-bottom: 12px;
-  opacity: 0.5;
-}
-
-.empty-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-}
-
-.empty-desc {
-  font-size: 14px;
-  max-width: 320px;
-  margin: 0 auto;
-  line-height: 1.5;
 }
 
 /* ============ 多选功能区（贴底全宽条） ============ */
@@ -812,7 +744,14 @@ onUnmounted(() => {
   background: var(--accent);
 }
 
-.favorites-multi-cancel {
+.favorites-multi-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.favorites-multi-action {
   padding: 0;
   border: none;
   background: transparent;
@@ -825,6 +764,10 @@ onUnmounted(() => {
 
   &:hover {
     opacity: 0.85;
+  }
+
+  &.danger {
+    color: var(--text-error);
   }
 }
 
