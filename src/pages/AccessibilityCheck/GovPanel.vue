@@ -16,7 +16,7 @@ onMounted(() => executeGovCheck());
 </script>
 
 <template>
-  <section class="panel">
+  <section class="panel panel--plain">
     <div class="gov-body">
       <div class="gov-check-grid">
         <div v-for="c in govChecks" :key="c.title" class="gov-check-card" :class="c.pass ? 'pass' : 'warn'">

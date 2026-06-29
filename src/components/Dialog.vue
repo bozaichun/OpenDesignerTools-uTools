@@ -90,6 +90,10 @@ onBeforeUnmount(() => {
       <div class="dialog-body">
         <slot></slot>
       </div>
+      <!-- 弹窗底部（固定，不参与滚动） -->
+      <div v-if="$slots.footer" class="dialog-footer">
+        <slot name="footer"></slot>
+      </div>
     </div>
   </div>
 </template>
@@ -184,9 +188,17 @@ onBeforeUnmount(() => {
 }
 
 .dialog-body {
-  padding: 16px 20px 24px;
+  padding: 16px 20px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
+}
+
+.dialog-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-primary);
+  background: var(--bg-muted);
+  flex-shrink: 0;
 }
 
 @media (max-width: 640px) {

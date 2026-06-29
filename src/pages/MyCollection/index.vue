@@ -231,10 +231,12 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-      <div class="palette-dialog-footer">
-        <button class="palette-btn secondary" @click="colorCardDialogVisible = false">取消</button>
-        <button class="palette-btn" @click="handleDownloadColorCard">下载色卡</button>
-      </div>
+      <template #footer>
+        <div class="palette-dialog-footer">
+          <button class="palette-btn secondary" @click="colorCardDialogVisible = false">取消</button>
+          <button class="palette-btn" @click="handleDownloadColorCard">下载色卡</button>
+        </div>
+      </template>
     </Dialog>
 
     <Dialog
@@ -525,6 +527,7 @@ onUnmounted(() => {
 .palette-dialog-body {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   margin: -16px -20px 0;
   padding: 0;
 }
@@ -540,6 +543,8 @@ onUnmounted(() => {
   display: grid;
   gap: 12px;
   padding: 12px;
+  max-height: min(52vh, 480px);
+  overflow-y: auto;
 }
 
 .palette-grid.palette-cols-3 {
@@ -615,10 +620,7 @@ onUnmounted(() => {
   justify-content: flex-end;
   align-items: center;
   gap: 10px;
-  padding: 12px 20px;
-  margin: 0 -20px -24px;
-  border-top: 1px solid var(--border-primary);
-  background: var(--bg-muted);
+  width: 100%;
 }
 
 .palette-btn {

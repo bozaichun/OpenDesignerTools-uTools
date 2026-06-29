@@ -61,6 +61,11 @@ onMounted(() => {
           <option value="300">300 lpi</option>
         </Selector>
       </template>
+      <template #footer>
+        <div class="halftone-hint">
+          💡 提示：网点百分比越小，颜色越浅。报纸常用 85-120 lpi，杂志画册 150-175 lpi，高端印刷可达 200-300 lpi。
+        </div>
+      </template>
     </PrintToolsDetailShell>
 
     <section class="panel module-panel">
@@ -92,10 +97,6 @@ onMounted(() => {
           </tbody>
         </table>
       </div>
-
-      <div class="halftone-hint">
-        💡 提示：网点百分比越小，颜色越浅。报纸常用 85-120 lpi，杂志画册 150-175 lpi，高端印刷可达 200-300 lpi。
-      </div>
     </section>
   </div>
 </template>
@@ -110,7 +111,7 @@ onMounted(() => {
   background: var(--bg-card); border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px;
 }
-.halftone-table-wrap { overflow-x: auto; margin-bottom: 12px; }
+.halftone-table-wrap { overflow-x: auto; }
 .data-table {
   width: 100%; border-collapse: collapse; font-size: 12px;
   th, td {
@@ -131,6 +132,7 @@ onMounted(() => {
   &.lg { width: 28px; height: 28px; margin-right: 0; }
 }
 .halftone-hint {
+  margin-top: 12px;
   padding: 12px 16px; background: var(--accent-soft); border-radius: var(--radius-md);
   font-size: 12px; color: var(--accent);
 }

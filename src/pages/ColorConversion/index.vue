@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { ref, reactive, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, inject, onMounted, onUnmounted } from 'vue';
 import ColorPicker from '../../components/ColorPicker.vue';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import Input from '../../components/Input.vue';
 import Banner from '../../components/Banner.vue';
 import {
@@ -8,13 +9,7 @@ import {
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
   copyToClipboard, showToast
 } from '../../utils/colorUtils';
-import {
-  isFavorite,
-  toggleFavorite,
-  normalizeFavoriteHex
-} from '../../utils/favoriteStorage';
 
-const setHeaderActions = inject('setHeaderActions');
 const clearHeaderActions = inject('clearHeaderActions');
 
 const currentRGB = ref({ r: 255, g: 255, b: 255, a: 1 });
@@ -50,38 +45,6 @@ const alphaSliderStyle = computed(() => {
     background: `linear-gradient(to right, rgba(${r}, ${g}, ${b}, 0), rgb(${r}, ${g}, ${b}))`
   };
 });
-
-function updateHeaderActions() {
-  const hex = normalizeFavoriteHex(inputs.hex);
-  const favorited = hex ? isFavorite(hex) : false;
-  setHeaderActions([
-    {
-      label: favorited ? '已收藏' : '收藏',
-      onClick: () => handleToggleFavorite(),
-      secondary: favorited
-    }
-  ]);
-}
-
-function handleToggleFavorite() {
-  const hex = normalizeFavoriteHex(inputs.hex);
-  if (!hex) {
-    showToast(null, '颜色格式无效，无法收藏', 'error');
-    return;
-  }
-  const wasFavorited = isFavorite(hex);
-  const result = toggleFavorite({ hex, name: hex });
-  if (!result.ok) {
-    showToast(null, result.message || '操作失败', 'error');
-    return;
-  }
-  showToast(
-    null,
-    wasFavorited ? '已取消收藏' : `已将 “${hex}” 加入我的收藏`,
-    'success'
-  );
-  updateHeaderActions();
-}
 
 function handleInputChange(format) {
   if (isUpdating.value) return;
@@ -164,27 +127,13 @@ function clearInputs() {
   syncAllFromRGB();
 }
 
-function copyValue(value, label) {
-  copyToClipboard(value);
-  showToast(null, `已复制 ${label}: ${value}`, 'success');
-}
-
-let handleFavoritesChanged = null;
-
 onMounted(() => {
   syncAllFromRGB();
-  updateHeaderActions();
-  handleFavoritesChanged = () => updateHeaderActions();
-  window.addEventListener('color-favorites-changed', handleFavoritesChanged);
+  clearHeaderActions();
 });
 
 onUnmounted(() => {
   clearHeaderActions();
-  window.removeEventListener('color-favorites-changed', handleFavoritesChanged);
-});
-
-watch(() => inputs.hex, () => {
-  updateHeaderActions();
 });
 </script>
 
@@ -220,13 +169,13 @@ watch(() => inputs.hex, () => {
               @change="handleColorPickerChange"
               @clear-all="clearInputs"
             />
-            <button
-              class="copy-icon-btn"
-              @click="copyValue(inputs.hex, 'HEX')"
-              title="复制 HEX"
-            >
-              <span class="iconfont icon-Copy"></span>
-            </button>
+            <ColorActionGroup
+              :value="inputs.hex"
+              copy-label="HEX"
+              :favorite-name="inputs.hex"
+              variant="default"
+              class="input-action-group"
+            />
           </div>
 
           <div class="input-row">
@@ -240,13 +189,13 @@ watch(() => inputs.hex, () => {
               placeholder="rgb(r, g, b)"
               @input="handleInputChange('rgb')"
             />
-            <button
-              class="copy-icon-btn"
-              @click="copyValue(inputs.rgb, 'RGB')"
-              title="复制 RGB"
-            >
-              <span class="iconfont icon-Copy"></span>
-            </button>
+            <ColorActionGroup
+              :value="inputs.rgb"
+              copy-label="RGB"
+              :show-favorite="false"
+              variant="default"
+              class="input-action-group"
+            />
           </div>
 
           <div class="input-row">
@@ -260,13 +209,13 @@ watch(() => inputs.hex, () => {
               placeholder="hsl(h, s%, l%)"
               @input="handleInputChange('hsl')"
             />
-            <button
-              class="copy-icon-btn"
-              @click="copyValue(inputs.hsl, 'HSL')"
-              title="复制 HSL"
-            >
-              <span class="iconfont icon-Copy"></span>
-            </button>
+            <ColorActionGroup
+              :value="inputs.hsl"
+              copy-label="HSL"
+              :show-favorite="false"
+              variant="default"
+              class="input-action-group"
+            />
           </div>
 
           <div class="input-row">
@@ -280,13 +229,13 @@ watch(() => inputs.hex, () => {
               placeholder="cmyk(c%, m%, y%, k%)"
               @input="handleInputChange('cmyk')"
             />
-            <button
-              class="copy-icon-btn"
-              @click="copyValue(inputs.cmyk, 'CMYK')"
-              title="复制 CMYK"
-            >
-              <span class="iconfont icon-Copy"></span>
-            </button>
+            <ColorActionGroup
+              :value="inputs.cmyk"
+              copy-label="CMYK"
+              :show-favorite="false"
+              variant="default"
+              class="input-action-group"
+            />
           </div>
 
           <div class="input-row">
@@ -300,13 +249,13 @@ watch(() => inputs.hex, () => {
               placeholder="hsv(h, s%, v%)"
               @input="handleInputChange('hsv')"
             />
-            <button
-              class="copy-icon-btn"
-              @click="copyValue(inputs.hsv, 'HSV')"
-              title="复制 HSV"
-            >
-              <span class="iconfont icon-Copy"></span>
-            </button>
+            <ColorActionGroup
+              :value="inputs.hsv"
+              copy-label="HSV"
+              :show-favorite="false"
+              variant="default"
+              class="input-action-group"
+            />
           </div>
 
           <div class="alpha-row">
@@ -396,13 +345,6 @@ watch(() => inputs.hex, () => {
   flex-direction: column;
 }
 
-.convert-section-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 12px 0;
-  color: var(--text-primary);
-}
-
 .input-row {
   display: flex;
   gap: 8px;
@@ -420,40 +362,24 @@ watch(() => inputs.hex, () => {
     min-width: 0;
   }
 
-  input[type="color"] {
-    width: 48px;
-    height: 40px;
-    padding: 2px;
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    background: var(--bg-card);
+  :deep(.color-picker) {
+    flex: 1;
+    min-width: 0;
   }
+}
 
-  .copy-icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+.input-action-group {
+  flex-shrink: 0;
+
+  :deep(.copy-icon-btn),
+  :deep(.color-action-group__favorite.favorite-btn) {
     width: 40px;
     height: 40px;
-    padding: 0;
-    background: var(--bg-muted);
-    border: 1px solid var(--border-primary);
     border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    flex-shrink: 0;
 
-    .iconfont {
+    .iconfont,
+    .favorite-icon {
       font-size: 16px;
-      line-height: 1;
-    }
-
-    &:hover {
-      background: var(--accent);
-      color: var(--text-invert);
-      border-color: var(--accent);
     }
   }
 }
@@ -591,14 +517,16 @@ watch(() => inputs.hex, () => {
 }
 
 @media (max-width: 640px) {
-  .input-row {
-    .copy-icon-btn {
+  .input-action-group {
+    :deep(.copy-icon-btn),
+    :deep(.color-action-group__favorite.favorite-btn) {
       width: 36px;
       height: 36px;
-    }
 
-    .copy-icon-btn .iconfont {
-      font-size: 14px;
+      .iconfont,
+      .favorite-icon {
+        font-size: 14px;
+      }
     }
   }
 }

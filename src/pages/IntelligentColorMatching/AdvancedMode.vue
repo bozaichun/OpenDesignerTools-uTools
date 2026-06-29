@@ -3,6 +3,8 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted, toRaw } from 'v
 import html2canvas from 'html2canvas';
 import ColorPicker from '../../components/ColorPicker.vue';
 import ColorActionGroup from '../../components/ColorActionGroup.vue';
+import ColorStripCard from '../../components/ColorStripCard.vue';
+import ColorStripSection from '../../components/ColorStripSection.vue';
 import Selector from '../../components/Selector.vue';
 import Input from '../../components/Input.vue';
 import Textarea from '../../components/Textarea.vue';
@@ -637,6 +639,13 @@ function generateMonochrome() {
     const names = ['三等分色 1', '三等分色 2'];
     complementary.push({ name: names[idx], color: hex });
   });
+  [150, 210].forEach((offset, idx) => {
+    const h = (hsl.h + offset) % 360;
+    const newRgb = hslToRgb({ h, s: hsl.s, l: hsl.l, a: 1 });
+    const hex = rgbToHex(newRgb).toUpperCase();
+    const names = ['分裂互补色 1', '分裂互补色 2'];
+    complementary.push({ name: names[idx], color: hex });
+  });
   complementaryColors.value = complementary;
 }
 function handleScenarioSelect(key) {
@@ -818,72 +827,41 @@ onUnmounted(() => {
 
       <div class="mono-palette-module">
         <div class="mono-palette-col mono-palette-col--shades">
-          <div class="section-title">同色系深浅色阶（9阶）</div>
-          <div class="color-grid-9">
-            <div
+          <ColorStripSection title="同色系深浅色阶" :columns="3" :divider="false">
+            <ColorStripCard
               v-for="(c, idx) in monochromeShades"
               :key="c"
-              class="color-card-sm color-card--with-action"
-              :style="{ background: c }"
-            >
-              <ColorActionGroup
-                :value="c"
-                :copy-label="'色阶 ' + (idx + 1)"
-                :favorite-name="'色阶 ' + (idx + 1)"
-                variant="on-color"
-                class="color-card-action-group"
-              />
-              <span class="color-card-sm-hex" :style="{ color: getContrastColor(c) }">{{ c }}</span>
-            </div>
-          </div>
+              :color="c"
+              :copy-label="'色阶 ' + (idx + 1)"
+              :favorite-name="'色阶 ' + (idx + 1)"
+            />
+          </ColorStripSection>
         </div>
 
         <div class="mono-palette-col mono-palette-col--analogous">
-          <div class="section-title">邻近色（左右各 30°）</div>
-          <div class="color-grid-3 mono-palette-stack">
-            <div
+          <ColorStripSection title="邻近色（左右各 30°）" :columns="1" :divider="false">
+            <ColorStripCard
               v-for="c in analogousColors"
               :key="c.name"
-              class="color-card color-card--compact color-card--with-action"
-              :style="{ background: c.color }"
-            >
-              <ColorActionGroup
-                :value="c.color"
-                :copy-label="c.name"
-                :favorite-name="c.name"
-                variant="on-color"
-                class="color-card-action-group"
-              />
-              <div class="color-card-text" :style="{ color: getContrastColor(c.color) }">
-                <div class="color-card-name">{{ c.name }}</div>
-                <div class="color-card-hex">{{ c.color }}</div>
-              </div>
-            </div>
-          </div>
+              :color="c.color"
+              :title="c.name"
+              :copy-label="c.name"
+              :favorite-name="c.name"
+            />
+          </ColorStripSection>
         </div>
 
         <div class="mono-palette-col mono-palette-col--complementary">
-          <div class="section-title">互补色 / 三等分色 / 分裂互补色</div>
-          <div class="color-grid-4 mono-palette-grid-2">
-            <div
+          <ColorStripSection title="互补色 / 三等分色 / 分裂互补色" :columns="2" :divider="false">
+            <ColorStripCard
               v-for="c in complementaryColors"
               :key="c.name"
-              class="color-card color-card--compact color-card--with-action"
-              :style="{ background: c.color }"
-            >
-              <ColorActionGroup
-                :value="c.color"
-                :copy-label="c.name"
-                :favorite-name="c.name"
-                variant="on-color"
-                class="color-card-action-group"
-              />
-              <div class="color-card-text" :style="{ color: getContrastColor(c.color) }">
-                <div class="color-card-name">{{ c.name }}</div>
-                <div class="color-card-hex">{{ c.color }}</div>
-              </div>
-            </div>
-          </div>
+              :color="c.color"
+              :title="c.name"
+              :copy-label="c.name"
+              :favorite-name="c.name"
+            />
+          </ColorStripSection>
         </div>
       </div>
     </section>
@@ -963,50 +941,29 @@ onUnmounted(() => {
 
       <div v-if="uniqueResult.colors.length" class="unique-palette-module">
         <div class="unique-palette-col unique-palette-col--diff">
-          <div class="section-title">差异化配色</div>
-          <div class="color-grid-6">
-            <div
+          <ColorStripSection title="差异化配色" :columns="3" :divider="false">
+            <ColorStripCard
               v-for="c in uniqueResult.colors"
               :key="c.name"
-              class="color-card color-card--compact color-card--with-action"
-              :style="{ background: c.color }"
-            >
-              <ColorActionGroup
-                :value="c.color"
-                :copy-label="c.name"
-                :favorite-name="c.name"
-                variant="on-color"
-                class="color-card-action-group"
-              />
-              <div class="color-card-text" :style="{ color: getContrastColor(c.color) }">
-                <div class="color-card-name">{{ c.name }}</div>
-                <div class="color-card-hex">{{ c.color }}</div>
-              </div>
-            </div>
-          </div>
+              :color="c.color"
+              :title="c.name"
+              :copy-label="c.name"
+              :favorite-name="c.name"
+            />
+          </ColorStripSection>
         </div>
 
         <div class="unique-palette-col unique-palette-col--avoid">
-          <div class="section-title">需要规避的典型配色</div>
-          <div class="color-grid-4">
-            <div
+          <ColorStripSection title="需要规避的典型配色" :columns="2" :divider="false">
+            <ColorStripCard
               v-for="c in avoidColors"
               :key="c.name"
-              class="color-card-sm color-card--with-action"
-              :style="{ background: c.color }"
-            >
-              <ColorActionGroup
-                :value="c.color"
-                :copy-label="c.name"
-                :favorite-name="c.name"
-                variant="on-color"
-                class="color-card-action-group"
-              />
-              <span class="color-card-sm-hex" :style="{ color: getContrastColor(c.color) }">
-                {{ c.name }} {{ c.color }}
-              </span>
-            </div>
-          </div>
+              :color="c.color"
+              :title="c.name"
+              :copy-label="c.name"
+              :favorite-name="c.name"
+            />
+          </ColorStripSection>
         </div>
       </div>
     </section>
@@ -1026,6 +983,8 @@ onUnmounted(() => {
   .panel {
     margin-bottom: 0;
     padding: var(--size-20);
+    border: none;
+    background: transparent;
   }
 }
 
@@ -1345,7 +1304,6 @@ onUnmounted(() => {
   gap: var(--size-20);
   padding: var(--size-20);
   background: var(--bg-muted);
-  border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
 }
 .mono-palette-col {
@@ -1353,21 +1311,19 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
 }
-.mono-palette-col--shades .color-grid-9 {
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+.mono-palette-col--shades :deep(.color-strip-section),
+.mono-palette-col--analogous :deep(.color-strip-section),
+.mono-palette-col--complementary :deep(.color-strip-section) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.mono-palette-col--shades :deep(.color-strip-grid),
+.mono-palette-col--analogous :deep(.color-strip-grid),
+.mono-palette-col--complementary :deep(.color-strip-grid) {
   flex: 1;
 }
-.mono-palette-stack {
-  grid-template-columns: 1fr;
-  gap: 10px;
-  flex: 1;
-}
-.mono-palette-grid-2 {
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  flex: 1;
-}
+
 .color-card--compact {
   min-height: 96px;
   padding: 12px;
@@ -1380,7 +1336,6 @@ onUnmounted(() => {
   gap: var(--size-20);
   padding: var(--size-20);
   background: var(--bg-muted);
-  border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
 }
 .unique-palette-col {
@@ -1388,9 +1343,14 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
 }
-.unique-palette-col--avoid .color-grid-4 {
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+.unique-palette-col--diff :deep(.color-strip-section),
+.unique-palette-col--avoid :deep(.color-strip-section) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.unique-palette-col--diff :deep(.color-strip-grid),
+.unique-palette-col--avoid :deep(.color-strip-grid) {
   flex: 1;
 }
 

@@ -9,7 +9,7 @@ import {
   SHADOW_FIELDS
 } from './semanticDesignSpec.js';
 import { buildSpecRevealQueue, SPEC_REVEAL_INTERVAL_MS } from './useSpecStreamingReveal.js';
-import ColorChipActions from './ColorChipActions.vue';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import { getContrastColor as gcc, parseColor } from '../../utils/colorUtils';
 
 const props = defineProps({
@@ -229,11 +229,13 @@ const showTypography = computed(() => typographyItems.value.length > 0);
             <span class="color-chip-label">{{ field.label }}</span>
             <span class="color-chip-hex">{{ themeColor(field.key) }}</span>
           </div>
-          <ColorChipActions
+          <ColorActionGroup
             v-if="!streaming"
             :value="themeColor(field.key)"
-            :label="field.label"
+            :copy-label="field.label"
             :favorite-name="buildFavoriteName(field.label)"
+            variant="on-color"
+            class="color-chip-action-group"
           />
         </div>
       </div>
@@ -262,11 +264,13 @@ const showTypography = computed(() => typographyItems.value.length > 0);
               <span class="color-chip-label">{{ field.label }}</span>
               <span class="color-chip-hex">{{ functionalColor(type.key, field.key) }}</span>
             </div>
-            <ColorChipActions
+            <ColorActionGroup
               v-if="!streaming"
               :value="functionalColor(type.key, field.key)"
-              :label="`${type.label}·${field.label}`"
+              :copy-label="`${type.label}·${field.label}`"
               :favorite-name="buildFavoriteName(`${type.label}·${field.label}`)"
+              variant="on-color"
+              class="color-chip-action-group"
             />
           </div>
         </div>
@@ -287,11 +291,13 @@ const showTypography = computed(() => typographyItems.value.length > 0);
             <span class="color-chip-label">{{ field.label }}</span>
             <span class="color-chip-hex">{{ auxiliaryColor(field.key) }}</span>
           </div>
-          <ColorChipActions
+          <ColorActionGroup
             v-if="!streaming"
             :value="auxiliaryColor(field.key)"
-            :label="field.label"
+            :copy-label="field.label"
             :favorite-name="buildFavoriteName(field.label)"
+            variant="on-color"
+            class="color-chip-action-group"
           />
         </div>
       </div>
@@ -310,12 +316,13 @@ const showTypography = computed(() => typographyItems.value.length > 0);
           >
             <span class="neutral-sample" :style="{ color: neutralColor('light', field.key) }">{{ field.label }}</span>
             <span class="neutral-hex">{{ neutralColor('light', field.key) }}</span>
-            <ColorChipActions
+            <ColorActionGroup
               v-if="!streaming"
               :value="neutralColor('light', field.key)"
-              :label="`浅色·${field.label}`"
+              :copy-label="`浅色·${field.label}`"
               :favorite-name="buildFavoriteName(`浅色·${field.label}`)"
-              :on-color="false"
+              variant="default"
+              class="color-chip-action-group color-chip-action-group--inline"
             />
           </div>
         </div>
@@ -330,12 +337,13 @@ const showTypography = computed(() => typographyItems.value.length > 0);
           >
             <span class="neutral-sample" :style="{ color: neutralColor('dark', field.key) }">{{ field.label }}</span>
             <span class="neutral-hex">{{ neutralColor('dark', field.key) }}</span>
-            <ColorChipActions
+            <ColorActionGroup
               v-if="!streaming"
               :value="neutralColor('dark', field.key)"
-              :label="`深色·${field.label}`"
+              :copy-label="`深色·${field.label}`"
               :favorite-name="buildFavoriteName(`深色·${field.label}`)"
-              :on-color="false"
+              variant="default"
+              class="color-chip-action-group color-chip-action-group--inline"
             />
           </div>
         </div>
@@ -355,12 +363,13 @@ const showTypography = computed(() => typographyItems.value.length > 0);
           <div class="shadow-meta">
             <span class="shadow-label">{{ field.label }}</span>
             <span class="shadow-value">{{ shadowValue(field.key) }}</span>
-            <ColorChipActions
+            <ColorActionGroup
               v-if="!streaming"
               :value="shadowValue(field.key)"
-              :label="field.label"
-              :on-color="false"
+              :copy-label="field.label"
+              variant="default"
               :show-favorite="false"
+              class="color-chip-action-group color-chip-action-group--inline"
             />
           </div>
         </div>
@@ -525,6 +534,7 @@ const showTypography = computed(() => typographyItems.value.length > 0);
 }
 
 .color-chip {
+  position: relative;
   min-height: 88px;
   border-radius: var(--radius-md);
   padding: 10px;
@@ -532,6 +542,18 @@ const showTypography = computed(() => typographyItems.value.length > 0);
   flex-direction: column;
   justify-content: space-between;
   border: 1px solid var(--border-primary);
+}
+
+.color-chip-action-group {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1;
+
+  &--inline {
+    position: static;
+    margin-top: 4px;
+  }
 }
 
 .color-chip-text {

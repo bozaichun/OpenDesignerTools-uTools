@@ -205,6 +205,9 @@
   border-radius: var(--radius-md); padding: 12px; text-align: center;
   overflow: visible;
 }
+.panel--plain .sim-card {
+  border: none;
+}
 .sim-card-head {
   position: relative;
   display: flex;
@@ -315,30 +318,66 @@
 .gov-check-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
 
 .text-bg-input { margin-bottom: 16px; }
+
+.panel--plain,
+.panel--text {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.stack-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.stack-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.stack-col--preview .text-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
 .text-suggest-grid {
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
   margin-bottom: 20px;
 }
 .text-suggest-card {
-  padding: 16px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-primary);
-  position: relative; min-height: 120px;
-  &.ok { border-color: var(--success); }
-  &.warn { border-color: var(--warning); }
+  padding: 14px;
+  border-radius: var(--radius-md);
+  position: relative;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  &.ok { box-shadow: inset 0 0 0 1px var(--success); }
+  &.warn { box-shadow: inset 0 0 0 1px var(--warning); }
+}
+.text-suggest-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 20px;
 }
 .text-suggest-actions {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 1;
+  position: static;
+  flex-shrink: 0;
 }
 .text-status-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
+  position: static;
+  display: inline-flex;
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   font-size: 10px;
   font-weight: 600;
+  flex-shrink: 0;
   &.ok {
     color: var(--success);
     background: var(--success-bg);
@@ -354,56 +393,11 @@
 .text-suggest-row-2 { font-size: 11px; margin-bottom: 4px; }
 .text-suggest-row-3 { font-size: 11px; font-weight: 600; }
 
-.stack-color-section {
-  padding-top: 16px;
-  border-top: 1px dashed var(--border-primary);
-}
 .stack-color-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 12px;
-}
-.stack-color-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
-}
-.stack-color-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 8px;
-  background: var(--bg-muted);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  transition: border-color 0.15s ease;
-  &:hover { border-color: var(--accent); }
-}
-.stack-color-swatch-wrap {
-  position: relative;
-  width: 100%;
-}
-.stack-color-actions {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  z-index: 1;
-}
-.stack-color-swatch {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-primary);
-}
-.stack-color-hex {
-  font-size: 10px;
-  font-family: monospace;
-  color: var(--text-secondary);
-  word-break: break-all;
-  text-align: center;
 }
 
 @media (max-width: 960px) {
@@ -413,5 +407,6 @@
   .gov-check-grid { grid-template-columns: 1fr; }
   .sim-grid { grid-template-columns: repeat(2, 1fr); }
   .text-suggest-grid { grid-template-columns: repeat(2, 1fr); }
-  .stack-color-grid { grid-template-columns: repeat(3, 1fr); }
+  .stack-layout { grid-template-columns: 1fr; }
+  .stack-col--preview .text-preview-grid { grid-template-columns: repeat(2, 1fr); }
 }

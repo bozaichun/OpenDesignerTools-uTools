@@ -133,7 +133,8 @@ export function computeTextSuggestions(textBgColor) {
     { name: '深灰', color: '#1F2937' },
     { name: '纯白', color: '#FFFFFF' },
     { name: '浅灰', color: '#F9FAFB' },
-    { name: '暖白', color: '#FFFBEB' }
+    { name: '暖白', color: '#FFFBEB' },
+    { name: '中灰', color: '#6B7280' }
   ];
   return cand.map((c) => {
     const ratio = contrast(c.color, textBgColor);

@@ -34,7 +34,7 @@ const dialogDeleteConfirm = ref(false);
 const dialogCodeExport = ref(false);
 const codeExportGroupId = ref(null);
 const newGroupName = ref('');
-const newGroupType = ref('personal');
+const newGroupType = ref('project');
 const deleteTargetId = ref(null);
 const deleteTargetName = ref('');
 const similarityThreshold = ref(5);
@@ -119,13 +119,13 @@ function getGroupTypeLabel(type) {
 function openNewGroupDialog() {
   editingGroupId.value = null;
   newGroupName.value = '';
-  newGroupType.value = 'personal';
+  newGroupType.value = 'project';
   dialogNewGroup.value = true;
 }
 function openEditGroupDialog(row) {
   editingGroupId.value = row.id;
   newGroupName.value = row.name;
-  newGroupType.value = row.type;
+  newGroupType.value = row.type === 'personal' ? 'project' : row.type;
   dialogNewGroup.value = true;
 }
 function closeGroupDialog() {
@@ -313,7 +313,7 @@ onUnmounted(() => {
   <div class="module-palette">
     <Banner
       title="统一管理品牌色与项目色板"
-      description="支持个人 / 项目 / 品牌三类分组，自动查重合并、一键生成代码并与团队共享色板"
+      description="支持项目 / 品牌两类分组，自动查重合并、一键生成代码并与团队共享色板"
       mode="url"
       image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/ColorPaletteManagement.png"
     />
@@ -386,7 +386,6 @@ onUnmounted(() => {
         <div class="form-field">
           <label class="form-label">分组类型</label>
           <Selector v-model="newGroupType">
-            <option value="personal">个人</option>
             <option value="project">项目</option>
             <option value="brand">品牌</option>
           </Selector>

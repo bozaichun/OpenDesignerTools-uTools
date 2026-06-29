@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import Dialog from '../../components/Dialog.vue';
-import { copyToClipboard, showToast } from '../../utils/colorUtils';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -18,11 +18,6 @@ const dialogVisible = computed({
     emit('update:visible', val);
   }
 });
-
-function handleCopy(value, percent) {
-  copyToClipboard(value);
-  showToast(null, `已复制 ${percent}% 网点色: ${value}`, 'success');
-}
 </script>
 
 <template>
@@ -38,14 +33,13 @@ function handleCopy(value, percent) {
         </div>
         <div class="halftone-chart-hex-cell">
           <span class="halftone-chart-hex">{{ level.color }}</span>
-          <button
-            type="button"
-            class="halftone-chart-copy-btn"
-            title="复制"
-            @click="handleCopy(level.color, level.percent)"
-          >
-            <span class="iconfont icon-Copy"></span>
-          </button>
+          <ColorActionGroup
+            :value="level.color"
+            :copy-label="level.percent + '% 网点色'"
+            :favorite-name="level.percent + '% 网点色'"
+            variant="default"
+            class="halftone-chart-actions"
+          />
         </div>
       </div>
     </div>
@@ -66,7 +60,7 @@ function handleCopy(value, percent) {
 .halftone-chart-hex-cell {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
 }
 .halftone-chart-hex {
@@ -74,30 +68,7 @@ function handleCopy(value, percent) {
   font-family: monospace;
   color: var(--text-tertiary);
 }
-.halftone-chart-copy-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
+.halftone-chart-actions {
   flex-shrink: 0;
-
-  .iconfont {
-    font-size: 12px;
-    line-height: 1;
-  }
-
-  &:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: var(--accent-soft);
-  }
 }
 </style>

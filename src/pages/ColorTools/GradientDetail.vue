@@ -3,7 +3,8 @@ import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ColorPicker from '../../components/ColorPicker.vue';
 import Dialog from '../../components/Dialog.vue';
-import ColorActionGroup from '../../components/ColorActionGroup.vue';
+import ColorStripCard from '../../components/ColorStripCard.vue';
+import ColorStripSection from '../../components/ColorStripSection.vue';
 import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
 import { parseColor, rgbToHsl, copyToClipboard, showToast } from '../../utils/colorUtils';
 import {
@@ -174,7 +175,7 @@ onUnmounted(() => {
       <div class="gradient-workbench">
         <div class="gradient-control-col">
           <div class="gradient-color-inputs">
-            <div v-for="stop in gradientStops" :key="stop.position" class="gradient-stop-input">
+            <div v-for="(stop, idx) in gradientStops" :key="'stop-' + idx" class="gradient-stop-input">
               <label>节点 {{ idx + 1 }}</label>
               <ColorPicker v-model="stop.color" />
               <input v-model="stop.position" type="range" min="0" max="100" class="gradient-pos-slider" />
@@ -222,22 +223,15 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="color-strip-section">
-        <div class="section-title inline">自动提取的 8 个节点色值</div>
-        <div class="color-strip-grid color-strip-grid--8">
-          <div v-for="(color, idx) in extractedGradientColors" :key="color" class="color-strip-cell">
-            <div class="color-strip-swatch" :style="{ background: color }"></div>
-            <div class="color-strip-meta">
-              <span class="color-strip-hex">{{ color }}</span>
-              <ColorActionGroup
-                :value="color"
-                :copy-label="color"
-                :favorite-name="'渐变节点 ' + (idx + 1)"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <ColorStripSection title="自动提取的 8 个节点色值" :columns="8">
+        <ColorStripCard
+          v-for="(color, idx) in extractedGradientColors"
+          :key="color"
+          :color="color"
+          :copy-label="color"
+          :favorite-name="'渐变节点 ' + (idx + 1)"
+        />
+      </ColorStripSection>
     </section>
 
     <Dialog
@@ -256,8 +250,6 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
-@use './colorStripCard.scss' as *;
-
 .color-detail { width: 100%; min-width: 0; }
 .panel {
   background: var(--bg-card); border: 1px solid var(--border-primary);

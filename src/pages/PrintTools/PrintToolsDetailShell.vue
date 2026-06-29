@@ -50,6 +50,7 @@ function handleModuleChange(moduleId) {
       <ColorPicker :model-value="color" @update:model-value="$emit('update:color', $event)" />
       <slot name="extra"></slot>
     </div>
+    <slot name="footer"></slot>
   </section>
 </template>
 

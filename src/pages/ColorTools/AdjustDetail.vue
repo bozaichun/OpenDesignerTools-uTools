@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
-import ColorActionGroup from '../../components/ColorActionGroup.vue';
+import ColorStripCard from '../../components/ColorStripCard.vue';
+import ColorStripSection from '../../components/ColorStripSection.vue';
 import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
 import { parseColor, rgbToHsl, getContrastColor as gcc } from '../../utils/colorUtils';
 import {
@@ -160,31 +161,21 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="color-strip-section">
-        <div class="section-title inline">同色系 9 阶色卡</div>
-        <div class="color-strip-grid color-strip-grid--9">
-          <div v-for="shade in adjustedShades" :key="shade.level" class="color-strip-cell">
-            <div class="color-strip-swatch" :style="{ background: shade.color }">
-              <span class="color-strip-label" :style="{ color: getContrastColor(shade.color) }">{{ shade.level }}</span>
-            </div>
-            <div class="color-strip-meta">
-              <span class="color-strip-hex">{{ shade.color }}</span>
-              <ColorActionGroup
-                :value="shade.color"
-                :copy-label="shade.color"
-                :favorite-name="'色阶 ' + shade.level"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <ColorStripSection title="同色系 9 阶色卡" :columns="9">
+        <ColorStripCard
+          v-for="shade in adjustedShades"
+          :key="shade.level"
+          :color="shade.color"
+          :label="String(shade.level)"
+          :copy-label="shade.color"
+          :favorite-name="'色阶 ' + shade.level"
+        />
+      </ColorStripSection>
     </section>
   </div>
 </template>
 
 <style lang="scss" scoped>
-@use './colorStripCard.scss' as *;
-
 .color-detail { width: 100%; min-width: 0; }
 .panel {
   background: var(--bg-card);
@@ -195,7 +186,6 @@ onUnmounted(() => {
   min-width: 0;
 }
 .section-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 20px 0 12px; }
-.section-title.inline { margin: 0 0 10px; }
 .adjust-panel { padding: 16px; }
 .adjust-workbench {
   display: grid;

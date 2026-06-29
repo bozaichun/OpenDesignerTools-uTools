@@ -2,7 +2,8 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ColorPicker from '../../components/ColorPicker.vue';
-import ColorActionGroup from '../../components/ColorActionGroup.vue';
+import ColorStripCard from '../../components/ColorStripCard.vue';
+import ColorStripSection from '../../components/ColorStripSection.vue';
 import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
 import {
   parseColor,
@@ -212,31 +213,21 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="color-strip-section">
-        <div class="section-title inline">A → B 过渡色（10 阶）</div>
-        <div class="color-strip-grid color-strip-grid--10">
-          <div v-for="(color, idx) in transitionColors" :key="color" class="color-strip-cell">
-            <div class="color-strip-swatch" :style="{ background: color }">
-              <span class="color-strip-label" :style="{ color: getContrastColor(color) }">{{ Math.round(idx / 9 * 100) }}%</span>
-            </div>
-            <div class="color-strip-meta">
-              <span class="color-strip-hex">{{ color }}</span>
-              <ColorActionGroup
-                :value="color"
-                :copy-label="color"
-                :favorite-name="'过渡色 ' + Math.round(idx / 9 * 100) + '%'"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <ColorStripSection title="A → B 过渡色（10 阶）" :columns="10">
+        <ColorStripCard
+          v-for="(color, idx) in transitionColors"
+          :key="color"
+          :color="color"
+          :label="Math.round(idx / 9 * 100) + '%'"
+          :copy-label="color"
+          :favorite-name="'过渡色 ' + Math.round(idx / 9 * 100) + '%'"
+        />
+      </ColorStripSection>
     </section>
   </div>
 </template>
 
 <style lang="scss" scoped>
-@use './colorStripCard.scss' as *;
-
 .color-detail { width: 100%; min-width: 0; }
 .panel {
   background: var(--bg-card); border: 1px solid var(--border-primary);

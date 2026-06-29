@@ -7,7 +7,7 @@ const simResults = computed(() => computeSimResults(simColor.value));
 </script>
 
 <template>
-  <section class="panel">
+  <section class="panel panel--plain">
     <div class="sim-grid">
       <div v-for="sim in simResults" :key="sim.key" class="sim-card">
         <div class="sim-card-head">

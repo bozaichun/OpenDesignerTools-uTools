@@ -28,7 +28,7 @@ function applyPair(p) {
 </script>
 
 <template>
-  <section class="panel wcag-panel">
+  <section class="panel panel--plain wcag-panel">
     <!-- 对比度仪表盘 -->
     <div class="contrast-gauge-card wcag-gauge-full">
       <div class="gauge-head">

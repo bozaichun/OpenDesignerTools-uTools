@@ -5,12 +5,8 @@ import {
   formatHEX, formatRGB, formatHSL, formatCMYK, formatHSV,
   copyToClipboard, showToast
 } from '../../utils/colorUtils';
-import {
-  isFavorite,
-  toggleFavorite,
-  normalizeFavoriteHex
-} from '../../utils/favoriteStorage';
 import ModuleTitle from '../../components/ModuleTitle.vue';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import Dialog from '../../components/Dialog.vue';
 import Straw from '../../components/Straw.vue';
 import { openInUBrowser } from '../../utils/ubrowser.js';
@@ -43,8 +39,6 @@ const paletteCols = computed(() => {
   if (total <= 6) return 3;
   return 4;
 });
-
-let handleFavoritesChanged = null;
 
 function loadAnalysisData() {
   try {
@@ -95,36 +89,10 @@ function updateHeaderActions() {
     clearHeaderActions();
     return;
   }
-  const hex = pickedColor.value?.hex;
-  const favorited = hex ? isFavorite(hex) : false;
   setHeaderActions([
-    {
-      label: favorited ? '已收藏' : '收藏',
-      onClick: () => handleFavoritePicked(),
-      secondary: true
-    },
     { label: '重新选择', onClick: () => handleReselect(), secondary: true },
     { label: '生成色卡', onClick: () => openPaletteDialog() }
   ]);
-}
-function handleFavoritePicked() {
-  if (!pickedColor.value?.hex) {
-    showToast(null, '请先在图片上取色', 'error');
-    return;
-  }
-  const hex = normalizeFavoriteHex(pickedColor.value.hex) || pickedColor.value.hex;
-  const wasFavorited = isFavorite(hex);
-  const result = toggleFavorite({ hex, name: hex });
-  if (!result.ok) {
-    showToast(null, result.message || '操作失败', 'error');
-    return;
-  }
-  showToast(
-    null,
-    wasFavorited ? '已取消收藏' : `已将 “${hex}” 加入我的收藏`,
-    'success'
-  );
-  updateHeaderActions();
 }
 function handleReselect() {
   fileInput.value.value = '';
@@ -383,12 +351,9 @@ watch(mainColors, () => {
 onMounted(() => {
   loadAnalysisData();
   updateHeaderActions();
-  handleFavoritesChanged = () => updateHeaderActions();
-  window.addEventListener('color-favorites-changed', handleFavoritesChanged);
 });
 onUnmounted(() => {
   clearHeaderActions();
-  window.removeEventListener('color-favorites-changed', handleFavoritesChanged);
 });
 </script>
 
@@ -435,10 +400,12 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-      <div class="palette-dialog-footer">
-        <button class="palette-btn secondary" @click="paletteDialogVisible = false">取消</button>
-        <button class="palette-btn" @click="downloadPalette">下载色卡</button>
-      </div>
+      <template #footer>
+        <div class="palette-dialog-footer">
+          <button class="palette-btn secondary" @click="paletteDialogVisible = false">取消</button>
+          <button class="palette-btn" @click="downloadPalette">下载色卡</button>
+        </div>
+      </template>
     </Dialog>
 
     <!-- 分析结果内容（始终显示，重选时保留旧数据） -->
@@ -471,66 +438,64 @@ onUnmounted(() => {
           />
 
           <div class="picker-result">
-            <div
-              class="picker-result-swatch"
-              :style="{ background: pickedColor.hex }"
-            ></div>
+            <div class="picker-result-visual">
+              <div
+                class="picker-result-swatch"
+                :style="{ background: pickedColor.hex }"
+                @click="copyValue(pickedColor.hex, 'HEX')"
+              ></div>
+              <button class="pr-search" @click="searchOnBaidu(pickedColor.hex)">色彩搭配</button>
+            </div>
             <div class="picker-result-info">
               <div class="pr-row">
                 <span class="pr-label">HEX</span>
                 <span class="pr-value">{{ pickedColor.hex }}</span>
-                <button
-                  class="code-copy"
-                  title="复制 HEX"
-                  @click="copyValue(pickedColor.hex, 'HEX')"
-                >
-                  <span class="iconfont icon-Copy"></span>
-                </button>
-                <button class="pr-search" @click="searchOnBaidu(pickedColor.hex)">色彩搭配</button>
+                <ColorActionGroup
+                  :value="pickedColor.hex"
+                  copy-label="HEX"
+                  :favorite-name="pickedColor.hex"
+                  variant="default"
+                />
               </div>
               <div class="pr-row">
                 <span class="pr-label">RGB</span>
                 <span class="pr-value">{{ pickedColor.rgb }}</span>
-                <button
-                  class="code-copy"
-                  title="复制 RGB"
-                  @click="copyValue(pickedColor.rgb, 'RGB')"
-                >
-                  <span class="iconfont icon-Copy"></span>
-                </button>
+                <ColorActionGroup
+                  :value="pickedColor.rgb"
+                  copy-label="RGB"
+                  :show-favorite="false"
+                  variant="default"
+                />
               </div>
               <div class="pr-row">
                 <span class="pr-label">HSL</span>
                 <span class="pr-value">{{ pickedColor.hsl }}</span>
-                <button
-                  class="code-copy"
-                  title="复制 HSL"
-                  @click="copyValue(pickedColor.hsl, 'HSL')"
-                >
-                  <span class="iconfont icon-Copy"></span>
-                </button>
+                <ColorActionGroup
+                  :value="pickedColor.hsl"
+                  copy-label="HSL"
+                  :show-favorite="false"
+                  variant="default"
+                />
               </div>
               <div class="pr-row">
                 <span class="pr-label">CMYK</span>
                 <span class="pr-value">{{ pickedColor.cmyk }}</span>
-                <button
-                  class="code-copy"
-                  title="复制 CMYK"
-                  @click="copyValue(pickedColor.cmyk, 'CMYK')"
-                >
-                  <span class="iconfont icon-Copy"></span>
-                </button>
+                <ColorActionGroup
+                  :value="pickedColor.cmyk"
+                  copy-label="CMYK"
+                  :show-favorite="false"
+                  variant="default"
+                />
               </div>
               <div class="pr-row">
                 <span class="pr-label">HSV</span>
                 <span class="pr-value">{{ pickedColor.hsv }}</span>
-                <button
-                  class="code-copy"
-                  title="复制 HSV"
-                  @click="copyValue(pickedColor.hsv, 'HSV')"
-                >
-                  <span class="iconfont icon-Copy"></span>
-                </button>
+                <ColorActionGroup
+                  :value="pickedColor.hsv"
+                  copy-label="HSV"
+                  :show-favorite="false"
+                  variant="default"
+                />
               </div>
             </div>
           </div>
@@ -570,37 +535,52 @@ onUnmounted(() => {
               <div class="code-row">
                 <span class="code-label">HEX</span>
                 <span class="code-value">{{ color.hex }}</span>
-                <button class="code-copy" @click="copyValue(color.hex, 'HEX')" title="复制 HEX">
-                  <span class="iconfont icon-Copy"></span>
-                </button>
+                <ColorActionGroup
+                  :value="color.hex"
+                  copy-label="HEX"
+                  :favorite-name="color.hex"
+                  variant="default"
+                />
               </div>
               <div class="code-row">
                 <span class="code-label">RGB</span>
                 <span class="code-value">{{ color.rgb }}</span>
-                <button class="code-copy" @click="copyValue(color.rgb, 'RGB')" title="复制 RGB">
-                  <span class="iconfont icon-Copy"></span>
-                </button>
+                <ColorActionGroup
+                  :value="color.rgb"
+                  copy-label="RGB"
+                  :show-favorite="false"
+                  variant="default"
+                />
               </div>
               <div class="code-row">
                 <span class="code-label">HSL</span>
                 <span class="code-value">{{ color.hsl }}</span>
-                <button class="code-copy" @click="copyValue(color.hsl, 'HSL')" title="复制 HSL">
-                  <span class="iconfont icon-Copy"></span>
-                </button>
+                <ColorActionGroup
+                  :value="color.hsl"
+                  copy-label="HSL"
+                  :show-favorite="false"
+                  variant="default"
+                />
               </div>
               <div class="code-row">
                 <span class="code-label">CMYK</span>
                 <span class="code-value">{{ color.cmyk || getColorFormat(color, 'cmyk') }}</span>
-                <button class="code-copy" @click="copyValue(color.cmyk || getColorFormat(color, 'cmyk'), 'CMYK')" title="复制 CMYK">
-                  <span class="iconfont icon-Copy"></span>
-                </button>
+                <ColorActionGroup
+                  :value="color.cmyk || getColorFormat(color, 'cmyk')"
+                  copy-label="CMYK"
+                  :show-favorite="false"
+                  variant="default"
+                />
               </div>
               <div class="code-row">
                 <span class="code-label">HSV</span>
                 <span class="code-value">{{ color.hsv || getColorFormat(color, 'hsv') }}</span>
-                <button class="code-copy" @click="copyValue(color.hsv || getColorFormat(color, 'hsv'), 'HSV')" title="复制 HSV">
-                  <span class="iconfont icon-Copy"></span>
-                </button>
+                <ColorActionGroup
+                  :value="color.hsv || getColorFormat(color, 'hsv')"
+                  copy-label="HSV"
+                  :show-favorite="false"
+                  variant="default"
+                />
               </div>
             </div>
             <div class="color-actions">
@@ -622,6 +602,7 @@ onUnmounted(() => {
 .module-detail {
   width: 100%;
   min-width: 0;
+  padding-bottom: 72px;
 }
 
 /* ============ 绌虹姸鎬?============ */
@@ -849,11 +830,20 @@ onUnmounted(() => {
   border: 1px solid var(--border-primary);
 }
 
+.picker-result-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  flex-shrink: 0;
+  width: 100px;
+}
+
 .picker-result-swatch {
   width: 100px;
   height: 100px;
   border-radius: var(--radius-md);
-  border: 2px solid var(--border-strong);
+  border: 1px solid var(--border-strong);
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
@@ -898,7 +888,8 @@ onUnmounted(() => {
 }
 
 .pr-search {
-  padding: 4px 12px;
+  width: 100%;
+  padding: 8px 10px;
   background: var(--accent-soft);
   color: var(--accent);
   border: 1px solid var(--accent);
@@ -907,6 +898,7 @@ onUnmounted(() => {
   font-size: 12px;
   flex-shrink: 0;
   transition: all 0.15s ease;
+  text-align: center;
 
   &:hover {
     background: var(--accent);
@@ -930,10 +922,26 @@ onUnmounted(() => {
     gap: 14px;
   }
 
-  .picker-result-swatch {
+  .picker-result {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .picker-result-visual {
     width: 100%;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .picker-result-swatch {
+    width: 80px;
     height: 80px;
-    aspect-ratio: 4 / 1;
+    aspect-ratio: auto;
+  }
+
+  .pr-search {
+    flex: 1;
+    width: auto;
   }
 }
 
@@ -941,6 +949,7 @@ onUnmounted(() => {
 .palette-dialog-body {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   margin: -16px -20px 0;
   padding: 0;
 }
@@ -956,6 +965,8 @@ onUnmounted(() => {
   display: grid;
   gap: 12px;
   padding: 12px;
+  max-height: min(52vh, 480px);
+  overflow-y: auto;
 }
 
 .palette-grid.palette-cols-3 {
@@ -1031,10 +1042,7 @@ onUnmounted(() => {
   justify-content: flex-end;
   align-items: center;
   gap: 10px;
-  padding: 12px 20px;
-  margin: 0 -20px -24px;
-  border-top: 1px solid var(--border-primary);
-  background: var(--bg-muted);
+  width: 100%;
 }
 
 .palette-btn {
