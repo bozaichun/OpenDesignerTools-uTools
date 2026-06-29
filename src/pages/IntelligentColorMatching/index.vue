@@ -50,7 +50,6 @@ provide('setIcmChatInSession', (active) => {
   height: calc(100vh - 56px - 36px);
   min-height: calc(100vh - 56px - 36px);
   margin: -20px;
-  padding: 0 20px;
   box-sizing: border-box;
 }
 .module-intelligent-body {
@@ -120,6 +119,12 @@ provide('setIcmChatInSession', (active) => {
   flex-shrink: 0;
 }
 .page-header-leading-slot .semantic-header-desc {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  flex-shrink: 1;
+}
+.page-header-leading-slot .semantic-header-desc-text {
   font-size: 12px;
   color: var(--text-tertiary);
   line-height: 1.5;
@@ -128,6 +133,58 @@ provide('setIcmChatInSession', (active) => {
   text-overflow: ellipsis;
   max-width: min(480px, 38vw);
   min-width: 0;
+}
+.page-header-leading-slot .semantic-header-desc-prompt-wrap {
+  display: none;
+  position: relative;
+  flex-shrink: 0;
+}
+.page-header-leading-slot .semantic-header-desc-prompt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--text-secondary);
+  cursor: help;
+  user-select: none;
+  line-height: 1;
+  transition: color 0.15s ease;
+  &:hover { color: var(--accent); }
+}
+.page-header-leading-slot .semantic-header-desc-tip {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: max-content;
+  max-width: min(320px, 70vw);
+  padding: 8px 12px;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+.page-header-leading-slot .semantic-header-desc-prompt-wrap:hover .semantic-header-desc-tip {
+  visibility: visible;
+  opacity: 1;
+}
+@media (max-width: 1024px) {
+  .page-header-leading-slot .semantic-header-desc-text {
+    display: none;
+  }
+  .page-header-leading-slot .semantic-header-desc-prompt-wrap {
+    display: inline-flex;
+    align-items: center;
+  }
 }
 .page-header-leading-slot .mode-btn {
   display: inline-flex;

@@ -4,27 +4,93 @@ import { getUniquePresets, COLOR_GROUPS } from '../../data/presetColors';
 import { showToast } from '../../utils/colorUtils';
 import { downloadPaletteCard } from '../../utils/paletteCard';
 import ColorActionGroup from '../../components/ColorActionGroup.vue';
-import Input from '../../components/Input.vue';
 import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
 import Banner from '../../components/Banner.vue';
+import LayoutContainer from '../../components/LayoutContainer.vue';
+import GridLayout from '../../components/GridLayout.vue';
 
 const setHeaderActions = inject('setHeaderActions');
 const clearHeaderActions = inject('clearHeaderActions');
 
 const presetColors = getUniquePresets();
 const colorGroups = COLOR_GROUPS;
-const searchText = ref('');
 const activeGroup = ref(null);
 const modalVisible = ref(false);
 const modalColor = ref({ name: '', hex: '', group: '' });
 const selectedKeys = ref(new Set());
+const filterStickSentinel = ref(null);
+const filterBarRef = ref(null);
+const filterBarStuck = ref(false);
+const filterBarHeight = ref(0);
+const filterBarFixedStyle = ref({});
+let filterStickObserver = null;
+let filterBarResizeObserver = null;
+let filterScrollRoot = null;
+
+function updateFilterBarLayout() {
+  const bar = filterBarRef.value;
+  if (!bar) return;
+
+  filterBarHeight.value = bar.offsetHeight;
+  const scrollRoot = bar.closest('.content-body');
+  if (!scrollRoot) return;
+
+  const rect = scrollRoot.getBoundingClientRect();
+  filterBarFixedStyle.value = {
+    top: `${rect.top}px`,
+    left: `${rect.left}px`,
+    width: `${rect.width}px`
+  };
+}
+
+function handleFilterScrollRootChange() {
+  updateFilterBarLayout();
+}
+
+function setupFilterBarStick() {
+  filterScrollRoot = filterStickSentinel.value?.closest('.content-body');
+  if (!filterScrollRoot || !filterStickSentinel.value) return;
+
+  updateFilterBarLayout();
+
+  filterStickObserver = new IntersectionObserver(
+    ([entry]) => {
+      filterBarStuck.value = !entry.isIntersecting;
+      if (filterBarStuck.value) {
+        updateFilterBarLayout();
+      }
+    },
+    { root: filterScrollRoot, threshold: 0 }
+  );
+  filterStickObserver.observe(filterStickSentinel.value);
+
+  filterScrollRoot.addEventListener('scroll', handleFilterScrollRootChange, { passive: true });
+  window.addEventListener('resize', handleFilterScrollRootChange, { passive: true });
+
+  if (typeof ResizeObserver !== 'undefined') {
+    filterBarResizeObserver = new ResizeObserver(() => {
+      updateFilterBarLayout();
+    });
+    filterBarResizeObserver.observe(filterScrollRoot);
+    if (filterBarRef.value) {
+      filterBarResizeObserver.observe(filterBarRef.value);
+    }
+  }
+}
+
+function teardownFilterBarStick() {
+  filterStickObserver?.disconnect();
+  filterStickObserver = null;
+  filterBarResizeObserver?.disconnect();
+  filterBarResizeObserver = null;
+  filterScrollRoot?.removeEventListener('scroll', handleFilterScrollRootChange);
+  window.removeEventListener('resize', handleFilterScrollRootChange);
+  filterScrollRoot = null;
+}
 
 const filteredColors = computed(() => {
-  const search = searchText.value.trim().toLowerCase();
   return presetColors.filter(c => {
-    const matchSearch = !search || c.name.toLowerCase().includes(search) || c.hex.toLowerCase().includes(search);
-    const matchGroup = !activeGroup.value || c.group === activeGroup.value;
-    return matchSearch && matchGroup;
+    return !activeGroup.value || c.group === activeGroup.value;
   });
 });
 
@@ -105,25 +171,41 @@ watch(filteredColors, (list) => {
 
 onMounted(() => {
   updateHeaderActions();
+  setupFilterBarStick();
 });
 
 onUnmounted(() => {
+  teardownFilterBarStick();
   clearHeaderActions();
 });
 </script>
 
 <template>
-  <div class="module-preset" :class="{ 'has-multi-bar': multiSelectVisible }">
+  <LayoutContainer
+    variant="module"
+    class="module-preset"
+    :class="{ 'has-multi-bar': multiSelectVisible }"
+  >
     <div class="preset-main">
     <Banner
       title="按色系浏览，一键获取颜色值"
-      description="覆盖红橙黄绿蓝紫黑白灰等常用色系，支持名称与 HEX 搜索快速定位"
+      description="覆盖红橙黄绿蓝紫黑白灰等常用色系，按色系筛选快速定位"
       mode="url"
       image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/PresetColors.png"
     />
-    <!-- 筛选与搜索 -->
-    <div class="preset-filter-bar">
-      <div class="group-chips">
+    <!-- 色系筛选（滚动后吸顶） -->
+    <div ref="filterStickSentinel" class="preset-filter-stick-sentinel" aria-hidden="true"></div>
+    <div
+      class="preset-filter-anchor"
+      :style="filterBarStuck ? { height: `${filterBarHeight}px` } : undefined"
+    >
+      <div
+        ref="filterBarRef"
+        class="preset-filter-bar"
+        :class="{ 'is-stuck': filterBarStuck }"
+        :style="filterBarStuck ? filterBarFixedStyle : undefined"
+      >
+        <div class="group-chips">
         <div
           class="chip"
           :class="{ active: activeGroup === null }"
@@ -141,16 +223,19 @@ onUnmounted(() => {
           {{ group }}
         </div>
       </div>
-      <div class="search-wrap">
-        <Input
-          v-model="searchText"
-          placeholder="搜索颜色名称或 HEX 值..."
-        />
       </div>
     </div>
 
     <!-- 颜色卡片网格 -->
-    <div v-if="filteredColors.length > 0" class="preset-grid">
+    <GridLayout
+      v-if="filteredColors.length > 0"
+      class="preset-grid"
+      :cols="5"
+      :cols-large="6"
+      :cols-xlarge="6"
+      :cols-tablet="3"
+      :cols-mobile="2"
+    >
       <div
         v-for="color in filteredColors"
         :key="color.name"
@@ -188,11 +273,11 @@ onUnmounted(() => {
           />
         </div>
       </div>
-    </div>
+    </GridLayout>
 
     <!-- 空状态 -->
     <div v-else class="empty-state">
-      没有找到匹配的颜色，请尝试其他搜索词。
+      当前色系下暂无颜色。
     </div>
     </div>
 
@@ -227,7 +312,7 @@ onUnmounted(() => {
       v-model:visible="modalVisible"
       :color="modalColor"
     />
-  </div>
+  </LayoutContainer>
 </template>
 
 <style lang="scss" scoped>
@@ -252,20 +337,40 @@ onUnmounted(() => {
 
 .preset-main {
   min-width: 0;
+
+  :deep(.app-banner) {
+    margin-bottom: 16px;
+  }
 }
 
-/* ============ 筛选与搜索 ============ */
+/* ============ 色系筛选 ============ */
+.preset-filter-stick-sentinel {
+  height: 0;
+  width: 100%;
+  pointer-events: none;
+}
+
+.preset-filter-anchor {
+  min-width: 0;
+}
+
 .preset-filter-bar {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-}
+  padding: 6px 0 10px;
+  margin-bottom: 12px;
+  background: var(--bg-card);
+  box-sizing: border-box;
 
-.search-wrap {
-  flex-shrink: 0;
-  width: 280px;
+  &.is-stuck {
+    position: fixed;
+    z-index: 15;
+    margin-bottom: 0;
+    padding: 8px 20px 10px;
+    border-bottom: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-bottom);
+  }
 }
 
 /* ============ 分组标签 ============ */
@@ -273,8 +378,7 @@ onUnmounted(() => {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  flex: 1;
-  min-width: 0;
+  justify-content: center;
 }
 
 .chip {
@@ -301,11 +405,6 @@ onUnmounted(() => {
 }
 
 /* ============ 颜色卡片网格 ============ */
-.preset-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-}
 
 .preset-card {
   position: relative;
@@ -630,31 +729,10 @@ onUnmounted(() => {
 }
 
 /* ============ 响应式 ============ */
-@media (max-width: 1200px) {
-  .preset-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .preset-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
 @media (max-width: 640px) {
-  .preset-filter-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .search-wrap {
-    width: 100%;
-  }
-
-  .preset-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+  .preset-filter-bar.is-stuck {
+    padding-left: 14px;
+    padding-right: 14px;
   }
 
   .module-preset.has-multi-bar {

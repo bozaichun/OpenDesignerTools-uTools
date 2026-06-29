@@ -6,6 +6,8 @@ import Input from '../../components/Input.vue';
 import Selector from '../../components/Selector.vue';
 import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
 import Banner from '../../components/Banner.vue';
+import LayoutContainer from '../../components/LayoutContainer.vue';
+import GridLayout from '../../components/GridLayout.vue';
 import {
   getAllFavorites,
   removeFavorite
@@ -141,14 +143,21 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="module-favorites">
+  <LayoutContainer variant="module" class="module-favorites">
     <Banner
       title="收藏常用色，快速取用"
       description="在预置颜色或其他页面点击收藏图标，将颜色保存到这里统一管理，可一键添加到色板"
       mode="url"
       image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/MyCollection.png"
     />
-    <div v-if="favorites.length > 0" class="favorites-grid">
+    <GridLayout
+      v-if="favorites.length > 0"
+      class="favorites-grid"
+      :cols="4"
+      :cols-large="5"
+      :cols-tablet="3"
+      :cols-mobile="1"
+    >
       <div
         v-for="item in favorites"
         :key="item.hex"
@@ -186,7 +195,7 @@ onUnmounted(() => {
           更多格式
         </button>
       </div>
-    </div>
+    </GridLayout>
 
     <div v-else class="empty-state">
       <div class="empty-icon">☆</div>
@@ -274,18 +283,12 @@ onUnmounted(() => {
         <button class="primary-btn" @click="goToPaletteManager">前往色板管理</button>
       </div>
     </Dialog>
-  </div>
+  </LayoutContainer>
 </template>
 
 <style lang="scss" scoped>
 .module-favorites {
   width: 100%;
-}
-
-.favorites-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
 }
 
 .favorite-card {
@@ -501,23 +504,7 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 1200px) {
-  .favorites-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .favorites-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 @media (max-width: 640px) {
-  .favorites-grid {
-    grid-template-columns: 1fr;
-  }
-
   .card-actions {
     flex-wrap: wrap;
     justify-content: space-between;

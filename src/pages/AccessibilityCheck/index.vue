@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import Banner from '../../components/Banner.vue';
+import LayoutContainer from '../../components/LayoutContainer.vue';
+import GridLayout from '../../components/GridLayout.vue';
 import ColorPicker from '../../components/ColorPicker.vue';
 import {
   DETAIL_MODULES,
@@ -50,7 +52,7 @@ function goToDetail(moduleId) {
 </script>
 
 <template>
-  <div class="module-access">
+  <LayoutContainer variant="module" class="module-access">
     <Banner
       title="输入色值，四项无障碍分析一步完成"
       description="选择或输入颜色，同步查看 WCAG 对比度、色弱模拟、政企合规、文字叠色推荐"
@@ -58,13 +60,13 @@ function goToDetail(moduleId) {
       image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/ColorContrast.png"
     />
 
-    <section class="panel unified-panel">
+    <LayoutContainer variant="panel" tag="section" class="unified-panel">
       <div class="unified-input-row">
         <ColorPicker v-model="fgColor" />
         <ColorPicker v-model="bgColor" />
       </div>
 
-      <div class="summary-grid">
+      <GridLayout class="summary-grid" :cols="4" :cols-tablet="2" :cols-mobile="1">
         <div class="summary-card">
           <div class="summary-label">WCAG 对比度</div>
           <div class="summary-swatch" :style="{ background: fgColor, borderColor: bgColor }"></div>
@@ -111,21 +113,13 @@ function goToDetail(moduleId) {
             <button class="sm-btn" @click="goToDetail('text')">查看详情</button>
           </div>
         </div>
-      </div>
-    </section>
-  </div>
+      </GridLayout>
+    </LayoutContainer>
+  </LayoutContainer>
 </template>
 
 <style lang="scss" scoped>
 .module-access { width: 100%; min-width: 0; }
-
-.panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  margin-bottom: 20px;
-}
 
 .unified-input-row {
   display: flex;
@@ -136,11 +130,6 @@ function goToDetail(moduleId) {
   :deep(.color-picker) { flex: 1; min-width: 200px; }
 }
 
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
 .summary-card {
   padding: 14px;
   background: var(--bg-muted);
@@ -201,10 +190,4 @@ function goToDetail(moduleId) {
   &:hover { border-color: var(--accent); color: var(--accent); }
 }
 
-@media (max-width: 1024px) {
-  .summary-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 640px) {
-  .summary-grid { grid-template-columns: 1fr; }
-}
 </style>

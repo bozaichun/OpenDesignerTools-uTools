@@ -58,7 +58,13 @@ watch(() => route.name, (name) => {
   <div class="icm-profession-layout">
     <!-- 页头左侧：当前专业模块说明（单实例，避免 keep-alive 多 Teleport 叠加） -->
     <Teleport to="#page-header-leading-slot">
-      <span v-if="headerDesc" :key="route.name" class="semantic-header-desc">{{ headerDesc }}</span>
+      <span v-if="headerDesc" :key="route.name" class="semantic-header-desc">
+        <span class="semantic-header-desc-text">{{ headerDesc }}</span>
+        <span class="semantic-header-desc-prompt-wrap">
+          <span class="semantic-header-desc-prompt iconfont icon-Prompt"></span>
+          <span class="semantic-header-desc-tip">{{ headerDesc }}</span>
+        </span>
+      </span>
     </Teleport>
 
     <!-- 页头右侧：新会话 / 历史记录 / 专业模式模块切换 -->

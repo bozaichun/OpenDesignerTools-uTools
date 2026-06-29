@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import ColorPicker from '../../components/ColorPicker.vue';
 import ColorActionGroup from '../../components/ColorActionGroup.vue';
@@ -15,9 +15,6 @@ import {
 } from './printToolsUtils';
 
 const route = useRoute();
-
-const setHeaderActions = inject('setHeaderActions', () => {});
-const clearHeaderActions = inject('clearHeaderActions', () => {});
 
 const inputColor = ref('#1677FF');
 const colorB = ref('#FFFFFF');
@@ -200,29 +197,11 @@ function buildOverprintSwatchImage(hex, textColor, label, width, height) {
   return canvas.toDataURL('image/png');
 }
 
-function updateHeaderActions() {
-  setHeaderActions([
-    {
-      label: '打印叠印',
-      icon: 'icon-Areality-PrintingTool',
-      iconOnly: true,
-      onClick: () => handlePrintOverprint(),
-    },
-  ]);
-}
-
 watch(() => route.query, () => {
   applyRouteQuery();
 });
 
-onMounted(() => {
-  applyRouteQuery();
-  updateHeaderActions();
-});
-
-onUnmounted(() => {
-  clearHeaderActions();
-});
+applyRouteQuery();
 </script>
 
 <template>
@@ -255,9 +234,7 @@ onUnmounted(() => {
             class="overprint-swatch large"
             :style="{ background: inputColor }"
           >
-            <span :style="{ color: getContrastColor(inputColor) }"
-              >颜色 A</span
-            >
+            <span :style="{ color: getContrastColor(inputColor) }">颜色 A</span>
           </div>
           <div class="overprint-label">{{ inputColor }}</div>
         </div>
@@ -267,9 +244,7 @@ onUnmounted(() => {
             class="overprint-swatch large"
             :style="{ background: colorB }"
           >
-            <span :style="{ color: getContrastColor(colorB) }"
-              >颜色 B</span
-            >
+            <span :style="{ color: getContrastColor(colorB) }">颜色 B</span>
           </div>
           <div class="overprint-label">{{ colorB }}</div>
         </div>
@@ -280,16 +255,23 @@ onUnmounted(() => {
             class="overprint-swatch large overprint-swatch-with-action"
             :style="overprintMixedStyle"
           >
-            <span :style="{ color: getContrastColor(overprintMixedHex) }"
-              >叠印效果</span
-            >
-            <ColorActionGroup
-              :value="overprintMixedHex"
-              copy-label="叠印色"
-              favorite-name="叠印效果"
-              variant="on-color"
-              class="swatch-action-group"
-            />
+            <span :style="{ color: getContrastColor(overprintMixedHex) }">叠印效果</span>
+            <div class="swatch-toolbar">
+              <button
+                type="button"
+                class="swatch-tool-btn"
+                title="打印叠印"
+                @click="handlePrintOverprint"
+              >
+                <span class="iconfont icon-Areality-PrintingTool"></span>
+              </button>
+              <ColorActionGroup
+                :value="overprintMixedHex"
+                copy-label="叠印色"
+                favorite-name="叠印效果"
+                variant="on-color"
+              />
+            </div>
           </div>
           <div class="overprint-label">{{ overprintMixedHex }}</div>
         </div>
@@ -414,10 +396,37 @@ onUnmounted(() => {
 .overprint-swatch-with-action {
   position: relative;
 }
-.swatch-action-group {
+.swatch-toolbar {
   position: absolute;
   top: 3px;
   right: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.swatch-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: var(--chip-on-color-bg);
+  border: 1px solid var(--chip-on-color-border);
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: var(--chip-on-color-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  .iconfont {
+    font-size: 9px;
+    line-height: 1;
+  }
+  &:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-invert);
+  }
 }
 .overprint-plus,
 .overprint-equals {

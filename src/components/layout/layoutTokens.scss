@@ -1,0 +1,46 @@
+// 多端布局断点（与 DESIGN.md §3.4 对齐，扩展大屏 / 数据大屏）
+$layout-bp-mobile-max: 640px;
+$layout-bp-tablet-min: 641px;
+$layout-bp-tablet-max: 1024px;
+$layout-bp-desktop-min: 1025px;
+$layout-bp-large-min: 1441px;
+$layout-bp-xlarge-min: 1921px;
+
+$layout-max-content: 1280px;
+$layout-max-wide: 1600px;
+
+@mixin layout-tablet-up {
+  @media (min-width: $layout-bp-tablet-min) {
+    @content;
+  }
+}
+
+@mixin layout-desktop-up {
+  @media (min-width: $layout-bp-desktop-min) {
+    @content;
+  }
+}
+
+@mixin layout-large-up {
+  @media (min-width: $layout-bp-large-min) {
+    @content;
+  }
+}
+
+@mixin layout-xlarge-up {
+  @media (min-width: $layout-bp-xlarge-min) {
+    @content;
+  }
+}
+
+@mixin layout-mobile-only {
+  @media (max-width: $layout-bp-mobile-max) {
+    @content;
+  }
+}
+
+@mixin layout-tablet-only {
+  @media (min-width: $layout-bp-tablet-min) and (max-width: $layout-bp-tablet-max) {
+    @content;
+  }
+}

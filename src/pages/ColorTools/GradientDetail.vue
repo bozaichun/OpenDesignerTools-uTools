@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ColorPicker from '../../components/ColorPicker.vue';
 import Dialog from '../../components/Dialog.vue';
@@ -18,9 +18,6 @@ import {
 } from './colorToolsUtils';
 
 const route = useRoute();
-
-const setHeaderActions = inject('setHeaderActions', () => {});
-const clearHeaderActions = inject('clearHeaderActions', () => {});
 
 const inputColor = ref('#1677FF');
 const adjustHue = ref(215);
@@ -94,15 +91,6 @@ function handleColorChange(val) {
   }
 }
 
-function updateHeaderActions() {
-  setHeaderActions([
-    {
-      label: '查看 CSS 代码',
-      onClick: () => { cssDialogVisible.value = true; }
-    }
-  ]);
-}
-
 function addStop() {
   if (gradientStops.value.length >= MAX_GRADIENT_STOPS) return;
   const lastPos = gradientStops.value.length > 0
@@ -152,12 +140,7 @@ watch(propsPanelOpen, (open) => {
 
 applyRouteQuery();
 
-onMounted(() => {
-  updateHeaderActions();
-});
-
 onUnmounted(() => {
-  clearHeaderActions();
   document.removeEventListener('pointerdown', handlePropsClickOutside);
 });
 </script>
@@ -195,15 +178,25 @@ onUnmounted(() => {
             <div class="gradient-preview-large" :style="gradientStyle">
               <span class="gradient-preview-text">渐变预览</span>
             </div>
-            <button
-              type="button"
-              class="gradient-props-btn"
-              title="属性调整"
-              :class="{ active: propsPanelOpen }"
-              @click.stop="togglePropsPanel"
-            >
-              <span class="iconfont icon-Areality-Setting"></span>
-            </button>
+            <div class="gradient-preview-toolbar">
+              <button
+                type="button"
+                class="gradient-preview-tool-btn"
+                title="查看 CSS 代码"
+                @click.stop="cssDialogVisible = true"
+              >
+                <span class="iconfont icon-Areality-Code"></span>
+              </button>
+              <button
+                type="button"
+                class="gradient-preview-tool-btn"
+                title="属性调整"
+                :class="{ active: propsPanelOpen }"
+                @click.stop="togglePropsPanel"
+              >
+                <span class="iconfont icon-Areality-Setting"></span>
+              </button>
+            </div>
             <Transition name="gradient-props-panel">
               <div v-if="propsPanelOpen" class="gradient-props-panel">
                 <ul class="gradient-direction-list">
@@ -310,11 +303,16 @@ onUnmounted(() => {
   display: flex; align-items: center; justify-content: center;
   border: 1px solid var(--border-primary);
 }
-.gradient-props-btn {
+.gradient-preview-toolbar {
   position: absolute;
   top: 8px;
   right: 8px;
   z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.gradient-preview-tool-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;

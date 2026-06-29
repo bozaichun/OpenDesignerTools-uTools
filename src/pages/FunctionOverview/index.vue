@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 import { useRouter } from 'vue-router';
+import LayoutContainer from '../../components/LayoutContainer.vue';
+import GridLayout from '../../components/GridLayout.vue';
 import {
   QUICK_START_STEPS,
   FEATURE_GROUPS,
@@ -23,7 +25,7 @@ function goToIcmChat() {
 </script>
 
 <template>
-  <div class="module-overview">
+  <LayoutContainer variant="module" tag="div" class="module-overview">
     <!-- 页头介绍 -->
     <section class="hero-section">
       <div class="hero-content">
@@ -62,7 +64,7 @@ function goToIcmChat() {
     <!-- 快速开始 -->
     <section class="quick-section">
       <h3 class="section-title">快速开始</h3>
-      <div class="quick-grid">
+      <GridLayout class="quick-grid" :cols="3" :cols-tablet="2" :cols-mobile="1">
         <div
           v-for="item in quickStartSteps"
           :key="item.step"
@@ -78,16 +80,18 @@ function goToIcmChat() {
             <span class="iconfont icon-UseImmediately quick-btn-icon"></span>
           </button>
         </div>
-      </div>
+      </GridLayout>
     </section>
 
-    <section
+    <LayoutContainer
       v-for="group in featureGroups"
       :key="group.title"
+      variant="section"
+      tag="section"
       class="feature-section"
     >
       <h3 class="section-title">{{ group.title }}</h3>
-      <div class="feature-grid">
+      <GridLayout class="feature-grid" mode="auto-fill" min-col-width="280px">
         <div
           v-for="item in group.items"
           :key="item.routeId"
@@ -104,8 +108,8 @@ function goToIcmChat() {
             <span class="iconfont icon-UseImmediately feature-link-icon"></span>
           </span>
         </div>
-      </div>
-    </section>
+      </GridLayout>
+    </LayoutContainer>
 
     <!-- 使用提示 -->
     <section class="tips-section">
@@ -114,7 +118,7 @@ function goToIcmChat() {
         <li v-for="tip in usageTips" :key="tip">{{ tip }}</li>
       </ul>
     </section>
-  </div>
+  </LayoutContainer>
 </template>
 
 <style lang="scss" scoped>
@@ -273,9 +277,11 @@ function goToIcmChat() {
 }
 
 .quick-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  /* 列数由 GridLayout 控制 */
+}
+
+.feature-grid {
+  /* auto-fill 由 GridLayout 控制 */
 }
 
 .quick-card {
@@ -355,13 +361,7 @@ function goToIcmChat() {
 }
 
 .feature-section {
-  margin-bottom: 24px;
-}
-
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 10px;
+  /* 间距由 LayoutContainer section 控制 */
 }
 
 .feature-card {
@@ -439,14 +439,6 @@ function goToIcmChat() {
 }
 
 @media (max-width: 900px) {
-  .quick-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .feature-grid {
-    grid-template-columns: 1fr;
-  }
-
   .featured-icm-card {
     flex-direction: column;
     align-items: flex-start;

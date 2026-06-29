@@ -4,7 +4,8 @@ import html2canvas from 'html2canvas';
 import ColorPicker from '../../components/ColorPicker.vue';
 import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import ColorStripCard from '../../components/ColorStripCard.vue';
-import ColorStripSection from '../../components/ColorStripSection.vue';
+import GridLayout from '../../components/GridLayout.vue';
+import { resolveColorStripCols } from '../../components/layoutUtils';
 import Selector from '../../components/Selector.vue';
 import Input from '../../components/Input.vue';
 import Textarea from '../../components/Textarea.vue';
@@ -29,6 +30,17 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['semantic-session-change']);
+
+function getStripGridProps(columns) {
+  const resolved = resolveColorStripCols(columns);
+  return {
+    cols: columns,
+    colsMobile: resolved.mobile,
+    colsTablet: resolved.tablet,
+    colsLarge: resolved.large,
+    colsXlarge: resolved.xlarge
+  };
+}
 
 const moodOptions = [
   { key: 'warm', label: '温暖亲切' },
@@ -827,41 +839,50 @@ onUnmounted(() => {
 
       <div class="mono-palette-module">
         <div class="mono-palette-col mono-palette-col--shades">
-          <ColorStripSection title="同色系深浅色阶" :columns="3" :divider="false">
-            <ColorStripCard
-              v-for="(c, idx) in monochromeShades"
-              :key="c"
-              :color="c"
-              :copy-label="'色阶 ' + (idx + 1)"
-              :favorite-name="'色阶 ' + (idx + 1)"
-            />
-          </ColorStripSection>
+          <div class="palette-section palette-section--plain">
+            <h4 class="palette-section__title">同色系深浅色阶</h4>
+            <GridLayout class="palette-grid" gap="sm" v-bind="getStripGridProps(3)">
+              <ColorStripCard
+                v-for="(c, idx) in monochromeShades"
+                :key="c"
+                :color="c"
+                :copy-label="'色阶 ' + (idx + 1)"
+                :favorite-name="'色阶 ' + (idx + 1)"
+              />
+            </GridLayout>
+          </div>
         </div>
 
         <div class="mono-palette-col mono-palette-col--analogous">
-          <ColorStripSection title="邻近色（左右各 30°）" :columns="1" :divider="false">
-            <ColorStripCard
-              v-for="c in analogousColors"
-              :key="c.name"
-              :color="c.color"
-              :title="c.name"
-              :copy-label="c.name"
-              :favorite-name="c.name"
-            />
-          </ColorStripSection>
+          <div class="palette-section palette-section--plain">
+            <h4 class="palette-section__title">邻近色（左右各 30°）</h4>
+            <GridLayout class="palette-grid" gap="sm" v-bind="getStripGridProps(1)">
+              <ColorStripCard
+                v-for="c in analogousColors"
+                :key="c.name"
+                :color="c.color"
+                :title="c.name"
+                :copy-label="c.name"
+                :favorite-name="c.name"
+              />
+            </GridLayout>
+          </div>
         </div>
 
         <div class="mono-palette-col mono-palette-col--complementary">
-          <ColorStripSection title="互补色 / 三等分色 / 分裂互补色" :columns="2" :divider="false">
-            <ColorStripCard
-              v-for="c in complementaryColors"
-              :key="c.name"
-              :color="c.color"
-              :title="c.name"
-              :copy-label="c.name"
-              :favorite-name="c.name"
-            />
-          </ColorStripSection>
+          <div class="palette-section palette-section--plain">
+            <h4 class="palette-section__title">互补色 / 三等分色 / 分裂互补色</h4>
+            <GridLayout class="palette-grid" gap="sm" v-bind="getStripGridProps(2)">
+              <ColorStripCard
+                v-for="c in complementaryColors"
+                :key="c.name"
+                :color="c.color"
+                :title="c.name"
+                :copy-label="c.name"
+                :favorite-name="c.name"
+              />
+            </GridLayout>
+          </div>
         </div>
       </div>
     </section>
@@ -941,29 +962,35 @@ onUnmounted(() => {
 
       <div v-if="uniqueResult.colors.length" class="unique-palette-module">
         <div class="unique-palette-col unique-palette-col--diff">
-          <ColorStripSection title="差异化配色" :columns="3" :divider="false">
-            <ColorStripCard
-              v-for="c in uniqueResult.colors"
-              :key="c.name"
-              :color="c.color"
-              :title="c.name"
-              :copy-label="c.name"
-              :favorite-name="c.name"
-            />
-          </ColorStripSection>
+          <div class="palette-section palette-section--plain">
+            <h4 class="palette-section__title">差异化配色</h4>
+            <GridLayout class="palette-grid" gap="sm" v-bind="getStripGridProps(3)">
+              <ColorStripCard
+                v-for="c in uniqueResult.colors"
+                :key="c.name"
+                :color="c.color"
+                :title="c.name"
+                :copy-label="c.name"
+                :favorite-name="c.name"
+              />
+            </GridLayout>
+          </div>
         </div>
 
         <div class="unique-palette-col unique-palette-col--avoid">
-          <ColorStripSection title="需要规避的典型配色" :columns="2" :divider="false">
-            <ColorStripCard
-              v-for="c in avoidColors"
-              :key="c.name"
-              :color="c.color"
-              :title="c.name"
-              :copy-label="c.name"
-              :favorite-name="c.name"
-            />
-          </ColorStripSection>
+          <div class="palette-section palette-section--plain">
+            <h4 class="palette-section__title">需要规避的典型配色</h4>
+            <GridLayout class="palette-grid" gap="sm" v-bind="getStripGridProps(2)">
+              <ColorStripCard
+                v-for="c in avoidColors"
+                :key="c.name"
+                :color="c.color"
+                :title="c.name"
+                :copy-label="c.name"
+                :favorite-name="c.name"
+              />
+            </GridLayout>
+          </div>
         </div>
       </div>
     </section>
@@ -974,11 +1001,9 @@ onUnmounted(() => {
 .advanced-mode {
   width: 100%;
   min-width: 0;
-  padding-top: var(--size-20);
 }
 
 .advanced-mode--flush {
-  padding-top: var(--size-20);
 
   .panel {
     margin-bottom: 0;
@@ -1005,6 +1030,7 @@ onUnmounted(() => {
 .semantic-panel {
   position: relative;
   min-width: 0;
+  margin: var(--size-20);
 }
 .semantic-layout {
   display: grid;
@@ -1048,7 +1074,7 @@ onUnmounted(() => {
   background: var(--bg-muted);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
-  max-height: calc(100vh - 56px - 36px - 80px);
+  max-height: calc(100vh - 56px - 36px - 80px - var(--size-20) * 2);
   overflow-y: auto;
 }
 .semantic-preview-toolbar {
@@ -1311,16 +1337,35 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
 }
-.mono-palette-col--shades :deep(.color-strip-section),
-.mono-palette-col--analogous :deep(.color-strip-section),
-.mono-palette-col--complementary :deep(.color-strip-section) {
+.palette-section {
+  min-width: 0;
+  width: 100%;
+}
+.palette-section--plain {
+  padding-top: 0;
+  border-top: none;
+}
+.palette-section__title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.palette-grid {
+  width: 100%;
+  min-width: 0;
+}
+
+.mono-palette-col--shades :deep(.palette-section),
+.mono-palette-col--analogous :deep(.palette-section),
+.mono-palette-col--complementary :deep(.palette-section) {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
-.mono-palette-col--shades :deep(.color-strip-grid),
-.mono-palette-col--analogous :deep(.color-strip-grid),
-.mono-palette-col--complementary :deep(.color-strip-grid) {
+.mono-palette-col--shades :deep(.palette-grid),
+.mono-palette-col--analogous :deep(.palette-grid),
+.mono-palette-col--complementary :deep(.palette-grid) {
   flex: 1;
 }
 
@@ -1343,14 +1388,14 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
 }
-.unique-palette-col--diff :deep(.color-strip-section),
-.unique-palette-col--avoid :deep(.color-strip-section) {
+.unique-palette-col--diff :deep(.palette-section),
+.unique-palette-col--avoid :deep(.palette-section) {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
-.unique-palette-col--diff :deep(.color-strip-grid),
-.unique-palette-col--avoid :deep(.color-strip-grid) {
+.unique-palette-col--diff :deep(.palette-grid),
+.unique-palette-col--avoid :deep(.palette-grid) {
   flex: 1;
 }
 
@@ -1396,6 +1441,10 @@ onUnmounted(() => {
 
 @media (max-width: 1024px) {
   .semantic-layout { grid-template-columns: 1fr; }
+  .mono-palette-module,
+  .unique-palette-module {
+    grid-template-columns: 1fr;
+  }
   .color-grid-5, .color-grid-4, .color-grid-3, .scenario-grid { grid-template-columns: repeat(2, 1fr); }
   .color-grid-9 { grid-template-columns: repeat(5, 1fr); }
 }

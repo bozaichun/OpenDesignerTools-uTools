@@ -2,6 +2,8 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import Banner from "../../components/Banner.vue";
+import LayoutContainer from "../../components/LayoutContainer.vue";
+import GridLayout from "../../components/GridLayout.vue";
 import ColorPicker from "../../components/ColorPicker.vue";
 import { parseColor, rgbToHsl } from "../../utils/colorUtils";
 import {
@@ -83,7 +85,7 @@ function goToDetail(moduleId) {
 </script>
 
 <template>
-  <div class="module-colortools">
+  <LayoutContainer variant="module" class="module-colortools">
     <Banner
       title="输入色值，三项调色分析一步完成"
       description="选择或输入颜色，同步查看色阶微调、渐变编辑、色差比对结果"
@@ -92,12 +94,12 @@ function goToDetail(moduleId) {
     />
 
     <!-- 三项调色统一面板 -->
-    <section class="panel unified-panel">
+    <LayoutContainer variant="panel" tag="section" class="unified-panel">
       <div class="unified-input-row">
         <ColorPicker v-model="inputColor" />
       </div>
 
-      <div class="summary-grid">
+      <GridLayout class="summary-grid" :cols="3" :cols-tablet="1" :cols-mobile="1">
         <div class="summary-card">
           <div class="summary-label">色阶微调</div>
           <div
@@ -153,23 +155,15 @@ function goToDetail(moduleId) {
             </button>
           </div>
         </div>
-      </div>
-    </section>
-  </div>
+      </GridLayout>
+    </LayoutContainer>
+  </LayoutContainer>
 </template>
 
 <style lang="scss" scoped>
 .module-colortools {
   width: 100%;
   min-width: 0;
-}
-
-.panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  margin-bottom: 20px;
 }
 
 .unified-input-row {
@@ -182,12 +176,6 @@ function goToDetail(moduleId) {
     flex: 1;
     min-width: 200px;
   }
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
 }
 
 .summary-card {
@@ -286,9 +274,4 @@ function goToDetail(moduleId) {
   }
 }
 
-@media (max-width: 1024px) {
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

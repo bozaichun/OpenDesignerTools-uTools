@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import Banner from '../../components/Banner.vue';
+import LayoutContainer from '../../components/LayoutContainer.vue';
+import GridLayout from '../../components/GridLayout.vue';
 import ColorPicker from '../../components/ColorPicker.vue';
 import Selector from '../../components/Selector.vue';
 import HalftoneChartDialog from './HalftoneChartDialog.vue';
@@ -72,7 +74,7 @@ function goToDetail(moduleId, extra = {}) {
 </script>
 
 <template>
-  <div class="module-printtools">
+  <LayoutContainer variant="module" class="module-printtools">
     <Banner
       title="输入色值，四项印刷分析一步完成"
       description="选择或输入颜色，同步查看 CMYK 校准、潘通匹配、叠印预览、网点换算结果"
@@ -80,7 +82,7 @@ function goToDetail(moduleId, extra = {}) {
       image-url="https://zblogphp-serverless-code-ap-beijing-1304983928.cos.ap-beijing.myqcloud.com/banner/icon/PrintingTool.png"
     />
     <!-- 统一色值输入 -->
-    <section class="panel unified-panel">
+    <LayoutContainer variant="panel" tag="section" class="unified-panel">
       <div class="unified-input-row">
         <ColorPicker v-model="inputColor" />
         <Selector v-model="cmykProfile" :block="false" :flex="true">
@@ -95,7 +97,7 @@ function goToDetail(moduleId, extra = {}) {
         </Selector>
       </div>
 
-      <div class="summary-grid">
+      <GridLayout class="summary-grid" :cols="4" :cols-tablet="2" :cols-mobile="1">
         <div class="summary-card">
           <div class="summary-label">CMYK 校准</div>
           <div class="summary-value">
@@ -162,28 +164,20 @@ function goToDetail(moduleId, extra = {}) {
             </button>
           </div>
         </div>
-      </div>
-    </section>
+      </GridLayout>
+    </LayoutContainer>
 
     <HalftoneChartDialog
       v-model:visible="halftoneChartVisible"
       :levels="halftoneLevels"
     />
-  </div>
+  </LayoutContainer>
 </template>
 
 <style lang="scss" scoped>
 .module-printtools {
   width: 100%;
   min-width: 0;
-}
-
-.panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  margin-bottom: 20px;
 }
 
 .unified-input-row {
@@ -198,11 +192,6 @@ function goToDetail(moduleId, extra = {}) {
   }
 }
 
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
 .summary-card {
   padding: 14px;
   background: var(--bg-muted);
@@ -264,14 +253,4 @@ function goToDetail(moduleId, extra = {}) {
   }
 }
 
-@media (max-width: 1024px) {
-  .summary-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 640px) {
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import ColorStripCard from '../../components/ColorStripCard.vue';
 import ColorStripSection from '../../components/ColorStripSection.vue';
 import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
@@ -14,9 +15,6 @@ import {
 } from './colorToolsUtils';
 
 const route = useRoute();
-
-const setHeaderActions = inject('setHeaderActions', () => {});
-const clearHeaderActions = inject('clearHeaderActions', () => {});
 
 const inputColor = ref('#1677FF');
 const adjustHue = ref(215);
@@ -67,22 +65,6 @@ function handleColorChange(val) {
   }
 }
 
-function resetAdjust() {
-  adjustHue.value = 215;
-  adjustSaturation.value = 100;
-  adjustLightness.value = 54;
-  inputColor.value = '#1677FF';
-}
-
-function updateHeaderActions() {
-  setHeaderActions([
-    {
-      label: '重置',
-      onClick: () => { resetAdjust(); }
-    }
-  ]);
-}
-
 function getContrastColor(hex) {
   const rgb = parseColor(hex);
   return rgb ? gcc(rgb) : '#000000';
@@ -93,14 +75,6 @@ watch(() => route.query, () => {
 });
 
 applyRouteQuery();
-
-onMounted(() => {
-  updateHeaderActions();
-});
-
-onUnmounted(() => {
-  clearHeaderActions();
-});
 </script>
 
 <template>
