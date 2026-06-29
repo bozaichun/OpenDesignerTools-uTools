@@ -2,19 +2,32 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted, toRaw } from 'vue';
 import html2canvas from 'html2canvas';
 import ColorPicker from '../../components/ColorPicker.vue';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import Selector from '../../components/Selector.vue';
 import Input from '../../components/Input.vue';
 import Textarea from '../../components/Textarea.vue';
 import SemanticDesignSpecPreview from './SemanticDesignSpecPreview.vue';
-import SemanticHistoryDrawer from './SemanticHistoryDrawer.vue';
-import { parseColor, rgbToHex, rgbToHsl, hslToRgb, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
+import { parseColor, rgbToHex, rgbToHsl, hslToRgb, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 import { sanitizeFileName } from '../../utils/codeGenerator';
-import { ADVANCED_TABS } from './intelligentColorMatchingUtils.js';
 import { buildSemanticAiMessages, finalizeSemanticAiResponse, tryParseSemanticAiResponsePartial } from './semanticColorAi.js';
 import { buildSemanticDesignSpecMarkdown } from './semanticDesignSpec.js';
 import { saveSemanticHistorySession } from './semanticHistoryStorage.js';
+import {
+  computeUniqueDifferentiatedPalette,
+  computeIndustryAvoidColors,
+  AVOID_INDUSTRY_OPTIONS
+} from './intelligentColorMatchingUtils.js';
 
-const activeTab = ref('semantic');
+const props = defineProps({
+  mode: {
+    type: String,
+    required: true,
+    validator: (value) => ['semantic', 'monochrome', 'scenario', 'unique'].includes(value)
+  }
+});
+
+const emit = defineEmits(['semantic-session-change']);
+
 const moodOptions = [
   { key: 'warm', label: '温暖亲切' },
   { key: 'cool', label: '冷静专业' },
@@ -46,13 +59,11 @@ const isPreviewRevealing = ref(false);
 const semanticPreviewRef = ref(null);
 const semanticPreviewContentRef = ref(null);
 
-const SEMANTIC_HEADER_DESC = '输入关键词、行业风格或情绪调性，一键生成整套配色方案';
 const SEMANTIC_PREVIEW_TIP = '温馨提示：可保存截图导出预览长图，或下载 Markdown 文档留存完整设计规范';
 const SCROLL_BOTTOM_THRESHOLD = 48;
 
 const stickToBottom = ref(true);
 const showScrollBottomBtn = ref(false);
-const historyDrawerVisible = ref(false);
 let semanticAiRequest = null;
 let semanticStreamFrame = null;
 
@@ -71,14 +82,17 @@ const scenarioOptions = [
 const selectedScenario = ref('');
 const darkMode = ref(false);
 
-const avoidIndustryOptions = [
-  { key: 'tech', label: '科技行业' },
-  { key: 'finance', label: '金融行业' },
-  { key: 'ecommerce', label: '电商行业' },
-  { key: 'food', label: '餐饮行业' }
-];
+const avoidIndustryOptions = AVOID_INDUSTRY_OPTIONS;
 const selectedAvoidIndustry = ref('tech');
-const uniqueResult = ref(null);
+const uniqueColor = ref('#1677FF');
+
+const uniqueResult = computed(() => {
+  return computeUniqueDifferentiatedPalette(uniqueColor.value, selectedAvoidIndustry.value);
+});
+
+const avoidColors = computed(() => {
+  return computeIndustryAvoidColors(uniqueColor.value, selectedAvoidIndustry.value);
+});
 
 const currentScenario = computed(() => {
   const data = {
@@ -116,41 +130,13 @@ const currentScenarioColors = computed(() => {
     { name: '背景 BG', color: s.bg }
   ];
 });
-const avoidColors = computed(() => {
-  const data = {
-    tech: [
-      { name: '科技蓝', color: '#1677FF' },
-      { name: '渐变蓝', color: '#2563EB' },
-      { name: '浅蓝', color: '#3B82F6' },
-      { name: '紫蓝', color: '#6366F1' }
-    ],
-    finance: [
-      { name: '金融红', color: '#DC2626' },
-      { name: '金色', color: '#D97706' },
-      { name: '稳重蓝', color: '#1E40AF' },
-      { name: '深灰', color: '#374151' }
-    ],
-    ecommerce: [
-      { name: '电商橙', color: '#F97316' },
-      { name: '促销红', color: '#EF4444' },
-      { name: '活力黄', color: '#FBBF24' },
-      { name: '商城绿', color: '#10B981' }
-    ],
-    food: [
-      { name: '食物红', color: '#E74C3C' },
-      { name: '暖橙', color: '#F39C12' },
-      { name: '嫩绿', color: '#27AE60' },
-      { name: '咖啡棕', color: '#8B4513' }
-    ]
-  };
-  return data[selectedAvoidIndustry.value] || data.tech;
-});
 
 function getContrastColor(hex) {
   const rgb = parseColor(hex);
   if (!rgb) return '#000000';
   return gcc(rgb);
 }
+
 const showPreviewActions = computed(() => !!semanticResult.value && !isGenerating.value && !isPreviewRevealing.value);
 const isPreviewStreaming = computed(() => isGenerating.value || isPreviewRevealing.value);
 const showPreviewScrollBtn = computed(() => showScrollBottomBtn.value && (isPreviewStreaming.value || !!semanticResult.value));
@@ -398,6 +384,12 @@ watch([semanticResult, isPreviewStreaming], () => {
   }
 }, { deep: true });
 
+watch(semanticInSession, (inSession) => {
+  if (props.mode === 'semantic') {
+    emit('semantic-session-change', inSession);
+  }
+}, { immediate: true });
+
 function flushSemanticStreamPreview(accumulated) {
   semanticStreamFrame = null;
   const parsed = tryParseSemanticAiResponsePartial(accumulated);
@@ -421,10 +413,6 @@ function handlePreviewRevealComplete() {
 
 function handlePreviewRevealTick() {
   if (stickToBottom.value) schedulePreviewScrollToBottom();
-}
-
-function openHistoryDrawer() {
-  historyDrawerVisible.value = true;
 }
 
 function applySemanticFormState({
@@ -467,7 +455,6 @@ function handleLoadSemanticHistory(session) {
     isGenerating.value = false;
   }
 
-  activeTab.value = 'semantic';
   applySemanticFormState(session);
   semanticResult.value = session.spec;
   stickToBottom.value = false;
@@ -661,39 +648,18 @@ function getScenarioPreviewStyle() {
     borderColor: currentScenario.value.primary
   };
 }
-function generateUnique() {
-  const data = {
-    tech: { name: '差异化科技配色', description: '规避常规蓝色，使用暖橙/琥珀/深绿等差异化配色', colors: [
-      { name: '主色', color: '#F59E0B' }, { name: '辅色', color: '#10B981' }, { name: '点缀', color: '#8B5CF6' },
-      { name: '文字', color: '#1F2937' }, { name: '背景', color: '#FFFBEB' }
-    ]},
-    finance: { name: '差异化金融配色', description: '打破红金传统，采用深紫/森林绿/深海蓝', colors: [
-      { name: '主色', color: '#7C3AED' }, { name: '辅色', color: '#047857' }, { name: '点缀', color: '#0891B2' },
-      { name: '文字', color: '#1F2937' }, { name: '背景', color: '#FAF5FF' }
-    ]},
-    ecommerce: { name: '差异化电商配色', description: '远离橙红黄，使用薄荷绿/粉紫/天青蓝', colors: [
-      { name: '主色', color: '#14B8A6' }, { name: '辅色', color: '#A855F7' }, { name: '点缀', color: '#0EA5E9' },
-      { name: '文字', color: '#1F2937' }, { name: '背景', color: '#F0FDFA' }
-    ]},
-    food: { name: '差异化餐饮配色', description: '跳出食物橙红，使用藏红花/橄榄绿/深陶土', colors: [
-      { name: '主色', color: '#B45309' }, { name: '辅色', color: '#4D7C0F' }, { name: '点缀', color: '#BE123C' },
-      { name: '文字', color: '#1C1917' }, { name: '背景', color: '#FEF3C7' }
-    ]}
-  };
-  uniqueResult.value = data[selectedAvoidIndustry.value] || data.tech;
-}
-function getAvoidIndustryLabel() {
-  const opt = avoidIndustryOptions.find(o => o.key === selectedAvoidIndustry.value);
-  return opt ? opt.label : '';
-}
-function copyValue(value, label) {
-  copyToClipboard(value);
-  showToast(null, '已复制 ' + label + ': ' + value, 'success');
-}
+
+watch(monoColor, () => {
+  generateMonochrome();
+});
+
+defineExpose({
+  loadSemanticHistory: handleLoadSemanticHistory,
+  startNewSemanticSession: handleNewSemanticSession
+});
 
 onMounted(() => {
-  generateMonochrome();
-  generateUnique();
+  if (props.mode === 'monochrome') generateMonochrome();
 });
 
 onUnmounted(() => {
@@ -703,51 +669,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- 页头左侧： AI 配色说明 -->
-  <Teleport v-if="activeTab === 'semantic'" to="#page-header-leading-slot">
-    <span class="semantic-header-desc">{{ SEMANTIC_HEADER_DESC }}</span>
-  </Teleport>
-
-  <!-- 页头右侧：新会话 / 历史记录 / 专业模式模块切换 -->
-  <Teleport to="#intelligent-color-matching-header-slot">
-    <div class="icm-header-tools">
-      <button
-        v-if="activeTab === 'semantic' && semanticInSession"
-        class="icm-new-session-btn"
-        title="新会话"
-        @click="handleNewSemanticSession"
-      >
-        新会话
-      </button>
-      <button
-        class="icm-history-btn"
-        title="历史记录"
-        @click="openHistoryDrawer"
-      >
-        <span class="iconfont icon-Areality-HistoricalRecord"></span>
-      </button>
-      <Selector
-        v-model="activeTab"
-        class="header-module-selector"
-        :block="false"
-        :flex="false"
-      >
-        <option v-for="tab in ADVANCED_TABS" :key="tab.key" :value="tab.key">{{ tab.label }}</option>
-      </Selector>
-    </div>
-  </Teleport>
-
-  <SemanticHistoryDrawer
-    v-model:visible="historyDrawerVisible"
-    @select="handleLoadSemanticHistory"
-  />
-
-  <div class="advanced-mode">
-    <section v-if="activeTab === 'semantic'" class="semantic-panel">
+  <div class="advanced-mode" :class="{ 'advanced-mode--flush': mode !== 'semantic' }">
+    <section v-if="mode === 'semantic'" class="semantic-panel">
       <div class="semantic-layout">
         <!-- 场景区（左侧） -->
         <div class="semantic-column semantic-column--scene">
-          <h3 class="semantic-column-title">场景</h3>
           <div class="semantic-input">
             <div class="semantic-input-block">
               <label class="semantic-input-label">情绪调性</label>
@@ -817,9 +743,8 @@ onUnmounted(() => {
 
         <!-- 预览区（右侧） -->
         <div class="semantic-column semantic-column--preview">
-          <div class="semantic-column-head">
-            <h3 class="semantic-column-title">预览</h3>
-            <div v-if="showPreviewActions" class="semantic-preview-toolbar">
+          <div v-if="showPreviewActions" class="semantic-column-head">
+            <div class="semantic-preview-toolbar">
               <p class="semantic-preview-tip">{{ SEMANTIC_PREVIEW_TIP }}</p>
               <div class="semantic-preview-actions">
                 <button
@@ -880,15 +805,9 @@ onUnmounted(() => {
       </div>
     </section>
 
-    <section v-if="activeTab === 'monochrome'" class="panel">
-      <div class="panel-header">
-        <h3 class="panel-title">基于单色延展配色</h3>
-        <span class="panel-sub">输入主色，自动生成互补色、邻近色、三等分色及同色系深浅色阶</span>
-      </div>
-
+    <section v-if="mode === 'monochrome'" class="panel">
       <div class="mono-input-row">
         <ColorPicker v-model="monoColor" />
-        <button class="primary-btn" @click="generateMonochrome">生成延展</button>
       </div>
 
       <div class="mono-preview">
@@ -897,64 +816,79 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="mono-section">
-        <div class="section-title">同色系深浅色阶（9阶）</div>
-        <div class="color-grid-9">
-          <div
-            v-for="(c, idx) in monochromeShades"
-            :key="c"
-            class="color-card-sm"
-            :style="{ background: c }"
-          >
-            <span class="color-card-sm-hex" :style="{ color: getContrastColor(c) }">{{ c }}</span>
-            <button class="copy-btn-xs" @click="copyValue(c, '色阶 ' + (idx + 1))">复制</button>
+      <div class="mono-palette-module">
+        <div class="mono-palette-col mono-palette-col--shades">
+          <div class="section-title">同色系深浅色阶（9阶）</div>
+          <div class="color-grid-9">
+            <div
+              v-for="(c, idx) in monochromeShades"
+              :key="c"
+              class="color-card-sm color-card--with-action"
+              :style="{ background: c }"
+            >
+              <ColorActionGroup
+                :value="c"
+                :copy-label="'色阶 ' + (idx + 1)"
+                :favorite-name="'色阶 ' + (idx + 1)"
+                variant="on-color"
+                class="color-card-action-group"
+              />
+              <span class="color-card-sm-hex" :style="{ color: getContrastColor(c) }">{{ c }}</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="mono-section">
-        <div class="section-title">邻近色（左右各 30°）</div>
-        <div class="color-grid-3">
-          <div
-            v-for="(c, idx) in analogousColors"
-            :key="c.name"
-            class="color-card"
-            :style="{ background: c.color }"
-          >
-            <div class="color-card-text" :style="{ color: getContrastColor(c.color) }">
-              <div class="color-card-name">{{ c.name }}</div>
-              <div class="color-card-hex">{{ c.color }}</div>
+        <div class="mono-palette-col mono-palette-col--analogous">
+          <div class="section-title">邻近色（左右各 30°）</div>
+          <div class="color-grid-3 mono-palette-stack">
+            <div
+              v-for="c in analogousColors"
+              :key="c.name"
+              class="color-card color-card--compact color-card--with-action"
+              :style="{ background: c.color }"
+            >
+              <ColorActionGroup
+                :value="c.color"
+                :copy-label="c.name"
+                :favorite-name="c.name"
+                variant="on-color"
+                class="color-card-action-group"
+              />
+              <div class="color-card-text" :style="{ color: getContrastColor(c.color) }">
+                <div class="color-card-name">{{ c.name }}</div>
+                <div class="color-card-hex">{{ c.color }}</div>
+              </div>
             </div>
-            <button class="copy-btn-sm" @click="copyValue(c.color, c.name)">复制</button>
           </div>
         </div>
-      </div>
 
-      <div class="mono-section">
-        <div class="section-title">互补色 / 三等分色 / 分裂互补色</div>
-        <div class="color-grid-4">
-          <div
-            v-for="(c, idx) in complementaryColors"
-            :key="c.name"
-            class="color-card"
-            :style="{ background: c.color }"
-          >
-            <div class="color-card-text" :style="{ color: getContrastColor(c.color) }">
-              <div class="color-card-name">{{ c.name }}</div>
-              <div class="color-card-hex">{{ c.color }}</div>
+        <div class="mono-palette-col mono-palette-col--complementary">
+          <div class="section-title">互补色 / 三等分色 / 分裂互补色</div>
+          <div class="color-grid-4 mono-palette-grid-2">
+            <div
+              v-for="c in complementaryColors"
+              :key="c.name"
+              class="color-card color-card--compact color-card--with-action"
+              :style="{ background: c.color }"
+            >
+              <ColorActionGroup
+                :value="c.color"
+                :copy-label="c.name"
+                :favorite-name="c.name"
+                variant="on-color"
+                class="color-card-action-group"
+              />
+              <div class="color-card-text" :style="{ color: getContrastColor(c.color) }">
+                <div class="color-card-name">{{ c.name }}</div>
+                <div class="color-card-hex">{{ c.color }}</div>
+              </div>
             </div>
-            <button class="copy-btn-sm" @click="copyValue(c.color, c.name)">复制</button>
           </div>
         </div>
       </div>
     </section>
 
-    <section v-if="activeTab === 'scenario'" class="panel">
-      <div class="panel-header">
-        <h3 class="panel-title">场景定向配色</h3>
-        <span class="panel-sub">适配海报、APP、PPT、社交媒体封面等场景，区分深浅模式</span>
-      </div>
-
+    <section v-if="mode === 'scenario'" class="panel">
       <div class="scenario-grid">
         <div
           v-for="s in scenarioOptions"
@@ -998,65 +932,80 @@ onUnmounted(() => {
 
         <div class="color-grid-5">
           <div
-            v-for="(c, idx) in currentScenarioColors"
+            v-for="c in currentScenarioColors"
             :key="c.name"
-            class="color-card"
+            class="color-card color-card--with-action"
             :style="{ background: c.color }"
           >
+            <ColorActionGroup
+              :value="c.color"
+              :copy-label="c.name"
+              :favorite-name="c.name"
+              variant="on-color"
+              class="color-card-action-group"
+            />
             <div class="color-card-text" :style="{ color: getContrastColor(c.color) }">
               <div class="color-card-name">{{ c.name }}</div>
               <div class="color-card-hex">{{ c.color }}</div>
             </div>
-            <button class="copy-btn-sm" @click="copyValue(c.color, c.name)">复制</button>
           </div>
         </div>
       </div>
     </section>
 
-    <section v-if="activeTab === 'unique'" class="panel">
-      <div class="panel-header">
-        <h3 class="panel-title">去同质化配色</h3>
-        <span class="panel-sub">规避行业烂大街配色，输出差异化商业配色方案</span>
-      </div>
-
+    <section v-if="mode === 'unique'" class="panel">
       <div class="unique-input-row">
+        <ColorPicker v-model="uniqueColor" />
         <Selector v-model="selectedAvoidIndustry" :block="false" :flex="true">
           <option v-for="i in avoidIndustryOptions" :key="i.key" :value="i.key">{{ i.label }}</option>
         </Selector>
-        <button class="primary-btn" @click="generateUnique">生成差异化配色</button>
       </div>
 
-      <div v-if="uniqueResult" class="unique-result">
-        <div class="result-title">{{ uniqueResult.name }}</div>
-        <div class="result-desc">{{ uniqueResult.description }}</div>
-        <div class="color-grid-5">
-          <div
-            v-for="(c, idx) in uniqueResult.colors"
-            :key="c.name"
-            class="color-card"
-            :style="{ background: c.color }"
-          >
-            <div class="color-card-text" :style="{ color: getContrastColor(c.color) }">
-              <div class="color-card-name">{{ c.name }}</div>
-              <div class="color-card-hex">{{ c.color }}</div>
+      <div v-if="uniqueResult.colors.length" class="unique-palette-module">
+        <div class="unique-palette-col unique-palette-col--diff">
+          <div class="section-title">差异化配色</div>
+          <div class="color-grid-6">
+            <div
+              v-for="c in uniqueResult.colors"
+              :key="c.name"
+              class="color-card color-card--compact color-card--with-action"
+              :style="{ background: c.color }"
+            >
+              <ColorActionGroup
+                :value="c.color"
+                :copy-label="c.name"
+                :favorite-name="c.name"
+                variant="on-color"
+                class="color-card-action-group"
+              />
+              <div class="color-card-text" :style="{ color: getContrastColor(c.color) }">
+                <div class="color-card-name">{{ c.name }}</div>
+                <div class="color-card-hex">{{ c.color }}</div>
+              </div>
             </div>
-            <button class="copy-btn-sm" @click="copyValue(c.color, c.name)">复制</button>
           </div>
         </div>
-      </div>
 
-      <div class="avoid-section">
-        <div class="section-title">需要规避的典型配色（{{ getAvoidIndustryLabel() }}）</div>
-        <div class="color-grid-4">
-          <div
-            v-for="(c, idx) in avoidColors"
-            :key="c.name"
-            class="color-card-sm"
-            :style="{ background: c.color }"
-          >
-            <span class="color-card-sm-hex" :style="{ color: getContrastColor(c.color) }">
-              {{ c.name }} {{ c.color }}
-            </span>
+        <div class="unique-palette-col unique-palette-col--avoid">
+          <div class="section-title">需要规避的典型配色</div>
+          <div class="color-grid-4">
+            <div
+              v-for="c in avoidColors"
+              :key="c.name"
+              class="color-card-sm color-card--with-action"
+              :style="{ background: c.color }"
+            >
+              <ColorActionGroup
+                :value="c.color"
+                :copy-label="c.name"
+                :favorite-name="c.name"
+                variant="on-color"
+                class="color-card-action-group"
+              />
+              <span class="color-card-sm-hex" :style="{ color: getContrastColor(c.color) }">
+                {{ c.name }} {{ c.color }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -1071,13 +1020,19 @@ onUnmounted(() => {
   padding-top: var(--size-20);
 }
 
+.advanced-mode--flush {
+  padding-top: var(--size-20);
+
+  .panel {
+    margin-bottom: 0;
+    padding: var(--size-20);
+  }
+}
+
 .panel {
   background: var(--bg-card); border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px;
 }
-.panel-header { margin-bottom: 16px; }
-.panel-title { font-size: 15px; font-weight: 600; margin: 0 0 4px 0; color: var(--text-primary); }
-.panel-sub { font-size: 12px; color: var(--text-tertiary); }
 
 .primary-btn {
   padding: 8px 18px; background: var(--accent); color: var(--text-invert);
@@ -1107,18 +1062,15 @@ onUnmounted(() => {
 }
 .semantic-column-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  min-height: 28px;
 }
-.semantic-column-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.4;
-  flex-shrink: 0;
+.semantic-column :deep(.module-title) {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  margin-bottom: 0;
 }
 .semantic-preview-wrap {
   position: relative;
@@ -1333,14 +1285,25 @@ onUnmounted(() => {
 }
 
 .semantic-input-row, .mono-input-row, .unique-input-row {
-  display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;
+  display: flex; gap: 12px; align-items: center; margin-bottom: var(--size-20); flex-wrap: wrap;
+  :deep(.color-picker) { flex: 1; min-width: 180px; }
 }
 
-.result-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
-.result-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+.color-card--with-action {
+  position: relative;
+}
+.color-card-action-group {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1;
+}
 
 .color-grid-5 {
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+}
+.color-grid-6 {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
 }
 .color-grid-4 {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
@@ -1365,26 +1328,72 @@ onUnmounted(() => {
 
 .color-card-sm {
   min-height: 80px; border-radius: var(--radius-sm); padding: 8px;
-  display: flex; flex-direction: column; justify-content: space-between;
+  display: flex; flex-direction: column; justify-content: flex-end;
   border: 1px solid var(--border-primary);
 }
 .color-card-sm-hex { font-size: 11px; font-family: monospace; }
 
-.copy-btn-sm, .copy-btn-xs {
-  padding: 4px 10px; background: var(--chip-on-color-bg);
-  border: 1px solid var(--chip-on-color-border); border-radius: var(--radius-sm);
-  font-size: 11px; cursor: pointer; color: var(--chip-on-color-text);
-  &:hover { background: var(--bg-card); }
-}
-.copy-btn-xs { padding: 2px 6px; font-size: 10px; }
-
-.mono-preview { margin-bottom: 20px; }
+.mono-preview { margin-bottom: var(--size-20); }
 .mono-preview-main {
   padding: 24px; border-radius: var(--radius-md); text-align: center;
   font-size: 16px; font-weight: 600;
 }
 
-.mono-section { margin-top: 20px; }
+.mono-palette-module {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) minmax(0, 1fr);
+  gap: var(--size-20);
+  padding: var(--size-20);
+  background: var(--bg-muted);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+}
+.mono-palette-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.mono-palette-col--shades .color-grid-9 {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  flex: 1;
+}
+.mono-palette-stack {
+  grid-template-columns: 1fr;
+  gap: 10px;
+  flex: 1;
+}
+.mono-palette-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  flex: 1;
+}
+.color-card--compact {
+  min-height: 96px;
+  padding: 12px;
+  justify-content: flex-end;
+}
+
+.unique-palette-module {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: var(--size-20);
+  padding: var(--size-20);
+  background: var(--bg-muted);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+}
+.unique-palette-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.unique-palette-col--avoid .color-grid-4 {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  flex: 1;
+}
+
 .section-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; }
 
 .scenario-grid {
@@ -1424,8 +1433,6 @@ onUnmounted(() => {
   padding: 20px; border-radius: var(--radius-sm); text-align: center;
   font-size: 13px; font-weight: 600;
 }
-
-.avoid-section { margin-top: 20px; padding-top: 20px; border-top: 1px dashed var(--border-primary); }
 
 @media (max-width: 1024px) {
   .semantic-layout { grid-template-columns: 1fr; }

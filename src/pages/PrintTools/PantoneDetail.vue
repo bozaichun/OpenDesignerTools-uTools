@@ -2,9 +2,8 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import Selector from '../../components/Selector.vue';
-import FavoriteButton from '../../components/FavoriteButton.vue';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
-import { copyToClipboard, showToast } from '../../utils/colorUtils';
 import { computePantoneResults, readDetailQuery } from './printToolsUtils';
 
 const route = useRoute();
@@ -24,11 +23,6 @@ function applyRouteQuery() {
   const q = readDetailQuery(route);
   inputColor.value = q.color;
   paperType.value = q.paper;
-}
-
-function copyValue(value, label) {
-  copyToClipboard(value);
-  showToast(null, '已复制 ' + label + ': ' + value, 'success');
 }
 
 watch(() => route.query, () => {
@@ -81,10 +75,11 @@ onMounted(() => {
                 <td class="mono">{{ p.hex }}</td>
                 <td>{{ p.deltaE.toFixed(2) }}</td>
                 <td>
-                  <div class="table-actions">
-                    <button class="sm-btn" @click="copyValue(p.hex, p.code)">复制</button>
-                    <FavoriteButton variant="text" :hex="p.hex" :name="p.code" />
-                  </div>
+                  <ColorActionGroup
+                    :value="p.hex"
+                    :copy-label="p.code"
+                    :favorite-name="p.code"
+                  />
                 </td>
               </tr>
             </tbody>
@@ -119,17 +114,5 @@ onMounted(() => {
   display: inline-block; width: 20px; height: 20px;
   border-radius: 3px; border: 1px solid var(--border-primary);
   vertical-align: middle; margin-right: 6px;
-}
-.sm-btn {
-  padding: 6px 12px; background: var(--bg-card);
-  border: 1px solid var(--border-primary); border-radius: var(--radius-sm);
-  font-size: 12px; cursor: pointer; color: var(--text-primary);
-  &:hover { border-color: var(--accent); color: var(--accent); }
-}
-.table-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
 }
 </style>

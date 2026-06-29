@@ -12,25 +12,25 @@ export const DETAIL_MODULES = [
     id: 'wcag',
     label: 'WCAG 对比度',
     route: '/AccessibilityCheck/WcagDetail',
-    description: '区分正文与大字号，自动判定 AA / AAA 合规等级'
+    description: '区分字号类型，自动判定AA、AAA合规等级'
   },
   {
     id: 'sim',
     label: '色弱色盲模拟',
     route: '/AccessibilityCheck/SimDetail',
-    description: '红绿色弱 / 蓝黄色弱 / 全色盲三色模拟，配色是否失效一目了然'
+    description: '三色弱色盲模拟，配色失效直观可见'
   },
   {
     id: 'gov',
     label: '政企合规',
     route: '/AccessibilityCheck/GovDetail',
-    description: '政务平台配色、海外欧盟色彩合规，一键优化不合规配色'
+    description: '政务欧盟配色，一键优化色彩合规'
   },
   {
     id: 'text',
     label: '文字叠色推荐',
     route: '/AccessibilityCheck/TextDetail',
-    description: '基于底色自动生成 AA / AAA 级合规可读文字色'
+    description: '依托底色生成AA/AAA合规文字色'
   }
 ];
 

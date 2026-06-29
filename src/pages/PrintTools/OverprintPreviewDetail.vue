@@ -2,11 +2,10 @@
 import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ColorPicker from '../../components/ColorPicker.vue';
-import FavoriteButton from '../../components/FavoriteButton.vue';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
 import {
   parseColor,
-  copyToClipboard,
   showToast,
   getContrastColor as gcc,
 } from '../../utils/colorUtils';
@@ -63,11 +62,6 @@ function getContrastColor(hex) {
   const rgb = parseColor(hex);
   if (!rgb) return '#000000';
   return gcc(rgb);
-}
-
-function copyValue(value, label) {
-  copyToClipboard(value);
-  showToast(null, '已复制 ' + label + ': ' + value, 'success');
 }
 
 function handlePrintOverprint() {
@@ -244,7 +238,7 @@ onUnmounted(() => {
         <div class="opacity-control">
           <input
             type="range"
-            v-model="opacity"
+            v-model.number="opacity"
             min="10"
             max="100"
             class="opacity-slider"
@@ -289,20 +283,13 @@ onUnmounted(() => {
             <span :style="{ color: getContrastColor(overprintMixedHex) }"
               >叠印效果</span
             >
-            <div class="swatch-action-group">
-              <FavoriteButton
-                :hex="overprintMixedHex"
-                name="叠印效果"
-                class="swatch-favorite-btn"
-              />
-              <button
-                class="action-icon-btn swatch-copy-btn"
-                title="复制颜色"
-                @click="copyValue(overprintMixedHex, '叠印色')"
-              >
-                <span class="iconfont icon-Copy"></span>
-              </button>
-            </div>
+            <ColorActionGroup
+              :value="overprintMixedHex"
+              copy-label="叠印色"
+              favorite-name="叠印效果"
+              variant="on-color"
+              class="swatch-action-group"
+            />
           </div>
           <div class="overprint-label">{{ overprintMixedHex }}</div>
         </div>
@@ -326,11 +313,14 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 140px;
+  flex: 1;
+  min-width: 160px;
+  max-width: 280px;
   span {
     font-size: 12px;
     color: var(--text-secondary);
     white-space: nowrap;
+    flex-shrink: 0;
   }
 }
 .panel {
@@ -342,6 +332,51 @@ onUnmounted(() => {
 }
 .opacity-slider {
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 999px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-muted);
+  outline: none;
+  cursor: pointer;
+
+  &::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: transparent;
+  }
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -6px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    background: var(--accent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+  }
+
+  &::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--bg-muted);
+    border: none;
+  }
+
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    background: var(--accent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+  }
 }
 .overprint-preview {
   display: flex;
@@ -379,57 +414,10 @@ onUnmounted(() => {
 .overprint-swatch-with-action {
   position: relative;
 }
-.swatch-copy-btn {
-  position: static;
-  width: 16px;
-  height: 16px;
-  background: var(--chip-on-color-bg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  .iconfont {
-    font-size: 9px;
-  }
-}
 .swatch-action-group {
   position: absolute;
   top: 3px;
   right: 3px;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-:deep(.swatch-favorite-btn.favorite-btn) {
-  width: 16px;
-  height: 16px;
-  background: var(--chip-on-color-bg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  .favorite-icon {
-    font-size: 9px;
-  }
-}
-.action-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  .iconfont {
-    font-size: 12px;
-    line-height: 1;
-  }
-  &:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--text-invert);
-  }
 }
 .overprint-plus,
 .overprint-equals {

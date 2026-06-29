@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ColorPicker from '../../components/ColorPicker.vue';
-import FavoriteButton from '../../components/FavoriteButton.vue';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
 import {
   parseColor,
@@ -123,11 +123,6 @@ function copyValue(value, label) {
   showToast(null, '已复制 ' + label, 'success');
 }
 
-function copyHexValue(value) {
-  copyToClipboard(value);
-  showToast(null, '已复制 ' + value, 'success');
-}
-
 watch(() => route.query, () => {
   applyRouteQuery();
 });
@@ -220,22 +215,17 @@ onMounted(() => {
       <div class="color-strip-section">
         <div class="section-title inline">A → B 过渡色（10 阶）</div>
         <div class="color-strip-grid color-strip-grid--10">
-          <div v-for="color in transitionColors" :key="color" class="color-strip-cell">
+          <div v-for="(color, idx) in transitionColors" :key="color" class="color-strip-cell">
             <div class="color-strip-swatch" :style="{ background: color }">
               <span class="color-strip-label" :style="{ color: getContrastColor(color) }">{{ Math.round(idx / 9 * 100) }}%</span>
             </div>
             <div class="color-strip-meta">
               <span class="color-strip-hex">{{ color }}</span>
-              <div class="color-strip-actions">
-                <FavoriteButton
-                  :hex="color"
-                  :name="'过渡色 ' + Math.round(idx / 9 * 100) + '%'"
-                  class="color-strip-favorite-btn"
-                />
-                <button type="button" class="color-strip-icon-btn" :title="'复制 ' + color" @click="copyHexValue(color)">
-                  <span class="iconfont icon-Copy"></span>
-                </button>
-              </div>
+              <ColorActionGroup
+                :value="color"
+                :copy-label="color"
+                :favorite-name="'过渡色 ' + Math.round(idx / 9 * 100) + '%'"
+              />
             </div>
           </div>
         </div>

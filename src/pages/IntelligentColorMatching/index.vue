@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, provide } from 'vue';
 import { useRoute } from 'vue-router';
+import { isIcmProfessionRoute } from './intelligentColorMatchingUtils.js';
 
 const route = useRoute();
 const chatInSession = ref(false);
@@ -24,9 +25,9 @@ provide('setIcmChatInSession', (active) => {
           <span class="iconfont icon-Areality-AIMode mode-btn-icon"></span>
         </router-link>
         <router-link
-          :to="{ name: 'Profession' }"
+          :to="{ name: 'IcmSemantic' }"
           class="mode-btn"
-          :class="{ active: route.name === 'Profession' }"
+          :class="{ active: isIcmProfessionRoute(route.name) }"
           title="专业模式"
         >
           <span class="iconfont icon-Areality-ProfessionalMode mode-btn-icon"></span>

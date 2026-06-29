@@ -93,9 +93,38 @@ const routes = [
       },
       {
         path: 'Profession',
-        name: 'Profession',
         component: () => import('../pages/IntelligentColorMatching/Profession.vue'),
-        meta: { title: '智能配色' }
+        redirect: { name: 'IcmSemantic' },
+        children: [
+          {
+            path: 'Semantic',
+            name: 'IcmSemantic',
+            component: () => import('../pages/IntelligentColorMatching/AdvancedMode.vue'),
+            props: { mode: 'semantic' },
+            meta: { title: '智能配色' }
+          },
+          {
+            path: 'Monochrome',
+            name: 'IcmMonochrome',
+            component: () => import('../pages/IntelligentColorMatching/AdvancedMode.vue'),
+            props: { mode: 'monochrome' },
+            meta: { title: '智能配色' }
+          },
+          {
+            path: 'Scenario',
+            name: 'IcmScenario',
+            component: () => import('../pages/IntelligentColorMatching/AdvancedMode.vue'),
+            props: { mode: 'scenario' },
+            meta: { title: '智能配色' }
+          },
+          {
+            path: 'Unique',
+            name: 'IcmUnique',
+            component: () => import('../pages/IntelligentColorMatching/AdvancedMode.vue'),
+            props: { mode: 'unique' },
+            meta: { title: '智能配色' }
+          }
+        ]
       }
     ]
   },

@@ -2,9 +2,8 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import Selector from '../../components/Selector.vue';
-import FavoriteButton from '../../components/FavoriteButton.vue';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import PrintToolsDetailShell from './PrintToolsDetailShell.vue';
-import { copyToClipboard, showToast } from '../../utils/colorUtils';
 import { computeHalftoneLevels, readDetailQuery } from './printToolsUtils';
 
 const route = useRoute();
@@ -31,11 +30,6 @@ function applyRouteQuery() {
   inputColor.value = q.color;
   useDPI.value = q.useDPI;
   dpi.value = q.dpi;
-}
-
-function copyValue(value, label) {
-  copyToClipboard(value);
-  showToast(null, '已复制 ' + label + ': ' + value, 'success');
 }
 
 watch(() => route.query, () => {
@@ -88,14 +82,11 @@ onMounted(() => {
               <td class="mono">{{ level.color }}</td>
               <td class="mono">rgb({{ level.rgb.r }}, {{ level.rgb.g }}, {{ level.rgb.b }})</td>
               <td>
-                <div class="table-actions">
-                  <button class="sm-btn" @click="copyValue(level.color, level.percent + '% 网点')">复制</button>
-                  <FavoriteButton
-                    variant="text"
-                    :hex="level.color"
-                    :name="level.percent + '% 网点'"
-                  />
-                </div>
+                <ColorActionGroup
+                  :value="level.color"
+                  :copy-label="level.percent + '% 网点'"
+                  :favorite-name="level.percent + '% 网点'"
+                />
               </td>
             </tr>
           </tbody>
@@ -138,18 +129,6 @@ onMounted(() => {
   border-radius: 3px; border: 1px solid var(--border-primary);
   vertical-align: middle; margin-right: 6px;
   &.lg { width: 28px; height: 28px; margin-right: 0; }
-}
-.sm-btn {
-  padding: 6px 12px; background: var(--bg-card);
-  border: 1px solid var(--border-primary); border-radius: var(--radius-sm);
-  font-size: 12px; cursor: pointer; color: var(--text-primary);
-  &:hover { border-color: var(--accent); color: var(--accent); }
-}
-.table-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
 }
 .halftone-hint {
   padding: 12px 16px; background: var(--accent-soft); border-radius: var(--radius-md);

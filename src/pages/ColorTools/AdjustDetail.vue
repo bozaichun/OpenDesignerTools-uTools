@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
-import FavoriteButton from '../../components/FavoriteButton.vue';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
-import { parseColor, rgbToHsl, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
+import { parseColor, rgbToHsl, getContrastColor as gcc } from '../../utils/colorUtils';
 import {
   computeAdjustedColor,
   computeAdjustedShades,
@@ -87,16 +87,6 @@ function getContrastColor(hex) {
   return rgb ? gcc(rgb) : '#000000';
 }
 
-function copyValue(value, label) {
-  copyToClipboard(value);
-  showToast(null, '已复制 ' + label, 'success');
-}
-
-function copyShadeHex(hex) {
-  copyToClipboard(hex);
-  showToast(null, '已复制 ' + hex, 'success');
-}
-
 watch(() => route.query, () => {
   applyRouteQuery();
 });
@@ -133,8 +123,15 @@ onUnmounted(() => {
             </div>
             <div class="adjust-compare-arrow">→</div>
             <div class="adjust-compare-item">
-              <div class="adjust-compare-swatch" :style="{ background: adjustedColor }">
+              <div class="adjust-compare-swatch adjust-compare-swatch-with-action" :style="{ background: adjustedColor }">
                 <span :style="{ color: getContrastColor(adjustedColor) }">结果</span>
+                <ColorActionGroup
+                  :value="adjustedColor"
+                  copy-label="调整后色值"
+                  favorite-name="调整后色值"
+                  variant="on-color"
+                  class="adjust-swatch-action-group"
+                />
               </div>
               <span class="adjust-compare-hex">{{ adjustedColor }}</span>
             </div>
@@ -142,7 +139,6 @@ onUnmounted(() => {
 
           <div class="adjust-meta-row">
             <span>HSL: {{ adjustHue }}° / {{ adjustSaturation }}% / {{ adjustLightness }}%</span>
-            <button class="sm-btn" @click="copyValue(adjustedColor, '调整后色值')">复制结果</button>
           </div>
         </div>
 
@@ -173,12 +169,11 @@ onUnmounted(() => {
             </div>
             <div class="color-strip-meta">
               <span class="color-strip-hex">{{ shade.color }}</span>
-              <div class="color-strip-actions">
-                <FavoriteButton :hex="shade.color" :name="'色阶 ' + shade.level" class="color-strip-favorite-btn" />
-                <button class="color-strip-icon-btn" :title="'复制 ' + shade.color" @click="copyShadeHex(shade.color)">
-                  <span class="iconfont icon-Copy"></span>
-                </button>
-              </div>
+              <ColorActionGroup
+                :value="shade.color"
+                :copy-label="shade.color"
+                :favorite-name="'色阶 ' + shade.level"
+              />
             </div>
           </div>
         </div>
@@ -199,16 +194,6 @@ onUnmounted(() => {
   margin-bottom: 20px;
   min-width: 0;
 }
-.sm-btn {
-  padding: 6px 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--text-primary);
-  &:hover { border-color: var(--accent); color: var(--accent); }
-}
 .section-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 20px 0 12px; }
 .section-title.inline { margin: 0 0 10px; }
 .adjust-panel { padding: 16px; }
@@ -228,6 +213,14 @@ onUnmounted(() => {
   width: 100%; max-width: 120px; height: 72px; border-radius: var(--radius-md);
   display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;
   border: 1px solid var(--border-primary);
+}
+.adjust-compare-swatch-with-action {
+  position: relative;
+}
+.adjust-swatch-action-group {
+  position: absolute;
+  top: 4px;
+  right: 4px;
 }
 .adjust-compare-hex { font-size: 11px; font-family: monospace; color: var(--text-tertiary); }
 .adjust-compare-arrow { font-size: 22px; color: var(--text-tertiary); flex-shrink: 0; }

@@ -6,36 +6,31 @@ export const DETAIL_MODULES = [
     id: 'cmyk',
     label: 'CMYK 校准',
     route: '/PrintTools/CmykDetail',
-    description: 'RGB/HEX 转带 ICC 配置 CMYK，预览印刷色差与溢色预警'
+    description: '屏幕色转CMYK色差预警'
   },
   {
     id: 'pantone',
     label: '潘通匹配',
     route: '/PrintTools/PantoneDetail',
-    description: '基于当前颜色自动匹配最接近的潘通色号'
+    description: '颜色自动匹配潘通铜版纸号'
   },
   {
     id: 'overprint',
     label: '叠印预览',
     route: '/PrintTools/OverprintPreviewDetail',
-    description: '主色作为底层，可调整叠印色与透明度预览印刷叠加效果'
+    description: '叠印色透明度印刷效果预览'
   },
   {
     id: 'screenTint',
     label: '网点换算',
     route: '/PrintTools/ScreenTintConverDetail',
-    description: '基于当前主色换算各网点百分比对应色值，适配画册、包装印刷制版'
+    description: '主色网点百分比色值换算表'
   }
 ];
 
-export function getDetailModuleDescription(path, query = {}) {
+export function getDetailModuleDescription(path) {
   const mod = DETAIL_MODULES.find((m) => m.route === path);
-  if (!mod) return '';
-  if (path === '/PrintTools/PantoneDetail') {
-    const paperLabel = query.paper === 'uncoated' ? '胶版纸' : '铜版纸';
-    return mod.description + '（' + paperLabel + '）';
-  }
-  return mod.description;
+  return mod?.description || '';
 }
 
 export const PANTONE_COATED = [

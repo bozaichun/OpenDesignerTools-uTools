@@ -16,19 +16,19 @@ export const DETAIL_MODULES = [
     id: 'adjust',
     label: '色阶微调',
     route: '/ColorTools/AdjustDetail',
-    description: '固定色相，微调明度、饱和度，一键生成同色系 9 阶色卡'
+    description: '固定色相调明暗，一键生成九阶同色系卡'
   },
   {
     id: 'gradient',
     label: '渐变编辑',
     route: '/ColorTools/GradientDetail',
-    description: '双色/多色渐变取色，拆分渐变节点色值，导出 CSS 渐变代码'
+    description: '渐变取色拆节点，导出CSS渐变代码'
   },
   {
     id: 'difference',
     label: '色差比对',
     route: '/ColorTools/DifferenceDetail',
-    description: '双色并排预览，精准计算数值色差，适配品牌极小色差管控'
+    description: '双列预览算色差，严控品牌微小色差'
   }
 ];
 

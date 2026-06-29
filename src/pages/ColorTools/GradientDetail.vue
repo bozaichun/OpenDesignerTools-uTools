@@ -3,7 +3,7 @@ import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ColorPicker from '../../components/ColorPicker.vue';
 import Dialog from '../../components/Dialog.vue';
-import FavoriteButton from '../../components/FavoriteButton.vue';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import ColorToolsDetailShell from './ColorToolsDetailShell.vue';
 import { parseColor, rgbToHsl, copyToClipboard, showToast } from '../../utils/colorUtils';
 import {
@@ -132,11 +132,6 @@ function handleGradientDirectionSelect(value) {
   propsPanelOpen.value = false;
 }
 
-function copyHexValue(value) {
-  copyToClipboard(value);
-  showToast(null, '已复制 ' + value, 'success');
-}
-
 function copyValue(value, label) {
   copyToClipboard(value);
   showToast(null, '已复制 ' + label, 'success');
@@ -230,16 +225,15 @@ onUnmounted(() => {
       <div class="color-strip-section">
         <div class="section-title inline">自动提取的 8 个节点色值</div>
         <div class="color-strip-grid color-strip-grid--8">
-          <div v-for="color in extractedGradientColors" :key="color" class="color-strip-cell">
+          <div v-for="(color, idx) in extractedGradientColors" :key="color" class="color-strip-cell">
             <div class="color-strip-swatch" :style="{ background: color }"></div>
             <div class="color-strip-meta">
               <span class="color-strip-hex">{{ color }}</span>
-              <div class="color-strip-actions">
-                <FavoriteButton :hex="color" :name="'渐变节点 ' + (idx + 1)" class="color-strip-favorite-btn" />
-                <button type="button" class="color-strip-icon-btn" :title="'复制 ' + color" @click="copyHexValue(color)">
-                  <span class="iconfont icon-Copy"></span>
-                </button>
-              </div>
+              <ColorActionGroup
+                :value="color"
+                :copy-label="color"
+                :favorite-name="'渐变节点 ' + (idx + 1)"
+              />
             </div>
           </div>
         </div>

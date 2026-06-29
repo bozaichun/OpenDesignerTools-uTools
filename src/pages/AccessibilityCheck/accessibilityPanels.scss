@@ -287,13 +287,10 @@
   &:hover { opacity: 0.9; }
 }
 .gov-body {
-  display: flex;
-  gap: 16px;
-  align-items: stretch;
+  display: block;
 }
 .gov-check-grid {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
@@ -316,55 +313,6 @@
 }
 .gov-check-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
 .gov-check-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
-.gov-summary {
-  flex: 0 0 min(240px, 30%);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 14px;
-  background: var(--bg-muted);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  color: var(--text-primary);
-}
-.gov-summary-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  strong { font-size: 13px; color: var(--text-primary); }
-  span { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
-}
-.gov-summary-suggest {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.gov-summary-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.gov-suggest-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.gov-suggest-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: 12px;
-  font-family: monospace;
-  &:hover { border-color: var(--accent); color: var(--accent); }
-}
-.gov-swatch {
-  width: 14px; height: 14px; border-radius: 2px; border: 1px solid var(--border-primary);
-}
 
 .text-bg-input { margin-bottom: 16px; }
 .text-suggest-grid {
@@ -377,10 +325,16 @@
   &.ok { border-color: var(--success); }
   &.warn { border-color: var(--warning); }
 }
+.text-suggest-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+}
 .text-status-badge {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 8px;
+  left: 8px;
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   font-size: 10px;
@@ -399,12 +353,6 @@
 .text-suggest-row-1 { font-size: 18px; font-weight: 700; margin-bottom: 8px; line-height: 1.3; }
 .text-suggest-row-2 { font-size: 11px; margin-bottom: 4px; }
 .text-suggest-row-3 { font-size: 11px; font-weight: 600; }
-.copy-btn-sm {
-  margin-top: 10px; padding: 4px 10px; background: var(--chip-on-color-bg);
-  border: 1px solid var(--chip-on-color-border); border-radius: var(--radius-sm);
-  font-size: 11px; cursor: pointer; color: var(--chip-on-color-text);
-  &:hover { background: var(--bg-card); }
-}
 
 .stack-color-section {
   padding-top: 16px;
@@ -430,11 +378,21 @@
   background: var(--bg-muted);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
-  cursor: pointer;
   transition: border-color 0.15s ease;
   &:hover { border-color: var(--accent); }
 }
+.stack-color-swatch-wrap {
+  position: relative;
+  width: 100%;
+}
+.stack-color-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1;
+}
 .stack-color-swatch {
+  display: block;
   width: 100%;
   aspect-ratio: 1;
   border-radius: var(--radius-sm);
@@ -451,8 +409,7 @@
 @media (max-width: 960px) {
   .wcag-preview-row { grid-template-columns: 1fr; }
   .contrast-result-matrix { grid-template-columns: repeat(2, 1fr); }
-  .gov-body { flex-direction: column; }
-  .gov-summary { flex: none; width: 100%; }
+  .gov-body { display: block; }
   .gov-check-grid { grid-template-columns: 1fr; }
   .sim-grid { grid-template-columns: repeat(2, 1fr); }
   .text-suggest-grid { grid-template-columns: repeat(2, 1fr); }

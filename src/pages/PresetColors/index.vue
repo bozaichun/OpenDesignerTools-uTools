@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { ref, computed, watch, inject, onMounted, onUnmounted } from 'vue';
 import { getUniquePresets, COLOR_GROUPS } from '../../data/presetColors';
-import { copyToClipboard, showToast } from '../../utils/colorUtils';
+import { showToast } from '../../utils/colorUtils';
 import { downloadPaletteCard } from '../../utils/paletteCard';
-import FavoriteButton from '../../components/FavoriteButton.vue';
+import ColorActionGroup from '../../components/ColorActionGroup.vue';
 import Input from '../../components/Input.vue';
 import ColorFormatDialog from '../../components/ColorFormatDialog.vue';
 import Banner from '../../components/Banner.vue';
@@ -95,11 +95,6 @@ function openColorModal(color) {
   modalVisible.value = true;
 }
 
-function copyValue(value, label) {
-  copyToClipboard(value);
-  showToast(null, '已复制 ' + label + ': ' + value, 'success');
-}
-
 watch(filteredColors, (list) => {
   const visibleNames = new Set(list.map((color) => color.name));
   const next = new Set([...selectedKeys.value].filter((name) => visibleNames.has(name)));
@@ -186,14 +181,11 @@ onUnmounted(() => {
           >
             查看颜色值
           </button>
-          <button
-            class="card-icon-btn"
-            :title="'复制颜色名: ' + color.name"
-            @click="copyValue(color.name, color.name)"
-          >
-            <span class="iconfont icon-Copy"></span>
-          </button>
-          <FavoriteButton :hex="color.hex" :name="color.name" />
+          <ColorActionGroup
+            :value="color.hex"
+            :copy-label="color.name"
+            :favorite-name="color.name"
+          />
         </div>
       </div>
     </div>
@@ -427,6 +419,10 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   cursor: default;
+
+  :deep(.color-action-group) {
+    flex-shrink: 0;
+  }
 }
 
 .view-color-btn {
