@@ -9,7 +9,7 @@ import Pagination from '../../components/Pagination.vue';
 import CodeExportPanel from '../../components/CodeExportPanel.vue';
 import Banner from '../../components/Banner.vue';
 import DefaultPage from '../../components/DefaultPage.vue';
-import { parseColor, copyToClipboard, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
+import { parseColor, showToast, getContrastColor as gcc } from '../../utils/colorUtils';
 import { loadPalettes, savePalettes as persistPalettes } from './paletteStorage.js';
 
 const router = useRouter();
@@ -30,27 +30,20 @@ const tableColumns = [
 ];
 const dialogNewGroup = ref(false);
 const editingGroupId = ref(null);
-const dialogShare = ref(false);
-const shareGroupId = ref(null);
 const dialogDedup = ref(false);
 const dialogDeleteConfirm = ref(false);
 const dialogBatchDeleteConfirm = ref(false);
 const dialogCodeExport = ref(false);
 const codeExportGroupId = ref(null);
 const newGroupName = ref('');
-const newGroupType = ref('project');
+const newGroupType = ref('personal');
 const deleteTargetId = ref(null);
 const deleteTargetName = ref('');
 const similarityThreshold = ref(5);
 const dedupResults = ref([]);
 const hasRunDedup = ref(false);
-const importJson = ref('');
 
 const currentGroup = computed(() => groups.value.find(g => g.id === activeGroup.value));
-const shareTargetGroup = computed(() => {
-  if (!shareGroupId.value) return null;
-  return groups.value.find((group) => group.id === shareGroupId.value) || null;
-});
 const codeExportGroup = computed(() => {
   if (!codeExportGroupId.value) return null;
   return groups.value.find((group) => group.id === codeExportGroupId.value) || null;
@@ -65,16 +58,6 @@ const codeExportColors = computed(() => {
 const codeExportTitle = computed(() => {
   if (!codeExportGroup.value) return '生成代码';
   return `生成代码 - ${codeExportGroup.value.name}`;
-});
-const shareLink = computed(() => 'https://color.tools/share/' + (shareTargetGroup.value ? shareTargetGroup.value.id : ''));
-const shareJson = computed(() => {
-  if (!shareTargetGroup.value) return '';
-  return JSON.stringify({
-    name: shareTargetGroup.value.name,
-    type: shareTargetGroup.value.type,
-    colors: shareTargetGroup.value.colors,
-    exportedAt: new Date().toISOString()
-  }, null, 2);
 });
 const paginatedGroups = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value;
@@ -185,7 +168,7 @@ function getGroupTypeLabel(type) {
 function openNewGroupDialog() {
   editingGroupId.value = null;
   newGroupName.value = '';
-  newGroupType.value = 'project';
+  newGroupType.value = 'personal';
   dialogNewGroup.value = true;
 }
 function openEditGroupDialog(row) {
@@ -198,12 +181,6 @@ function closeGroupDialog() {
   dialogNewGroup.value = false;
   editingGroupId.value = null;
   newGroupName.value = '';
-}
-function openShareDialog(row) {
-  shareGroupId.value = row.id;
-  activeGroup.value = row.id;
-  importJson.value = '';
-  dialogShare.value = true;
 }
 function openDedupDialog(row) {
   activeGroup.value = row.id;
@@ -336,35 +313,6 @@ function mergeGroup(group) {
   showToast(null, '已合并相似色值', 'success');
   dedupResults.value = [];
 }
-function importPalette() {
-  try {
-    const data = JSON.parse(importJson.value);
-    if (!data.name || !Array.isArray(data.colors)) {
-      throw new Error('格式错误');
-    }
-    const newGroup = {
-      id: 'g-' + Date.now(),
-      name: data.name + ' (导入)',
-      type: data.type || 'project',
-      colors: data.colors.map(c => ({
-        name: c.name || '未命名',
-        color: c.color || '#000000',
-        note: c.note || ''
-      }))
-    };
-    groups.value.push(newGroup);
-    activeGroup.value = newGroup.id;
-    importJson.value = '';
-    savePalettes();
-    showToast(null, '色板导入成功！', 'success');
-  } catch (e) {
-    showToast(null, 'JSON 格式错误，请检查', 'error');
-  }
-}
-function copyValue(value, label) {
-  copyToClipboard(value);
-  showToast(null, '已复制 ' + label, 'success');
-}
 
 onMounted(() => {
   reloadGroups();
@@ -448,7 +396,6 @@ onUnmounted(() => {
             <button class="link-btn" @click="openEditGroupDialog(row)">编辑</button>
             <button class="link-btn" @click="viewGroup(row)">查看</button>
             <button class="link-btn" @click="openDedupDialog(row)">查重</button>
-            <button class="link-btn" @click="openShareDialog(row)">共享</button>
             <button class="link-btn" @click="openCodeExportDialog(row)">导出</button>
             <button class="link-btn danger" @click="openDeleteConfirm(row)">删除</button>
           </div>
@@ -522,69 +469,6 @@ onUnmounted(() => {
       </div>
     </Dialog>
 
-    <!-- 共享导出 -->
-    <Dialog
-      v-model:visible="dialogShare"
-      title="团队色板共享"
-      max-width="720px"
-    >
-      <div class="dialog-share">
-        <p class="dialog-desc">支持色板链接分享，团队同步统一品牌色</p>
-
-        <div v-if="shareTargetGroup" class="share-section">
-          <div class="share-preview">
-            <div class="share-title">{{ shareTargetGroup.name }}</div>
-            <div class="share-colors">
-              <div
-                v-for="(c, idx) in shareTargetGroup.colors"
-                :key="c.name || c.color"
-                class="share-color-item"
-                :style="{ background: c.color }"
-              >
-                <span class="share-color-text" :style="{ color: getContrastColor(c.color) }">
-                  {{ c.name }}
-                </span>
-                <span class="share-color-hex">{{ c.color }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="share-link-box">
-            <span class="share-link-label">分享链接：</span>
-            <div class="share-link-row">
-              <Input
-                variant="mono"
-                :model-value="shareLink"
-                readonly
-                :flex="true"
-              />
-              <button class="primary-btn" @click="copyValue(shareLink, '分享链接')">复制链接</button>
-            </div>
-          </div>
-
-          <div class="share-code-box">
-            <div class="share-code-title">JSON 格式导出</div>
-            <textarea :value="shareJson" readonly class="share-code-textarea"></textarea>
-            <button class="secondary-btn" @click="copyValue(shareJson, '色板 JSON')">复制 JSON</button>
-          </div>
-
-          <div class="share-hint">
-            提示：将 JSON 内容发送给团队成员，他们可在本页面「色板管理」粘贴导入
-          </div>
-
-          <div class="import-section">
-            <div class="import-title">导入 JSON 色板</div>
-            <textarea v-model="importJson" placeholder="在此粘贴色板 JSON 数据..." class="share-code-textarea"></textarea>
-            <button class="primary-btn" @click="importPalette">导入色板</button>
-          </div>
-        </div>
-
-        <div v-else class="empty-state">
-          <div class="empty-text">暂无分组，请先创建分组</div>
-        </div>
-      </div>
-    </Dialog>
-
     <!-- 查重合并 -->
     <Dialog
       v-model:visible="dialogDedup"
@@ -633,7 +517,9 @@ onUnmounted(() => {
         </div>
 
         <div v-if="dedupResults.length === 0 && hasRunDedup" class="empty-state">
-          <div class="empty-icon">✓</div>
+          <div class="empty-icon">
+            <span class="iconfont icon-Areality-Success"></span>
+          </div>
           <div class="empty-text">恭喜！当前色板中未检测到明显重复色值</div>
         </div>
       </div>
@@ -821,7 +707,6 @@ onUnmounted(() => {
 }
 
 .dialog-form,
-.dialog-share,
 .dialog-dedup,
 .dialog-confirm {
   display: flex;
@@ -992,82 +877,19 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
-.share-preview {
-  padding: 16px;
-  background: var(--bg-muted);
-  border-radius: var(--radius-md);
-}
-
-.share-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
-
-.share-colors {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 8px;
-}
-
-.share-color-item {
-  padding: 14px 10px;
-  border-radius: var(--radius-sm);
-  text-align: center;
-  min-height: 72px;
-}
-
-.share-color-text { font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px; }
-.share-color-hex { font-size: 11px; font-family: monospace; display: block; }
-
-.share-link-box,
-.share-code-box,
-.import-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.share-link-label { font-size: 13px; font-weight: 500; }
-
-.share-link-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.share-link-row :deep(.app-input-wrap) {
-  min-width: 200px;
-}
-
-.share-code-title,
-.import-title {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.share-code-textarea {
-  padding: 12px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  font-size: 12px;
-  font-family: monospace;
-  min-height: 100px;
-  resize: vertical;
-}
-
-.share-hint {
-  font-size: 12px;
-  color: var(--text-secondary);
-  padding: 10px 14px;
-  background: var(--bg-muted);
-  border-radius: var(--radius-md);
-}
-
 .empty-state {
   padding: 24px;
   text-align: center;
 }
 
-.empty-icon { font-size: 36px; margin-bottom: 8px; }
+.empty-icon {
+  margin-bottom: 8px;
+
+  .iconfont {
+    font-size: 36px;
+    color: var(--success);
+  }
+}
 .empty-text { font-size: 14px; color: var(--text-secondary); }
 
 /* ============ 多选功能区 ============ */

@@ -1,14 +1,16 @@
 <script lang="ts" setup>
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Selector from '../../components/Selector.vue';
 import SemanticHistoryDrawer from './SemanticHistoryDrawer.vue';
 import { ADVANCED_TABS, getProfessionHeaderDesc } from './intelligentColorMatchingUtils.js';
+import { getAllSemanticHistorySessions } from './semanticHistoryStorage.js';
 
 const route = useRoute();
 const router = useRouter();
 const historyDrawerVisible = ref(false);
 const semanticInSession = ref(false);
+const hasHistory = ref(false);
 const modeRef = ref(null);
 
 const currentTabKey = computed(() => {
@@ -47,10 +49,23 @@ function handleSemanticSessionChange(inSession) {
   semanticInSession.value = !!inSession;
 }
 
+function refreshHistoryState() {
+  hasHistory.value = getAllSemanticHistorySessions().length > 0;
+}
+
 watch(() => route.name, (name) => {
   if (name !== 'IcmSemantic') {
     semanticInSession.value = false;
   }
+});
+
+onMounted(() => {
+  refreshHistoryState();
+  window.addEventListener('semantic-history-changed', refreshHistoryState);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('semantic-history-changed', refreshHistoryState);
 });
 </script>
 
@@ -79,7 +94,7 @@ watch(() => route.name, (name) => {
           新会话
         </button>
         <button
-          v-if="isSemanticRoute"
+          v-if="isSemanticRoute && hasHistory && !semanticInSession"
           class="icm-history-btn"
           title="历史记录"
           @click="openHistoryDrawer"

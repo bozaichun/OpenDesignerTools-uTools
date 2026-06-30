@@ -414,6 +414,8 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  padding: 20px;
+  box-sizing: border-box;
 }
 .chat-welcome {
   flex: 1;
@@ -422,7 +424,7 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 40px 20px;
+  padding: 20px 0;
 }
 .welcome-avatar {
   width: 64px;
@@ -486,7 +488,7 @@ defineExpose({ loadSession, resetToHome: handleBackToHome });
   flex-shrink: 0;
   position: relative;
   z-index: 10;
-  padding: 12px 0;
+  padding: 20px;
   background: var(--bg-card);
   border-top: 1px solid var(--border-primary);
 }

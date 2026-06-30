@@ -4,23 +4,39 @@ import LayoutContainer from '../../components/LayoutContainer.vue';
 import GridLayout from '../../components/GridLayout.vue';
 import {
   QUICK_START_STEPS,
-  FEATURE_GROUPS,
-  USAGE_TIPS,
-  ICM_CHAT_FEATURE
+  MAIN_FEATURES,
+  ICM_MODE_FEATURES,
+  USAGE_TIPS
 } from '../../data/functionOverview.js';
 
 const router = useRouter();
 const quickStartSteps = QUICK_START_STEPS;
-const featureGroups = FEATURE_GROUPS;
+const mainFeatures = MAIN_FEATURES;
+const icmModeFeatures = ICM_MODE_FEATURES;
 const usageTips = USAGE_TIPS;
-const icmChatFeature = ICM_CHAT_FEATURE;
 
-function goToFeature(routeId) {
+function goToRouteId(routeId) {
   router.push('/' + routeId);
 }
 
-function goToIcmChat() {
-  router.push({ name: icmChatFeature.routeName });
+function goToRouteName(routeName) {
+  router.push({ name: routeName });
+}
+
+function handleQuickStart(item) {
+  if (item.routeName) {
+    goToRouteName(item.routeName);
+    return;
+  }
+  goToRouteId(item.routeId);
+}
+
+function handleFeatureClick(item) {
+  if (item.routeId === 'IntelligentColorMatching') {
+    goToRouteName('BozaiChat');
+    return;
+  }
+  goToRouteId(item.routeId);
 }
 </script>
 
@@ -31,33 +47,15 @@ function goToIcmChat() {
       <div class="hero-content">
         <h2 class="hero-title">颜色值转换器</h2>
         <p class="hero-desc">
-          一站式色值工具集，涵盖格式转换、图片取色、智能配色、色板管理与印刷辅助。
-          从左侧导航或下方卡片即可快速进入各功能。
+          从下方卡片或左侧导航进入对应功能。涵盖色值转换、图片取色、智能配色、色板管理与印刷调色等完整工作流。
         </p>
       </div>
       <div class="hero-tags">
-        <span class="hero-tag">HEX / RGB / CMYK</span>
+        <span class="hero-tag">格式转换</span>
         <span class="hero-tag">图片取色</span>
+        <span class="hero-tag">智能配色</span>
         <span class="hero-tag">色板管理</span>
         <span class="hero-tag">本地收藏</span>
-      </div>
-    </section>
-
-    <!-- 智能配色问答：醒目快捷入口 -->
-    <section class="featured-icm-section">
-      <div class="featured-icm-card" @click="goToIcmChat">
-        <div class="featured-icm-left">
-          <span class="featured-icm-badge">{{ icmChatFeature.badge }}</span>
-          <div class="featured-icm-head">
-            <span :class="['iconfont', icmChatFeature.icon, 'featured-icm-icon']"></span>
-            <h3 class="featured-icm-title">{{ icmChatFeature.title }}</h3>
-          </div>
-          <p class="featured-icm-desc">{{ icmChatFeature.desc }}</p>
-        </div>
-        <button class="featured-icm-btn" @click.stop="goToIcmChat">
-          立即体验
-          <span class="iconfont icon-UseImmediately featured-icm-btn-icon"></span>
-        </button>
       </div>
     </section>
 
@@ -69,13 +67,13 @@ function goToIcmChat() {
           v-for="item in quickStartSteps"
           :key="item.step"
           class="quick-card"
-          @click="goToFeature(item.routeId)"
+          @click="handleQuickStart(item)"
         >
           <div class="quick-step">0{{ item.step }}</div>
           <span :class="['iconfont', item.icon, 'quick-icon']"></span>
           <div class="quick-title">{{ item.title }}</div>
           <div class="quick-desc">{{ item.desc }}</div>
-          <button class="quick-btn" @click.stop="goToFeature(item.routeId)">
+          <button class="quick-btn" @click.stop="handleQuickStart(item)">
             立即使用
             <span class="iconfont icon-UseImmediately quick-btn-icon"></span>
           </button>
@@ -83,20 +81,15 @@ function goToIcmChat() {
       </GridLayout>
     </section>
 
-    <LayoutContainer
-      v-for="group in featureGroups"
-      :key="group.title"
-      variant="section"
-      tag="section"
-      class="feature-section"
-    >
-      <h3 class="section-title">{{ group.title }}</h3>
-      <GridLayout class="feature-grid" mode="auto-fill" min-col-width="280px">
+    <!-- 全部功能：与侧边栏导航一致 -->
+    <section class="feature-section">
+      <h3 class="section-title">全部功能</h3>
+      <GridLayout class="feature-grid" mode="auto-fill" min-col-width="220px">
         <div
-          v-for="item in group.items"
+          v-for="item in mainFeatures"
           :key="item.routeId"
           class="feature-card"
-          @click="goToFeature(item.routeId)"
+          @click="handleFeatureClick(item)"
         >
           <div class="feature-card-header">
             <span :class="['iconfont', item.icon, 'feature-icon']"></span>
@@ -109,7 +102,25 @@ function goToIcmChat() {
           </span>
         </div>
       </GridLayout>
-    </LayoutContainer>
+    </section>
+
+    <!-- 智能配色子模式 -->
+    <section class="icm-section">
+      <h3 class="section-title">智能配色 · 模式入口</h3>
+      <GridLayout class="icm-grid" :cols="5" :cols-tablet="3" :cols-mobile="2">
+        <div
+          v-for="item in icmModeFeatures"
+          :key="item.routeName"
+          class="icm-card"
+          @click="goToRouteName(item.routeName)"
+        >
+          <span v-if="item.badge" class="icm-badge">{{ item.badge }}</span>
+          <span :class="['iconfont', item.icon, 'icm-icon']"></span>
+          <div class="icm-label">{{ item.label }}</div>
+          <p class="icm-desc">{{ item.desc }}</p>
+        </div>
+      </GridLayout>
+    </section>
 
     <!-- 使用提示 -->
     <section class="tips-section">
@@ -148,7 +159,7 @@ function goToIcmChat() {
   font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.7;
-  max-width: 640px;
+  max-width: 720px;
 }
 
 .hero-tags {
@@ -168,103 +179,6 @@ function goToIcmChat() {
   font-weight: 500;
 }
 
-.featured-icm-section {
-  margin-bottom: 28px;
-}
-
-.featured-icm-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 22px 24px;
-  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--bg-card) 55%);
-  border: 2px solid var(--accent);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-md);
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-bottom);
-    border-color: var(--accent-hover);
-
-    .featured-icm-btn {
-      background: var(--accent);
-      color: var(--text-invert);
-    }
-  }
-}
-
-.featured-icm-left {
-  flex: 1;
-  min-width: 0;
-}
-
-.featured-icm-badge {
-  display: inline-block;
-  padding: 2px 10px;
-  margin-bottom: 10px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-invert);
-  background: var(--accent);
-  border-radius: var(--radius-pill);
-  letter-spacing: 0.5px;
-}
-
-.featured-icm-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.featured-icm-icon {
-  font-size: 28px;
-  color: var(--accent);
-  line-height: 1;
-}
-
-.featured-icm-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.3;
-}
-
-.featured-icm-desc {
-  margin: 0;
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  max-width: 560px;
-}
-
-.featured-icm-btn {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 22px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--accent);
-  background: var(--bg-card);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.featured-icm-btn-icon {
-  font-size: 14px;
-  line-height: 1;
-}
-
 .section-title {
   margin: 0 0 14px;
   font-size: 15px;
@@ -272,16 +186,10 @@ function goToIcmChat() {
   color: var(--text-primary);
 }
 
-.quick-section {
+.quick-section,
+.feature-section,
+.icm-section {
   margin-bottom: 28px;
-}
-
-.quick-grid {
-  /* 列数由 GridLayout 控制 */
-}
-
-.feature-grid {
-  /* auto-fill 由 GridLayout 控制 */
 }
 
 .quick-card {
@@ -360,10 +268,6 @@ function goToIcmChat() {
   line-height: 1;
 }
 
-.feature-section {
-  /* 间距由 LayoutContainer section 控制 */
-}
-
 .feature-card {
   background: var(--bg-muted);
   border: 1px solid var(--border-primary);
@@ -423,6 +327,57 @@ function goToIcmChat() {
   line-height: 1;
 }
 
+.icm-card {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: 16px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 132px;
+
+  &:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+}
+
+.icm-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-invert);
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+}
+
+.icm-icon {
+  display: block;
+  font-size: 22px;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.icm-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.icm-desc {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
 .tips-section {
   background: var(--bg-muted);
   border: 1px solid var(--border-primary);
@@ -436,18 +391,6 @@ function goToIcmChat() {
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.8;
-}
-
-@media (max-width: 900px) {
-  .featured-icm-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .featured-icm-btn {
-    width: 100%;
-    justify-content: center;
-  }
 }
 
 @media (max-width: 640px) {

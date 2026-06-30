@@ -1,121 +1,89 @@
-// 功能概览页：快速入门步骤与使用提示
+// 功能概览页：与侧边栏导航对齐的快捷入口配置
+import { NAV_MENU_ITEMS } from './navMenu.js';
+
+const FEATURE_DESC_MAP = {
+  BasicKnowledge: '色彩模型、色轮、对比度等基础知识与图表',
+  ColorConversion: 'HEX、RGB、HSL、CMYK、HSV 等格式双向转换',
+  ImageColorSampling: '从图片提取主色与细节色，查看完整色值分析',
+  PresetColors: '按色系浏览常用颜色，支持搜索、复制与收藏',
+  AccessibilityCheck: 'WCAG 对比度、色弱模拟、政企合规与文字叠色',
+  IntelligentColorMatching: 'AI 问答与语义配色、单色延展等专业配色能力',
+  PaletteManager: '个人 / 项目 / 品牌分组管理，查重合并与代码导出',
+  PrintTools: '专色、网点、纸张等专业印刷色值计算',
+  ColorTools: '亮度饱和度调节、混色模拟、渐变生成等调色工具',
+  MyCollection: '集中管理收藏色值，快速添加到色板或查看全格式'
+};
+
 export const QUICK_START_STEPS = [
   {
     step: 1,
     title: '转换色值',
-    desc: '输入 HEX / RGB 等格式，实时互转并复制结果',
+    desc: 'HEX / RGB / HSL / CMYK 等格式实时互转',
     routeId: 'ColorConversion',
     icon: 'icon-Areality-ColorConversion'
   },
   {
     step: 2,
     title: '图片取色',
-    desc: '上传图片，点击取色并查看完整色值分析',
+    desc: '上传图片提取主色与细节色，生成色值报告',
     routeId: 'ImageColorSampling',
     icon: 'icon-Areality-Picture'
   },
   {
     step: 3,
-    title: '收藏与管理',
-    desc: '收藏常用颜色，一键添加到色板分组',
-    routeId: 'MyCollection',
-    icon: 'icon-Areality-MyCollection'
+    title: '智能配色',
+    desc: 'AI 问答与语义配色，一键生成可落地方案',
+    routeName: 'BozaiChat',
+    icon: 'icon-Areality-ColorMatching'
   }
 ];
 
-export const FEATURE_GROUPS = [
+/** 侧边栏全部功能（不含功能概览自身） */
+export const MAIN_FEATURES = NAV_MENU_ITEMS
+  .filter((item) => item.id !== 'FunctionOverview')
+  .map((item) => ({
+    routeId: item.id,
+    label: item.label,
+    icon: item.icon,
+    desc: FEATURE_DESC_MAP[item.id] || ''
+  }));
+
+export const ICM_MODE_FEATURES = [
   {
-    title: '学习与查阅',
-    items: [
-      {
-        routeId: 'BasicKnowledge',
-        icon: 'icon-Areality-Overview',
-        label: '基础知识',
-        desc: '色彩模型、色轮、对比度等科普图表，帮助理解颜色原理'
-      },
-      {
-        routeId: 'PresetColors',
-        icon: 'icon-Areality-Color',
-        label: '预置颜色',
-        desc: '按色系浏览常用颜色，支持搜索、复制与收藏'
-      }
-    ]
+    routeName: 'BozaiChat',
+    label: 'AI 问答',
+    desc: '向波仔提问配色问题，多轮对话即时解答',
+    icon: 'icon-Areality-AIMode',
+    badge: '推荐'
   },
   {
-    title: '取色与转换',
-    items: [
-      {
-        routeId: 'ColorConversion',
-        icon: 'icon-Areality-ColorConversion',
-        label: '颜色转换',
-        desc: 'HEX、RGB、HSL、CMYK、HSV 等格式双向实时转换'
-      },
-      {
-        routeId: 'ImageColorSampling',
-        icon: 'icon-Areality-Picture',
-        label: '图片取色',
-        desc: '从图片中提取主色与细节色，生成完整色值报告'
-      }
-    ]
+    routeName: 'IcmSemantic',
+    label: '语义 AI 配色',
+    desc: '按情绪调性与行业场景生成完整配色规范',
+    icon: 'icon-Areality-ColorMatching'
   },
   {
-    title: '配色与管理',
-    items: [
-      {
-        routeId: 'IntelligentColorMatching',
-        icon: 'icon-Areality-ColorMatching',
-        label: '智能配色',
-        desc: '基于主色自动生成协调配色方案'
-      },
-      {
-        routeId: 'AccessibilityCheck',
-        icon: 'icon-Areality-ColorContrast',
-        label: '色彩对比',
-        desc: '检测前景/背景对比度，评估可读性与 WCAG 等级'
-      },
-      {
-        routeId: 'PaletteManager',
-        icon: 'icon-Areality-Palette',
-        label: '色板管理',
-        desc: '创建分组、管理品牌色，支持导入导出与代码生成'
-      },
-      {
-        routeId: 'MyCollection',
-        icon: 'icon-Copyright',
-        label: '我的收藏',
-        desc: '集中管理收藏色值，快速添加到色板或查看全格式'
-      }
-    ]
+    routeName: 'IcmMonochrome',
+    label: '单色延展',
+    desc: '输入主色生成色阶、邻近色与互补色',
+    icon: 'icon-Areality-ColorMixing'
   },
   {
-    title: '专业工具',
-    items: [
-      {
-        routeId: 'PrintTools',
-        icon: 'icon-Areality-PrintingTool',
-        label: '印刷工具',
-        desc: '专色、网点、纸张等专业印刷相关色值计算'
-      },
-      {
-        routeId: 'ColorTools',
-        icon: 'icon-Areality-ColorMixing',
-        label: '调色工具',
-        desc: '亮度/饱和度调节、混色模拟、渐变生成等实用功能'
-      }
-    ]
+    routeName: 'IcmScenario',
+    label: '场景定向',
+    desc: '适配海报、APP、PPT 等场景的深浅色方案',
+    icon: 'icon-Areality-Picture'
+  },
+  {
+    routeName: 'IcmUnique',
+    label: '去同质化',
+    desc: '规避行业俗配，输出差异化商业配色',
+    icon: 'icon-Areality-ColorContrast'
   }
 ];
-
-export const ICM_CHAT_FEATURE = {
-  routeName: 'BozaiChat',
-  icon: 'icon-Areality-ColorMatching',
-  title: '智能配色 · 问答模式',
-  desc: '向波仔提问语义配色、单色延展、场景定向等问题，AI 即时生成可执行配色方案',
-  badge: 'AI 问答'
-};
 
 export const USAGE_TIPS = [
   '在 uTools 中搜索「颜色转换」「取色」等关键词可快速唤起对应功能',
-  '预置颜色与取色结果均支持 ★ 收藏，数据保存在本地并可云端同步',
-  '色板管理支持 JSON 导入导出，方便团队共享品牌色'
+  '预置颜色、取色结果与色板色值均支持收藏，数据保存在本地',
+  '色板管理支持分组导出代码，方便接入设计规范与开发流程'
 ];

@@ -1,13 +1,19 @@
 <script lang="ts" setup>
-import { ref, inject, onUnmounted } from 'vue';
+import { ref, inject, onMounted, onUnmounted } from 'vue';
 import ChatMode from './ChatMode.vue';
 import ChatHistoryDrawer from './ChatHistoryDrawer.vue';
+import { getAllChatSessions } from './chatHistoryStorage';
 
 const setIcmChatInSession = inject('setIcmChatInSession');
 
 const chatInSession = ref(false);
 const historyDrawerVisible = ref(false);
+const hasHistory = ref(false);
 const chatModeRef = ref(null);
+
+function refreshHistoryState() {
+  hasHistory.value = getAllChatSessions().length > 0;
+}
 
 function handleSessionActive(active) {
   chatInSession.value = active;
@@ -26,7 +32,13 @@ function handleNewSession() {
   chatModeRef.value?.resetToHome?.();
 }
 
+onMounted(() => {
+  refreshHistoryState();
+  window.addEventListener('chat-history-changed', refreshHistoryState);
+});
+
 onUnmounted(() => {
+  window.removeEventListener('chat-history-changed', refreshHistoryState);
   setIcmChatInSession?.(false);
 });
 </script>
@@ -45,7 +57,7 @@ onUnmounted(() => {
           新会话
         </button>
         <button
-          v-else
+          v-else-if="hasHistory"
           class="icm-history-btn"
           title="历史会话"
           @click="openHistoryDrawer"

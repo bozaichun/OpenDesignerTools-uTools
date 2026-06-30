@@ -32,25 +32,31 @@ const stackColors = computed(() => computeSimilarStackColors(textBgColor.value))
           <div
             v-for="rec in textSuggestions"
             :key="rec.name"
-            class="text-suggest-card"
+            class="color-strip-cell text-suggest-card"
             :class="rec.qualified ? 'ok' : 'warn'"
-            :style="{ background: textBgColor, color: rec.color }"
           >
-            <div class="text-suggest-card-top">
+            <div
+              class="color-strip-swatch text-suggest-swatch"
+              :style="{ background: textBgColor, color: rec.color }"
+            >
               <span class="text-status-badge" :class="rec.qualified ? 'ok' : 'warn'">
                 {{ rec.qualified ? '合格' : '不合格' }}
               </span>
+              <span class="color-strip-label">{{ rec.name }}</span>
+            </div>
+            <div class="color-strip-meta">
+              <span
+                class="color-strip-hex"
+                :title="`对比度 ${rec.ratio.toFixed(2)}:1 · ${rec.level}`"
+              >{{ rec.color }}</span>
               <ColorActionGroup
                 :value="rec.color"
                 :copy-label="rec.name"
                 :favorite-name="rec.name"
-                variant="on-color"
+                variant="default"
                 class="text-suggest-actions"
               />
             </div>
-            <div class="text-suggest-row-1">{{ rec.name }}</div>
-            <div class="text-suggest-row-2">推荐文字色：{{ rec.color }}</div>
-            <div class="text-suggest-row-3">对比度 {{ rec.ratio.toFixed(2) }}:1 · {{ rec.level }}</div>
           </div>
         </div>
       </div>
@@ -60,4 +66,5 @@ const stackColors = computed(() => computeSimilarStackColors(textBgColor.value))
 
 <style lang="scss" scoped>
 @use './accessibilityPanels.scss' as *;
+@use '../../components/colorStripCard.scss' as *;
 </style>

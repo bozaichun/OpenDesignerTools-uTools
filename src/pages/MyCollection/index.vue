@@ -374,10 +374,10 @@ onUnmounted(() => {
                   <button
                     type="button"
                     class="color-action-group__extra-btn"
-                    title="更多格式"
+                    title="查看颜色值"
                     @click="openColorModal(item)"
                   >
-                    <span class="iconfont icon-Color"></span>
+                    <span class="iconfont icon-ViewDetails"></span>
                   </button>
                 </template>
               </ColorActionGroup>

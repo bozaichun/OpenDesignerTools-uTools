@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import SectionTitle from '../../components/SectionTitle.vue';
-import { openFeedbackForm } from '../../utils/feedback.js';
+// import { openFeedbackForm } from '../../utils/feedback.js';
 
 defineProps({
   title: {
@@ -46,15 +46,15 @@ defineEmits(['toggle-mode', 'show-setting', 'back']);
       <slot name="actions"></slot>
       <slot name="extra"></slot>
       <slot name="mobile-expand"></slot>
-      <button class="icon-btn feedback-btn" title="需求反馈" @click="openFeedbackForm">
+      <!-- <button class="icon-btn feedback-btn" title="需求反馈" @click="openFeedbackForm">
         <span class="iconfont icon-Areality-Feedback"></span>
-      </button>
-      <button class="icon-btn" @click="$emit('toggle-mode')" title="切换模式">
+      </button> -->
+      <!-- <button class="icon-btn" @click="$emit('toggle-mode')" title="切换模式">
         <span class="iconfont icon-Areality-ModeSwitching"></span>
-      </button>
-      <button class="icon-btn" @click="$emit('show-setting')" title="设置">
+      </button> -->
+      <!-- <button class="icon-btn" @click="$emit('show-setting')" title="设置">
         <span class="iconfont icon-Areality-Setting"></span>
-      </button>
+      </button> -->
     </div>
   </header>
 </template>
