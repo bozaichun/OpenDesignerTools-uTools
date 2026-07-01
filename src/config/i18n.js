@@ -28,7 +28,7 @@ export const I18N_DICT = {
     langKo: '韩语',
     langRu: '俄语',
     settingsSaved: '设置已自动保存',
-    footerCopyright: '© {year} 波仔椿 · 颜色值转换器'
+    footerCopyright: '© {year} 波仔椿 · 设计师工具'
   },
   'zh-TW': {
     functionOverview: '功能概覽',

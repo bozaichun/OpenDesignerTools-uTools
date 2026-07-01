@@ -211,18 +211,24 @@ onMounted(() => {
   listenForSettings();
 
   // uTools 插件入口：按 feature code 跳转对应页面
+  const FEATURE_ROUTE_MAP = {
+    color_overview: '/FunctionOverview',
+    color_knowledge: '/BasicKnowledge',
+    color_convert: '/ColorConversion',
+    color_image: '/ImageColorSampling',
+    color_preset: '/PresetColors',
+    color_accessibility: '/AccessibilityCheck',
+    color_matching: '/IntelligentColorMatching',
+    color_palette: '/PaletteManager',
+    color_print: '/PrintTools',
+    color_tools: '/ColorTools',
+    color_collection: '/MyCollection'
+  };
+
   if (window.utools && typeof window.utools.onPluginEnter === 'function') {
     window.utools.onPluginEnter((action) => {
-      const code = action && action.code;
-      if (code === 'color_preset') {
-        router.push('/PresetColors');
-      } else if (code === 'color_knowledge') {
-        router.push('/BasicKnowledge');
-      } else if (code === 'color_convert') {
-        router.push('/ColorConversion');
-      } else if (code === 'color_image') {
-        router.push('/ImageColorSampling');
-      }
+      const route = FEATURE_ROUTE_MAP[action && action.code];
+      if (route) router.push(route);
     });
   }
 

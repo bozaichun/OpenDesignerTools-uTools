@@ -1,7 +1,7 @@
 {
-  "name": "颜色值转换器",
+  "name": "设计师工具",
   "code": "color_converter",
-  "description": "支持 HEX / RGB / RGBA / HSL / HSLA / CMYK / LAB / HSV 等多格式颜色值互转、图片取色、预设颜色查询、色彩科普的 uTools 工具",
+  "description": "设计师工具集：色值转换、图片取色、预设色卡、色彩对比、智能配色、色板管理、印刷与调色等专业能力",
   "version": "1.0.0",
   "main": "index.html",
   "preload": "preload/services.js",
@@ -11,9 +11,14 @@
   },
   "features": [
     {
-      "code": "color_preset",
-      "explain": "W3C 标准预设色卡查询，支持按颜色名和 HEX 值搜索",
-      "cmds": ["预设颜色表", "预设色卡", "色卡查询", "CSS 颜色名"]
+      "code": "color_overview",
+      "explain": "设计师工具功能入口与使用指南，快速了解全部能力",
+      "cmds": ["功能概览", "设计师工具", "使用指南", "工具入口"]
+    },
+    {
+      "code": "color_knowledge",
+      "explain": "色彩模型、色轮、对比度等基础知识与图表科普",
+      "cmds": ["色彩知识库", "色彩科普", "颜色知识", "配色原理", "基础知识"]
     },
     {
       "code": "color_convert",
@@ -26,9 +31,39 @@
       "cmds": ["图片取色", "吸管取色", "图片调色板", "从图片提取颜色"]
     },
     {
-      "code": "color_knowledge",
-      "explain": "色彩基础知识与格式科普（色光三原色、色环、各格式适用场景）",
-      "cmds": ["色彩知识库", "色彩科普", "颜色知识", "配色原理"]
+      "code": "color_preset",
+      "explain": "W3C 标准预设色卡查询，支持按颜色名和 HEX 值搜索",
+      "cmds": ["预设颜色表", "预设色卡", "色卡查询", "CSS 颜色名", "预置颜色"]
+    },
+    {
+      "code": "color_accessibility",
+      "explain": "WCAG 对比度、色弱色盲模拟、政企合规与文字叠色推荐",
+      "cmds": ["色彩对比", "对比度检测", "WCAG", "色弱模拟", "无障碍配色"]
+    },
+    {
+      "code": "color_matching",
+      "explain": "AI 问答与语义配色、单色延展、场景定向等专业配色能力",
+      "cmds": ["智能配色", "AI 配色", "语义配色", "配色方案", "波仔配色"]
+    },
+    {
+      "code": "color_palette",
+      "explain": "个人 / 项目 / 品牌分组管理，查重合并与代码导出",
+      "cmds": ["色板管理", "调色板", "色板导出", "品牌色板"]
+    },
+    {
+      "code": "color_print",
+      "explain": "CMYK 校准、潘通匹配、叠印预览、网点换算等印刷色值计算",
+      "cmds": ["印刷工具", "CMYK", "潘通", "叠印预览", "网点换算"]
+    },
+    {
+      "code": "color_tools",
+      "explain": "色阶微调、渐变编辑、色差比对等调色工具",
+      "cmds": ["调色工具", "色阶微调", "渐变编辑", "色差比对"]
+    },
+    {
+      "code": "color_collection",
+      "explain": "集中管理收藏色值，快速添加到色板或查看全格式",
+      "cmds": ["我的收藏", "收藏色值", "色值收藏"]
     }
   ]
 }

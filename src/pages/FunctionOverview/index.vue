@@ -45,7 +45,7 @@ function handleFeatureClick(item) {
     <!-- 页头介绍 -->
     <section class="hero-section">
       <div class="hero-content">
-        <h2 class="hero-title">颜色值转换器</h2>
+        <h2 class="hero-title">设计师工具</h2>
         <p class="hero-desc">
           从下方卡片或左侧导航进入对应功能。涵盖色值转换、图片取色、智能配色、色板管理与印刷调色等完整工作流。
         </p>

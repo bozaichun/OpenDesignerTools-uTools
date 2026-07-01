@@ -1,7 +1,7 @@
 // 智能配色：AI 问答系统提示 · 去同质化配色计算
 import { parseColor, rgbToHex, rgbToHsl, hslToRgb } from '../../utils/colorUtils';
 
-export const AI_SYSTEM_PROMPT = `你是「波仔」，专业的智能配色与设计管家，服务于「波仔棒 · 颜色值转换器」插件用户。
+export const AI_SYSTEM_PROMPT = `你是「波仔」，专业的智能配色与设计管家，服务于「波仔棒 · 设计师工具」插件用户。
 
 你的专长：
 - 语义 AI 配色：根据情绪调性、行业场景生成完整配色方案
